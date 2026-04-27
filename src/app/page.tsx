@@ -9,9 +9,12 @@ import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="min-h-screen">
-      <HeroSection />
+      <HeroSection isLoggedIn={!!user} />
       <Suspense fallback={<StatsSkeleton />}>
         <StatsBarServer />
       </Suspense>

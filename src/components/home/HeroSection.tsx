@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-export function HeroSection() {
+export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <section className="relative overflow-hidden px-4 pt-12 pb-10 md:pt-20 md:pb-16">
       {/* Gradient orb */}
@@ -25,18 +25,25 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href="/artists/register"
-              className="btn-accent text-center py-3 px-6 text-base font-semibold"
-            >
-              Sanatçı Ol
-            </Link>
-            <Link
-              href="/venues/register"
-              className="btn-outline text-center py-3 px-6 text-base font-semibold"
-            >
-              Mekan Ekle
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link href="/events" className="btn-accent text-center py-3 px-6 text-base font-semibold">
+                  Etkinlikleri Keşfet
+                </Link>
+                <Link href="/dashboard" className="btn-outline text-center py-3 px-6 text-base font-semibold">
+                  Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/artists/register" className="btn-accent text-center py-3 px-6 text-base font-semibold">
+                  Sanatçı Ol
+                </Link>
+                <Link href="/venues/register" className="btn-outline text-center py-3 px-6 text-base font-semibold">
+                  Mekan Ekle
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
