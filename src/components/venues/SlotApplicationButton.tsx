@@ -1,0 +1,104 @@
+'use client'
+
+import { useState } from 'react'
+import { BottomSheet } from '@/components/ui/BottomSheet'
+import { createClient } from '@/lib/supabase/client'
+
+interface Props {
+  slotId: string
+  venueName: string
+}
+
+export function SlotApplicationButton({ slotId, venueName }: Props) {
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleApply() {
+    setLoading(true)
+    setError('')
+    const supabase = createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = '/auth'
+      return
+    }
+
+    const { data: artistData } = await supabase
+      .from('artists')
+      .select('id')
+      .eq('profile_id', user.id)
+      .single()
+
+    const artist = artistData as { id: string } | null
+    if (!artist) {
+      setError('Başvurmak için önce sanatçı profilinizi oluşturun.')
+      setLoading(false)
+      return
+    }
+
+    const { error: err } = await supabase.from('applications').insert({
+      slot_id: slotId,
+      artist_id: artist.id,
+      message,
+      status: 'pending' as const,
+    } as any)
+
+    if (err) {
+      if (err.code === '23505') {
+        setError('Bu slota zaten başvurdunuz.')
+      } else {
+        setError('Başvuru gönderilemedi. Tekrar deneyin.')
+      }
+    } else {
+      setSuccess(true)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="btn-accent py-1.5 px-4 text-sm flex-shrink-0"
+      >
+        Başvur
+      </button>
+
+      <BottomSheet open={open} onClose={() => { setOpen(false); setSuccess(false); setError('') }} title={`Başvur: ${venueName}`}>
+        {success ? (
+          <div className="py-6 text-center">
+            <div className="text-success text-4xl mb-3">✓</div>
+            <p className="text-text-primary font-medium">Başvurunuz alındı!</p>
+            <p className="text-text-muted text-sm mt-1">Mekan sahibi en kısa sürede dönüş yapacak.</p>
+            <button onClick={() => setOpen(false)} className="btn-outline mt-4">Kapat</button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="label">Mesajınız (isteğe bağlı)</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Kendinizi tanıtın, repertuarınızdan bahsedin..."
+                rows={4}
+                className="input-field resize-none"
+              />
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button
+              onClick={handleApply}
+              disabled={loading}
+              className="btn-accent w-full py-3 disabled:opacity-50"
+            >
+              {loading ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+            </button>
+          </div>
+        )}
+      </BottomSheet>
+    </>
+  )
+}

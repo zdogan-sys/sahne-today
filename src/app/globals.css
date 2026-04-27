@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+:root {
+  --font-bebas: 'Bebas Neue', sans-serif;
+  --font-dm: 'DM Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: #0a0a0b;
+  color: #E4E0D8;
+  font-family: var(--font-dm);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.font-bebas {
+  font-family: var(--font-bebas);
+  letter-spacing: 0.02em;
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-card border border-[rgba(228,224,216,0.1)];
+  }
+
+  .chip {
+    @apply text-xs uppercase font-medium px-2 py-0.5 rounded-chip;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white font-medium px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors;
+  }
+
+  .btn-outline {
+    @apply border border-[rgba(228,224,216,0.2)] text-text-primary font-medium px-4 py-2 rounded-lg hover:border-accent hover:text-accent transition-colors;
+  }
+
+  .input-field {
+    @apply w-full bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/60 transition-colors text-sm;
+  }
+
+  .label {
+    @apply text-xs text-text-muted uppercase tracking-wide font-medium mb-1 block;
+  }
+}
+
+@layer utilities {
+  .text-muted {
+    color: rgba(228, 224, 216, 0.4);
+  }
+
+  .border-subtle {
+    border-color: rgba(228, 224, 216, 0.1);
+  }
+}
