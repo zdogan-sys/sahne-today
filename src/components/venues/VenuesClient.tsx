@@ -9,7 +9,7 @@ import { VENUE_TYPE_LABELS, cn } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
-type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[] }
+type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[]; logo_url?: string | null }
 
 const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
   const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
@@ -142,7 +142,18 @@ function VenueCard({ venue, canSeeSlots }: { venue: VenueFull; canSeeSlots: bool
   return (
     <Link href={`/venues/${venue.id}`} className="card overflow-hidden hover:border-accent/30 transition-colors block">
       <div className="relative h-36 bg-[rgba(228,224,216,0.04)]">
-        {venue.photo_url ? (
+        {venue.logo_url ? (
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="relative w-full h-full">
+              <Image
+                src={venue.logo_url}
+                alt={venue.name}
+                fill
+                className="object-contain"
+              />
+            </div>
+          </div>
+        ) : venue.photo_url ? (
           <Image
             src={venue.photo_url}
             alt={venue.name}
