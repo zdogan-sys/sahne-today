@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
 import { Clock, Check, X, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { respondToCancelRequest } from '@/app/actions/event'
 import { BandSection } from '@/components/bands/BandSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
@@ -91,10 +92,8 @@ export function ArtistDashboard({ userId }: { userId: string }) {
   }
 
   async function handleCancelRequest(eventId: string, approve: boolean) {
-    await supabase.from('events').update({
-      ...(approve ? { status: 'cancelled' } : {}),
-      cancel_requested: false,
-    } as any).eq('id', eventId)
+    const res = await respondToCancelRequest(eventId, approve)
+    if (!res.success) return
     setEvents(prev => approve
       ? prev.filter(e => e.id !== eventId)
       : prev.map(e => e.id === eventId ? { ...e, cancel_requested: false } : e)
