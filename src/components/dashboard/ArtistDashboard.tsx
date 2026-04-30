@@ -92,12 +92,8 @@ export function ArtistDashboard({ userId }: { userId: string }) {
   }
 
   async function handleCancelRequest(eventId: string, approve: boolean) {
-    const res = await respondToCancelRequest(eventId, approve)
-    if (!res.success) return
-    setEvents(prev => approve
-      ? prev.filter(e => e.id !== eventId)
-      : prev.map(e => e.id === eventId ? { ...e, cancel_requested: false } : e)
-    )
+    await respondToCancelRequest(eventId, approve)
+    await load()
   }
 
   async function respondInvite(memberId: string, accept: boolean) {

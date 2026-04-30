@@ -17,14 +17,6 @@ export async function respondToCancelRequest(eventId: string, approve: boolean) 
 
   if (!artist) return { success: false, error: 'Sanatçı profili bulunamadı.' }
 
-  const { data: event } = await supabaseAuth
-    .from('events')
-    .select('id, artist_id, band_id')
-    .eq('id', eventId)
-    .single()
-
-  if (!event) return { success: false, error: 'Etkinlik bulunamadı.' }
-
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
