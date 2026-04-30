@@ -10,6 +10,7 @@ import { VENUE_TYPE_LABELS, formatDate } from '@/lib/utils'
 import { MapPin, Phone, Mail, Users, Zap, ArrowLeft, Music, Images, CalendarDays } from 'lucide-react'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VenueCoverEditor } from '@/components/venues/VenueCoverEditor'
+import { VenueLogoEditor } from '@/components/venues/VenueLogoEditor'
 import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
@@ -102,14 +103,26 @@ export default async function VenuePage({ params }: Props) {
             <ArrowLeft size={14} />
             Mekanlar
           </Link>
-          <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
-              {VENUE_TYPE_LABELS[venue.venue_type]}
-            </span>
-            {venue.verified && (
-              <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
-            )}
+          <div className="flex items-end gap-3">
+            <div className="pointer-events-auto">
+              <VenueLogoEditor
+                venueId={venue.id}
+                initialUrl={venue.logo_url ?? null}
+                name={venue.name}
+                isOwner={isOwner}
+              />
+            </div>
+            <div>
+              <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
+                  {VENUE_TYPE_LABELS[venue.venue_type]}
+                </span>
+                {venue.verified && (
+                  <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -30,6 +30,7 @@ export interface Venue {
   venue_type: VenueType
   description: string | null
   photo_url: string | null
+  logo_url: string | null
   capacity_seated: number | null
   capacity_standing: number | null
   stage_area_m2: number | null

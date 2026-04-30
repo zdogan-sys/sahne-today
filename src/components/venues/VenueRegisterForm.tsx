@@ -181,6 +181,20 @@ export function VenueRegisterForm() {
       await supabase.from('slots').insert(slotInserts as any)
     }
 
+    // Sanatçı profili yoksa role'ü venue olarak güncelle
+    const { data: artistProfile } = await supabase
+      .from('artists')
+      .select('id')
+      .eq('profile_id', user.id)
+      .maybeSingle()
+
+    if (!artistProfile) {
+      await supabase
+        .from('profiles')
+        .update({ role: 'venue' } as any)
+        .eq('id', user.id)
+    }
+
     window.location.href = '/dashboard'
   }
 
