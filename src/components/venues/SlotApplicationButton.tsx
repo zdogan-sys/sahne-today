@@ -35,7 +35,7 @@ export function SlotApplicationButton({ slotId, venueName }: Props) {
 
     const artist = artistData as { id: string } | null
     if (!artist) {
-      setError('Başvurmak için önce sanatçı profilinizi oluşturun.')
+      setError('Sahne almak için önce sanatçı profilinizi oluşturun.')
       setLoading(false)
       return
     }
@@ -49,9 +49,9 @@ export function SlotApplicationButton({ slotId, venueName }: Props) {
 
     if (err) {
       if (err.code === '23505') {
-        setError('Bu slota zaten başvurdunuz.')
+        setError('Bu slot için zaten talepte bulundunuz.')
       } else {
-        setError('Başvuru gönderilemedi. Tekrar deneyin.')
+        setError('İstek gönderilemedi. Tekrar deneyin.')
       }
     } else {
       setSuccess(true)
@@ -65,14 +65,14 @@ export function SlotApplicationButton({ slotId, venueName }: Props) {
         onClick={() => setOpen(true)}
         className="btn-accent py-1.5 px-4 text-sm flex-shrink-0"
       >
-        Başvur
+        Sahne Al
       </button>
 
-      <BottomSheet open={open} onClose={() => { setOpen(false); setSuccess(false); setError('') }} title={`Başvur: ${venueName}`}>
+      <BottomSheet open={open} onClose={() => { setOpen(false); setSuccess(false); setError('') }} title={`Sahne Al: ${venueName}`}>
         {success ? (
           <div className="py-6 text-center">
             <div className="text-success text-4xl mb-3">✓</div>
-            <p className="text-text-primary font-medium">Başvurunuz alındı!</p>
+            <p className="text-text-primary font-medium">Talebiniz alındı!</p>
             <p className="text-text-muted text-sm mt-1">Mekan sahibi en kısa sürede dönüş yapacak.</p>
             <button onClick={() => setOpen(false)} className="btn-outline mt-4">Kapat</button>
           </div>
@@ -94,7 +94,7 @@ export function SlotApplicationButton({ slotId, venueName }: Props) {
               disabled={loading}
               className="btn-accent w-full py-3 disabled:opacity-50"
             >
-              {loading ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+              {loading ? 'Gönderiliyor...' : 'Sahne Al'}
             </button>
           </div>
         )}

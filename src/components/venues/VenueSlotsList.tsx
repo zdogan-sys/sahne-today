@@ -139,7 +139,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
               )}
               {!isOwner && hasUser && (
                 <Link href={`/venues/${venueId}/calendar`} className="btn-accent py-1.5 px-4 text-sm">
-                  Başvur
+                  Sahne Al
                 </Link>
               )}
             </div>

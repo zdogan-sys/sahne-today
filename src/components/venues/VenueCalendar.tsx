@@ -226,7 +226,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       status: 'pending',
     } as any)
     if (err) {
-      setError(err.code === '23505' ? 'Bu tarihe zaten başvurdunuz.' : 'Başvuru gönderilemedi. Tekrar deneyin.')
+      setError(err.code === '23505' ? 'Bu tarih için zaten talepte bulundunuz.' : 'İstek gönderilemedi. Tekrar deneyin.')
     } else {
       setSuccess(true)
     }
@@ -671,7 +671,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
               {success ? (
                 <div className="text-center py-2">
-                  <p className="text-success text-sm font-medium">✓ Başvurunuz alındı!</p>
+                  <p className="text-success text-sm font-medium">✓ Talebiniz alındı!</p>
                   <p className="text-text-muted text-xs mt-0.5">Mekan sahibi en kısa sürede dönüş yapacak.</p>
                 </div>
               ) : (
@@ -724,7 +724,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                     disabled={loading}
                     className="btn-accent w-full py-2.5 text-sm disabled:opacity-50"
                   >
-                    {loading ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+                    {loading ? 'Gönderiliyor...' : 'Sahne Al'}
                   </button>
                 </>
               )}
