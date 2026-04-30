@@ -33,16 +33,9 @@ export function SlotApplicationButton({ slotId, venueName }: Props) {
       .eq('profile_id', user.id)
       .single()
 
-    const artist = artistData as { id: string } | null
-    if (!artist) {
-      setError('Sahne almak için önce sanatçı profilinizi oluşturun.')
-      setLoading(false)
-      return
-    }
-
     const { error: err } = await supabase.from('applications').insert({
       slot_id: slotId,
-      artist_id: artist.id,
+      artist_id: artistData?.id,
       message,
       status: 'pending' as const,
     } as any)
