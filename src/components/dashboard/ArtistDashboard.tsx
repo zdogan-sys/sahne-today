@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
-import { Clock, Check, X, Search } from 'lucide-react'
+import { Clock, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { respondToCancelRequest } from '@/app/actions/event'
 import { BandSection } from '@/components/bands/BandSection'
@@ -238,17 +238,15 @@ export function ArtistDashboard({ userId }: { userId: string }) {
                   <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => handleCancelRequest(ev.id, false)}
-                      title="Reddet"
-                      className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"
+                      className="px-3 py-1.5 rounded-md bg-success/10 text-success text-xs font-medium hover:bg-success/20 transition-colors"
                     >
-                      <Check size={14} />
+                      İptal Etme
                     </button>
                     <button
                       onClick={() => handleCancelRequest(ev.id, true)}
-                      title="Onayla — etkinlik iptal edilir"
-                      className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors"
+                      className="px-3 py-1.5 rounded-md bg-red-400/10 text-red-400 text-xs font-medium hover:bg-red-400/20 transition-colors"
                     >
-                      <X size={14} />
+                      İptal Et
                     </button>
                   </div>
                 </div>
