@@ -20,8 +20,7 @@ export default async function VenuesPage() {
   const venueRes = user ? await supabase.from('venues').select('id').eq('owner_id', user.id).limit(1).maybeSingle() : null
   
   const isArtist = !!artistRes?.data
-  const isVenueOwner = !!venueRes?.data
-  const canSeeSlots = isArtist || isVenueOwner
+  const canSeeSlots = isArtist
 
   const today = new Date().toISOString().split('T')[0]
 
