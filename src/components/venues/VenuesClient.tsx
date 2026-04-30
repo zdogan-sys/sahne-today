@@ -12,9 +12,9 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[] }
 
 const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
-const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
+  const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
 
-export function VenuesClient({ initialVenues }: { initialVenues: VenueFull[] }) {
+export function VenuesClient({ initialVenues, canSeeSlots }: { initialVenues: VenueFull[]; canSeeSlots: boolean }) {
   const [city, setCity] = useState('')
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
@@ -42,6 +42,7 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueFull[] }) 
             city={city} setCity={setCity}
             venueType={venueType} setVenueType={setVenueType}
             onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
+            canSeeSlots={canSeeSlots}
           />
         </div>
       </aside>
@@ -62,9 +63,7 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueFull[] }) 
           <div className="text-center py-16 text-text-muted text-sm">Mekan bulunamadı.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filtered.map((venue) => (
-              <VenueCard key={venue.id} venue={venue} />
-            ))}
+            {filtered.map((venue) => <VenueCard key={venue.id} venue={venue} canSeeSlots={canSeeSlots} />)}
           </div>
         )}
       </div>
@@ -74,6 +73,7 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueFull[] }) 
           city={city} setCity={setCity}
           venueType={venueType} setVenueType={setVenueType}
           onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
+          canSeeSlots={canSeeSlots}
         />
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           Filtrele ({filtered.length})
@@ -83,10 +83,11 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueFull[] }) 
   )
 }
 
-function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots }: {
+function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots, canSeeSlots }: {
   city: string; setCity: (v: string) => void
   venueType: string; setVenueType: (v: string) => void
   onlyOpenSlots: boolean; setOnlyOpenSlots: (v: boolean) => void
+  canSeeSlots: boolean
 }) {
   return (
     <div className="space-y-5">
@@ -97,7 +98,7 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
             <button key={c} onClick={() => setCity(city === c ? '' : c)}
               className={cn('chip border transition-colors', city === c
                 ? 'bg-accent/10 text-accent border-accent/30'
-                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
+                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
               )}>
               {c}
             </button>
@@ -107,32 +108,35 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
 
       <div>
         <label className="label">Mekan Türü</label>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-2">
           {VENUE_TYPES.map(([key, label]) => (
-            <button key={key} onClick={() => setVenueType(venueType === key ? '' : key)}
-              className={cn('w-full text-left px-3 py-1.5 rounded text-sm transition-colors', venueType === key
-                ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary'
-              )}>
-              {label}
-            </button>
+            <label key={key} className="flex items-center gap-2 cursor-pointer group">
+              <div className={cn('w-4 h-4 rounded-full border flex items-center justify-center transition-colors', venueType === key ? 'border-accent' : 'border-[rgba(228,224,216,0.2)] group-hover:border-[rgba(228,224,216,0.4)]')}>
+                {venueType === key && <div className="w-2 h-2 rounded-full bg-accent" />}
+              </div>
+              <span className="text-sm text-text-muted group-hover:text-text-primary transition-colors">{label}</span>
+              <input type="radio" className="hidden" checked={venueType === key} onChange={() => setVenueType(venueType === key ? '' : key)} />
+            </label>
           ))}
         </div>
       </div>
 
-      <div>
-        <button onClick={() => setOnlyOpenSlots(!onlyOpenSlots)}
-          className={cn('flex items-center gap-2 text-sm transition-colors', onlyOpenSlots ? 'text-accent' : 'text-text-muted')}>
-          <div className={cn('w-4 h-4 rounded border transition-colors flex items-center justify-center', onlyOpenSlots ? 'bg-accent border-accent' : 'border-[rgba(228,224,216,0.2)]')}>
-            {onlyOpenSlots && <span className="text-white text-[10px]">✓</span>}
-          </div>
-          Açık Slot Olanlar
-        </button>
-      </div>
+      {canSeeSlots && (
+        <div>
+          <button onClick={() => setOnlyOpenSlots(!onlyOpenSlots)}
+            className={cn('flex items-center gap-2 text-sm transition-colors', onlyOpenSlots ? 'text-accent' : 'text-text-muted')}>
+            <div className={cn('w-4 h-4 rounded border transition-colors flex items-center justify-center', onlyOpenSlots ? 'bg-accent border-accent' : 'border-[rgba(228,224,216,0.2)]')}>
+              {onlyOpenSlots && <span className="text-white text-[10px]">✓</span>}
+            </div>
+            Açık Slot Olanlar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-function VenueCard({ venue }: { venue: VenueFull }) {
+function VenueCard({ venue, canSeeSlots }: { venue: VenueFull; canSeeSlots: boolean }) {
   const openSlots = venue.slots?.filter((s) => s.status === 'open').length ?? 0
 
   return (
@@ -144,16 +148,13 @@ function VenueCard({ venue }: { venue: VenueFull }) {
             alt={venue.name}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 50vw, 33vw"
-            placeholder="blur"
-            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUEA//EACQQAAIBBAEEAwAAAAAAAAAAAAECAAMEERIhMUFRcaHw/8QAFAEBAAAAAAAAAAAAAAAAAAAABv/EABkRAAMBAQEAAAAAAAAAAAAAAAABEQISE//aAAwDAQACEQMRAD8AtyGORnuFX7Y3MVFk7TUyysWudP7xbKrqHKIRNlRKgXkEbSSfJJJ2Mb8TxaJSv1q/mCP8xtxqCHKz3C7RaINYJcqalK2cNUPfRCCBuDvsR39YxB7D//Z"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <Music size={32} className="text-[rgba(228,224,216,0.12)]" />
           </div>
         )}
-        {openSlots > 0 && (
+        {canSeeSlots && openSlots > 0 && (
           <div className="absolute top-2 right-2 bg-accent text-white text-xs font-bold px-2 py-0.5 rounded-full">
             {openSlots} açık slot
           </div>

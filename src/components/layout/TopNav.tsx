@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard, Mic2, Store } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const navLinks = [
@@ -13,13 +13,22 @@ const navLinks = [
   { href: '/bands', label: 'Gruplar' },
 ]
 
+const cities = ['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Bursa', 'Eskişehir']
+
 export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [cityOpen, setCityOpen] = useState(false)
+  const [selectedCity, setSelectedCity] = useState<string>('Tümü')
   const [user, setUser] = useState<{ email?: string; display_name?: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    const savedCity = localStorage.getItem('sahne_city')
+    if (savedCity && cities.includes(savedCity)) {
+      setSelectedCity(savedCity)
+    }
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setUser({ email: user.email, display_name: user.user_metadata?.display_name })
     })
@@ -35,6 +44,13 @@ export function TopNav() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city)
+    localStorage.setItem('sahne_city', city)
+    setCityOpen(false)
+    window.dispatchEvent(new Event('city_changed'))
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     setMenuOpen(false)
@@ -47,9 +63,39 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm border-b border-[rgba(228,224,216,0.08)]">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bebas text-2xl text-text-primary tracking-wider">
-          SAHNE.TODAY
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="font-bebas text-2xl text-text-primary tracking-wider">
+            SAHNE.TODAY
+          </Link>
+
+          {/* Desktop City Selector */}
+          <div className="relative hidden sm:block">
+            <button 
+              onClick={() => setCityOpen(!cityOpen)}
+              className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors bg-[rgba(228,224,216,0.05)] px-3 py-1.5 rounded-full"
+            >
+              <MapPin size={14} />
+              {selectedCity === 'Tümü' ? 'Şehir Seç' : selectedCity}
+              <ChevronDown size={14} />
+            </button>
+            {cityOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
+                <div className="absolute top-full left-0 mt-2 w-48 bg-surface border border-[rgba(228,224,216,0.08)] rounded-xl shadow-lg z-50 py-2 overflow-hidden">
+                  {cities.map(city => (
+                    <button
+                      key={city}
+                      onClick={() => handleCitySelect(city)}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-[rgba(228,224,216,0.05)] transition-colors ${selectedCity === city ? 'text-accent font-medium bg-[rgba(228,224,216,0.03)]' : 'text-text-muted'}`}
+                    >
+                      {city === 'Tümü' ? 'Tüm Şehirler' : city}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">

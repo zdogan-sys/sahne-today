@@ -573,7 +573,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           const dateStr = toISO(date)
           const daySlots = getSlotsForDate(date)
           const dayEvents = eventsByDate.get(dateStr) ?? []
-          const hasOpenSlot = daySlots.length > 0 && date >= today && !!artistId
+          const hasOpenSlot = daySlots.length > 0 && date >= today && (!!artistId || !!isOwner)
           const hasEvent = dayEvents.length > 0
           const isPast = date < today
           const isToday = date.getTime() === today.getTime()
@@ -616,7 +616,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-text-muted">
-        {artistId && (
+        {(artistId || isOwner) && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-accent/15 border border-accent/20" />
             <span>Boş Sahne</span>

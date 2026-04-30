@@ -39,6 +39,9 @@ export default async function VenuePage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  const artistRes = user ? await supabase.from('artists').select('id').eq('profile_id', user.id).maybeSingle() : null
+  const isArtist = !!artistRes?.data
+
   const [venueRes, slotsRes, eventsRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     supabase.from('slots').select('*').eq('venue_id', id).eq('status', 'open').order('day_of_week'),
@@ -55,6 +58,7 @@ export default async function VenuePage({ params }: Props) {
   const slots = (slotsRes.data ?? []) as unknown as Slot[]
   const events = (eventsRes.data ?? []) as unknown as (Event & { artists: { stage_name: string } | null })[]
   const isOwner = user?.id === venue.owner_id
+  const canSeeSlots = isOwner || isArtist
   const photos: string[] = (venue as any).photos ?? []
   const videoUrls: string[] = (venue as any).video_urls ?? []
   const socialLinks = ((venue as any).social_links ?? {}) as SocialLinksData
@@ -219,12 +223,14 @@ export default async function VenuePage({ params }: Props) {
           <span className="text-text-muted text-xs">{photos.length} fotoğraf →</span>
         </Link>
 
-        <VenueSlotsList
-          slots={slots as any[]}
-          venueId={venue.id}
-          isOwner={isOwner}
-          hasUser={!!user}
-        />
+        {canSeeSlots && (
+          <VenueSlotsList
+            slots={slots as any[]}
+            venueId={venue.id}
+            isOwner={isOwner}
+            hasUser={!!user}
+          />
+        )}
 
         {events.length > 0 && (
           <div>

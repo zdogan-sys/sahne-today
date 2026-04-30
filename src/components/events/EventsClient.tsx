@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Clock, Filter, Music2, Building2 } from 'lucide-react'
+import { MapPin, Clock, Filter, Music2, Building2, X } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
+import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { formatTime } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -24,6 +26,10 @@ const ENTRY_TYPES = [
   { value: 'door', label: 'Kapıda' },
 ]
 
+function toISO(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 function groupByDate(events: EventFull[]) {
   return events.reduce<Record<string, EventFull[]>>((acc, event) => {
     const key = event.event_date
@@ -38,6 +44,12 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   const [city, setCity] = useState('')
   const [entryType, setEntryType] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
+  const [view, setView] = useState<'list' | 'calendar'>('list')
+  const [popupDate, setPopupDate] = useState<Date | null>(null)
+  const [popupEvents, setPopupEvents] = useState<EventFull[]>([])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const filtered = initialEvents.filter((e) => {
     if (genre && e.genre !== genre) return false
@@ -48,6 +60,73 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
   const grouped = groupByDate(filtered)
   const activeFilters = [genre, city, entryType].filter(Boolean).length
+
+  const calendarEvents: CalendarEventItem[] = filtered.map(e => ({
+    id: e.id,
+    event_date: e.event_date,
+    title: e.title,
+    start_time: e.start_time,
+    end_time: e.end_time ?? null,
+    subtitle: e.venues?.name ?? null,
+    status: 'confirmed',
+  }))
+
+  function handleDayClick(date: Date) {
+    const dateStr = toISO(date)
+    const dayEvents = filtered.filter(e => e.event_date === dateStr)
+    if (dayEvents.length === 0) return
+    setPopupDate(date)
+    setPopupEvents(dayEvents)
+  }
+
+  const popup = popupDate && mounted ? createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) setPopupDate(null) }}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPopupDate(null)} />
+      <div className="relative w-full max-w-md bg-surface-alt border border-[rgba(228,224,216,0.1)] rounded-2xl overflow-hidden z-10">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)]">
+          <p className="font-bebas text-xl text-text-primary tracking-wide">
+            {popupDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+          </p>
+          <button onClick={() => setPopupDate(null)} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-4 py-3 space-y-2 max-h-[60vh] overflow-y-auto">
+          {popupEvents.map(event => (
+            <Link
+              key={event.id}
+              href={`/events/${event.id}`}
+              onClick={() => setPopupDate(null)}
+              className="flex gap-3 p-3 rounded-xl hover:bg-[rgba(228,224,216,0.05)] transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-text-primary text-sm truncate">{event.title}</p>
+                  {event.genre && <GenreChip genre={event.genre} />}
+                </div>
+                {event.venues?.name && (
+                  <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
+                    <MapPin size={10} />
+                    {event.venues.name}{event.venues.district ? ` · ${event.venues.district}` : ''}
+                  </p>
+                )}
+                <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
+                  <Clock size={10} />
+                  {formatTime(event.start_time)}
+                  {event.entry_type === 'free' && <span className="text-success ml-2">Ücretsiz</span>}
+                  {event.entry_fee ? <span className="ml-2">{event.entry_fee}₺</span> : null}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null
 
   return (
     <div className="md:flex md:gap-6">
@@ -64,43 +143,74 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       </aside>
 
       <div className="flex-1">
-        {/* Mobile filter button */}
-        <div className="md:hidden flex items-center justify-between mb-4">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-text-muted">{filtered.length} etkinlik</span>
-          <button
-            onClick={() => setFilterOpen(true)}
-            className="flex items-center gap-2 btn-outline py-1.5 text-sm"
-          >
-            <Filter size={14} />
-            Filtre
-            {activeFilters > 0 && (
-              <span className="bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                {activeFilters}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)]">
+              <button
+                onClick={() => setView('list')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                Liste
+              </button>
+              <button
+                onClick={() => setView('calendar')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                Takvim
+              </button>
+            </div>
+
+            {/* Mobile filter button */}
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="md:hidden flex items-center gap-2 btn-outline py-1.5 text-sm"
+            >
+              <Filter size={14} />
+              Filtre
+              {activeFilters > 0 && (
+                <span className="bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {activeFilters}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Events list grouped by date */}
-        {Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-16 text-text-muted">
-            <p>Etkinlik bulunamadı.</p>
+        {/* Calendar view */}
+        {view === 'calendar' && (
+          <div className="card p-4 mb-4">
+            <EventCalendar
+              events={calendarEvents}
+              onDayClick={handleDayClick}
+            />
           </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(grouped).map(([date, evts]) => (
-              <div key={date}>
-                <h2 className="font-bebas text-2xl text-text-primary mb-3">
-                  {new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
-                </h2>
-                <div className="space-y-2">
-                  {evts.map((event) => (
-                    <EventListCard key={event.id} event={event} />
-                  ))}
+        )}
+
+        {/* List view */}
+        {view === 'list' && (
+          Object.keys(grouped).length === 0 ? (
+            <div className="text-center py-16 text-text-muted">
+              <p>Etkinlik bulunamadı.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(grouped).map(([date, evts]) => (
+                <div key={date}>
+                  <h2 className="font-bebas text-2xl text-text-primary mb-3">
+                    {new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+                  </h2>
+                  <div className="space-y-2">
+                    {evts.map((event) => (
+                      <EventListCard key={event.id} event={event} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -115,6 +225,8 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
           Filtrele ({filtered.length})
         </button>
       </BottomSheet>
+
+      {popup}
     </div>
   )
 }
@@ -193,7 +305,6 @@ function EventListCard({ event }: { event: EventFull }) {
 
   return (
     <Link href={`/events/${event.id}`} className="card p-4 flex gap-4 hover:border-accent/30 transition-colors block">
-      {/* Date badge */}
       <div className="flex-shrink-0 w-12 h-12 bg-[rgba(212,83,126,0.08)] rounded-lg flex flex-col items-center justify-center border border-accent/20">
         <span className="font-bebas text-lg text-accent leading-none">{dayNum}</span>
         <span className="text-[9px] text-accent/70 uppercase">{month}</span>
@@ -205,7 +316,6 @@ function EventListCard({ event }: { event: EventFull }) {
           {event.genre && <GenreChip genre={event.genre} />}
         </div>
 
-        {/* Performer row */}
         {performerName && (
           <div className="flex items-center gap-1.5 mt-1">
             <Avatar src={performerAvatar} size={5} fallback={<Music2 size={10} className="text-text-muted" />} />
@@ -213,7 +323,6 @@ function EventListCard({ event }: { event: EventFull }) {
           </div>
         )}
 
-        {/* Venue row */}
         {event.venues?.name && (
           <div className="flex items-center gap-1.5 mt-1">
             <Avatar src={venueAvatar} size={5} fallback={<Building2 size={10} className="text-text-muted" />} />

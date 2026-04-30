@@ -136,7 +136,8 @@ export function ArtistDashboard({ userId }: { userId: string }) {
               city: artist.city,
               genres: artist.genres,
               instruments: artist.instruments,
-              bio: artist.bio
+              bio: artist.bio,
+              social_links: artist.social_links,
             }}
           />
         </div>

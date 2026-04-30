@@ -5,42 +5,61 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/supabase/types'
 import { GenreChip } from '@/components/ui/GenreChip'
-import { formatTime, formatDate } from '@/lib/utils'
+import { formatTime } from '@/lib/utils'
 import { MapPin, Clock } from 'lucide-react'
+import { ALL_GENRES } from '@/lib/constants'
 
-const GENRES = ['Tümü', 'Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'İstanbul', 'Ankara']
+const TIME_FILTERS = ['Bugün', 'Bu Hafta', 'Bu Ay'] as const
+type TimeFilter = typeof TIME_FILTERS[number]
+
+const GENRE_FILTERS = ['Tümü', ...ALL_GENRES]
 
 type EventWithRelations = Event & {
   venues: { name: string; district: string; city: string } | null
   artists: { stage_name: string } | null
 }
 
+function getDateRange(period: TimeFilter): { from: string; to: string } {
+  const now = new Date()
+  // Gece yarısı - 04:00 arası önceki günün devamı sayılır
+  const effective = now.getHours() < 4 ? new Date(now.getTime() - 86400000) : now
+  const from = effective.toISOString().split('T')[0]
+
+  if (period === 'Bugün') {
+    return { from, to: from }
+  } else if (period === 'Bu Hafta') {
+    const to = new Date(now.getTime() + 7 * 86400000).toISOString().split('T')[0]
+    return { from, to }
+  } else {
+    const to = new Date(now.getTime() + 29 * 86400000).toISOString().split('T')[0]
+    return { from, to }
+  }
+}
+
 export function EventFeed() {
   const [events, setEvents] = useState<EventWithRelations[]>([])
-  const [activeFilter, setActiveFilter] = useState('Tümü')
+  const [timePeriod, setTimePeriod] = useState<TimeFilter>('Bu Hafta')
+  const [activeGenre, setActiveGenre] = useState('Tümü')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     async function fetchEvents() {
       setLoading(true)
-      const today = new Date().toISOString().split('T')[0]
+      const { from, to } = getDateRange(timePeriod)
 
       let query = supabase
         .from('events')
         .select('*, venues(name, district, city), artists(stage_name)')
         .eq('status', 'confirmed')
-        .gte('event_date', today)
+        .gte('event_date', from)
+        .lte('event_date', to)
         .order('event_date', { ascending: true })
         .order('start_time', { ascending: true })
-        .limit(20)
+        .limit(30)
 
-      if (activeFilter !== 'Tümü' && !['İstanbul', 'Ankara'].includes(activeFilter)) {
-        query = query.eq('genre', activeFilter)
-      } else if (activeFilter === 'İstanbul') {
-        // filter by city via venue
-      } else if (activeFilter === 'Ankara') {
-        // filter by city via venue
+      if (activeGenre !== 'Tümü') {
+        query = query.eq('genre', activeGenre)
       }
 
       const { data } = await query
@@ -48,22 +67,35 @@ export function EventFeed() {
       setLoading(false)
     }
     fetchEvents()
-  }, [activeFilter])
+  }, [timePeriod, activeGenre])
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bebas text-3xl text-text-primary">BUGÜN VE YAKIN GÜNLER</h2>
+      {/* Time period tabs */}
+      <div className="flex gap-1 mb-5 bg-surface rounded-xl p-1 border border-[rgba(228,224,216,0.08)]">
+        {TIME_FILTERS.map((period) => (
+          <button
+            key={period}
+            onClick={() => setTimePeriod(period)}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+              timePeriod === period
+                ? 'bg-accent text-white'
+                : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            {period}
+          </button>
+        ))}
       </div>
 
       {/* Genre filter chips */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-3 -mx-4 px-4 mb-5">
-        {GENRES.map((g) => (
+      <div className="flex flex-wrap gap-2 mb-5">
+        {GENRE_FILTERS.map((g) => (
           <button
             key={g}
-            onClick={() => setActiveFilter(g)}
+            onClick={() => setActiveGenre(g)}
             className={`flex-shrink-0 chip transition-colors ${
-              activeFilter === g
+              activeGenre === g
                 ? 'bg-accent text-white border-accent'
                 : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
             } border`}
@@ -109,7 +141,6 @@ function EventCard({ event }: { event: EventWithRelations }) {
 
   return (
     <Link href={`/events/${event.id}`} className="card p-4 flex gap-4 hover:border-accent/30 transition-colors block">
-      {/* Date badge */}
       <div className="flex-shrink-0 w-14 h-14 bg-[rgba(212,83,126,0.08)] rounded-lg flex flex-col items-center justify-center border border-accent/20">
         <span className="font-bebas text-xl text-accent leading-none">{dayNum}</span>
         <span className="text-[10px] text-accent/70 uppercase">{month}</span>

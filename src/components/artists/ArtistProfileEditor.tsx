@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
+import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ interface Props {
     genres: string[]
     instruments: string[]
     bio: string | null
+    social_links?: SocialLinksData | null
   }
 }
 
@@ -28,6 +30,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const [genres, setGenres] = useState<string[]>(initialData.genres || [])
   const [instruments, setInstruments] = useState<string[]>(initialData.instruments || [])
   const [bio, setBio] = useState(initialData.bio || '')
+  const [socialLinks, setSocialLinks] = useState<SocialLinksData>(initialData.social_links ?? {})
   const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
 
   async function handleSave() {
@@ -48,6 +51,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
         genres,
         instruments: activeTab === 'music' ? instruments : [],
         bio: bio || null,
+        social_links: socialLinks,
       } as any)
       .eq('id', artistId)
 
@@ -136,6 +140,8 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
               placeholder="Kendinizi anlatan kısa bir açıklama..."
             />
           </div>
+
+          <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 

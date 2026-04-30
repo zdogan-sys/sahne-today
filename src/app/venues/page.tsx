@@ -15,10 +15,13 @@ export const metadata: Metadata = {
 export default async function VenuesPage() {
   const supabase = await createClient()
 
-  const { data: venues } = await supabase
-    .from('venues')
-    .select('*, slots!inner(id)')
-    .order('created_at', { ascending: false })
+  const { data: { user } } = await supabase.auth.getUser()
+  const artistRes = user ? await supabase.from('artists').select('id').eq('profile_id', user.id).maybeSingle() : null
+  const venueRes = user ? await supabase.from('venues').select('id').eq('owner_id', user.id).limit(1).maybeSingle() : null
+  
+  const isArtist = !!artistRes?.data
+  const isVenueOwner = !!venueRes?.data
+  const canSeeSlots = isArtist || isVenueOwner
 
   const { data: allVenues } = await supabase
     .from('venues')
@@ -34,7 +37,7 @@ export default async function VenuesPage() {
             {Array.from({ length: 6 }).map((_, i) => <VenueCardSkeleton key={i} />)}
           </div>
         }>
-          <VenuesClient initialVenues={(allVenues ?? []) as any[]} />
+          <VenuesClient initialVenues={(allVenues ?? []) as any[]} canSeeSlots={canSeeSlots} />
         </Suspense>
       </ErrorBoundary>
     </div>
