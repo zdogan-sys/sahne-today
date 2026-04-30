@@ -569,7 +569,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="aspect-square" />
+          if (!date) return <div key={`e-${i}`} className="h-9" />
           const dateStr = toISO(date)
           const daySlots = getSlotsForDate(date)
           const dayEvents = eventsByDate.get(dateStr) ?? []
@@ -585,7 +585,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'relative h-9 rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
                   ? 'bg-accent text-white'
                   : hasOpenSlot

@@ -102,7 +102,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="aspect-square" />
+          if (!date) return <div key={`e-${i}`} className="h-9" />
           const dateStr = toISO(date)
           const dayEvents = byDate.get(dateStr) ?? []
           const hasEvent = dayEvents.length > 0
@@ -116,7 +116,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'relative h-9 rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
                   ? 'bg-success/20 text-white ring-1 ring-success/40'
                   : hasEvent
