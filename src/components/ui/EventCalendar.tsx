@@ -79,7 +79,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
 
   return (
     <div>
-      <div className="max-w-[320px]">
+      <div className="max-w-[500px]">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={prevMonth} className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
@@ -135,7 +135,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
           )
         })}
       </div>
-      </div>{/* end max-w-[320px] */}
+      </div>{/* end max-w-[500px] */}
 
       {/* Internal detail panel (only when onDayClick is NOT provided) */}
       {!onDayClick && internalSelected && internalDayEvents.length > 0 && (
