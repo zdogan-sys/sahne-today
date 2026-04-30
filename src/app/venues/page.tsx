@@ -23,10 +23,17 @@ export default async function VenuesPage() {
   const isVenueOwner = !!venueRes?.data
   const canSeeSlots = isArtist || isVenueOwner
 
-  const { data: allVenues } = await supabase
-    .from('venues')
-    .select('*, slots(id, status)')
-    .order('created_at', { ascending: false })
+  const today = new Date().toISOString().split('T')[0]
+
+  const [venuesRes, eventsRes] = await Promise.all([
+    supabase.from('venues').select('*, slots(id, status)').order('created_at', { ascending: false }),
+    supabase.from('events')
+      .select('id, venue_id, title, event_date, start_time')
+      .eq('status', 'confirmed')
+      .gte('event_date', today)
+      .order('event_date', { ascending: true })
+      .order('start_time', { ascending: true }),
+  ])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -37,7 +44,11 @@ export default async function VenuesPage() {
             {Array.from({ length: 6 }).map((_, i) => <VenueCardSkeleton key={i} />)}
           </div>
         }>
-          <VenuesClient initialVenues={(allVenues ?? []) as any[]} canSeeSlots={canSeeSlots} />
+          <VenuesClient
+            initialVenues={(venuesRes.data ?? []) as any[]}
+            upcomingEvents={(eventsRes.data ?? []) as any[]}
+            canSeeSlots={canSeeSlots}
+          />
         </Suspense>
       </ErrorBoundary>
     </div>

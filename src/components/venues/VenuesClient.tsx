@@ -3,18 +3,26 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Filter, Music } from 'lucide-react'
+import { MapPin, Filter, Music, CalendarDays } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
-import { VENUE_TYPE_LABELS, cn } from '@/lib/utils'
+import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
 type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[]; logo_url?: string | null }
 
+type UpcomingEvent = {
+  id: string
+  venue_id: string
+  title: string
+  event_date: string
+  start_time: string
+}
+
 const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
   const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
 
-export function VenuesClient({ initialVenues, canSeeSlots }: { initialVenues: VenueFull[]; canSeeSlots: boolean }) {
+export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }: { initialVenues: VenueFull[]; upcomingEvents?: UpcomingEvent[]; canSeeSlots: boolean }) {
   const [city, setCity] = useState('')
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
@@ -63,7 +71,14 @@ export function VenuesClient({ initialVenues, canSeeSlots }: { initialVenues: Ve
           <div className="text-center py-16 text-text-muted text-sm">Mekan bulunamadı.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filtered.map((venue) => <VenueCard key={venue.id} venue={venue} canSeeSlots={canSeeSlots} />)}
+            {filtered.map((venue) => (
+              <VenueCard
+                key={venue.id}
+                venue={venue}
+                canSeeSlots={canSeeSlots}
+                nearestEvent={upcomingEvents.find(e => e.venue_id === venue.id) ?? null}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -136,8 +151,15 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
   )
 }
 
-function VenueCard({ venue, canSeeSlots }: { venue: VenueFull; canSeeSlots: boolean }) {
+function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; canSeeSlots: boolean; nearestEvent: UpcomingEvent | null }) {
   const openSlots = venue.slots?.filter((s) => s.status === 'open').length ?? 0
+
+  const today = new Date().toISOString().split('T')[0]
+  const eventLabel = nearestEvent
+    ? nearestEvent.event_date === today
+      ? `Bugün ${formatTime(nearestEvent.start_time)}`
+      : new Date(nearestEvent.event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) + ' · ' + formatTime(nearestEvent.start_time)
+    : null
 
   return (
     <Link href={`/venues/${venue.id}`} className="card overflow-hidden hover:border-accent/30 transition-colors block">
@@ -186,6 +208,14 @@ function VenueCard({ venue, canSeeSlots }: { venue: VenueFull; canSeeSlots: bool
             <GenreChip key={g} genre={g} />
           ))}
         </div>
+
+        {eventLabel && (
+          <div className="mt-2 pt-2 border-t border-[rgba(228,224,216,0.06)] flex items-center gap-1.5 text-xs text-accent">
+            <CalendarDays size={11} className="flex-shrink-0" />
+            <span className="truncate font-medium">{nearestEvent!.title}</span>
+            <span className="text-text-muted flex-shrink-0">{eventLabel}</span>
+          </div>
+        )}
       </div>
     </Link>
   )
