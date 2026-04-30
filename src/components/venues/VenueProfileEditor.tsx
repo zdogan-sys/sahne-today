@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Edit2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import Image from 'next/image'
+import { Edit2, Camera, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
@@ -27,7 +28,93 @@ interface Props {
     equipment: string[]
     genres: string[]
     description: string | null
+    photo_url: string | null
+    logo_url: string | null
   }
+}
+
+function ImageUploadField({
+  label,
+  url,
+  onUrl,
+  aspect = 'cover',
+}: {
+  label: string
+  url: string | null
+  onUrl: (v: string | null) => void
+  aspect?: 'cover' | 'logo'
+}) {
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith('image/')) return
+    setUploading(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const form = new FormData()
+    form.append('file', file)
+    form.append('bucket', 'venues')
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {},
+      body: form,
+    })
+    const json = await res.json()
+    if (res.ok && json.url) onUrl(json.url)
+    setUploading(false)
+  }
+
+  const isCover = aspect === 'cover'
+
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <div className={`relative overflow-hidden rounded-xl border border-[rgba(228,224,216,0.1)] bg-[rgba(228,224,216,0.04)] flex items-center justify-center ${isCover ? 'h-28' : 'h-20 w-20'}`}>
+        {url ? (
+          <>
+            <Image src={url} alt={label} fill className="object-cover" sizes={isCover ? '600px' : '80px'} />
+            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+              >
+                <Camera size={14} className="text-white" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onUrl(null)}
+                className="w-8 h-8 rounded-lg bg-red-500/70 hover:bg-red-500/90 flex items-center justify-center transition-colors"
+              >
+                <X size={14} className="text-white" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="flex flex-col items-center gap-1 text-text-muted hover:text-text-primary transition-colors"
+          >
+            {uploading
+              ? <Loader2 size={18} className="animate-spin" />
+              : <Camera size={18} />
+            }
+            {!uploading && <span className="text-xs">{isCover ? 'Fotoğraf Ekle' : 'Logo Ekle'}</span>}
+          </button>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+      />
+    </div>
+  )
 }
 
 export function VenueProfileEditor({ venueId, initialData }: Props) {
@@ -48,6 +135,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [equipment, setEquipment] = useState<string[]>(initialData.equipment || [])
   const [genres, setGenres] = useState<string[]>(initialData.genres || [])
   const [description, setDescription] = useState(initialData.description || '')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(initialData.photo_url)
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialData.logo_url)
 
   async function handleSave() {
     if (!name.trim() || !city || !district || !address || !venueType) {
@@ -75,6 +164,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
         equipment,
         genres,
         description: description || null,
+        photo_url: photoUrl,
+        logo_url: logoUrl,
       } as any)
       .eq('id', venueId)
 
@@ -102,6 +193,15 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title="Mekan Profilini Düzenle">
         <div className="space-y-4">
+
+          {/* Images */}
+          <div className="flex gap-3 items-end">
+            <ImageUploadField label="Logo" url={logoUrl} onUrl={setLogoUrl} aspect="logo" />
+            <div className="flex-1">
+              <ImageUploadField label="Kapak Fotoğrafı" url={photoUrl} onUrl={setPhotoUrl} aspect="cover" />
+            </div>
+          </div>
+
           <div>
             <label className="label">Mekan Adı *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="input-field text-sm" />
@@ -112,8 +212,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
               <label className="label">Şehir *</label>
               <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field text-sm">
                 <option value="">Şehir Seçin</option>
-                {/* Fallback array since CITY_OPTIONS comes from utils/constants */}
-                {['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri'].map((c) => (
+                {CITY_OPTIONS.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

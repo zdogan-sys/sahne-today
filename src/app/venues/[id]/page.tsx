@@ -85,6 +85,8 @@ export default async function VenuePage({ params }: Props) {
               equipment: venue.equipment ?? [],
               genres: venue.genres ?? [],
               description: venue.description,
+              photo_url: venue.photo_url ?? null,
+              logo_url: venue.logo_url ?? null,
             }}
           />
         )}
