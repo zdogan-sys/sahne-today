@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
-import { MapPin, Check, X, Clock } from 'lucide-react'
+import { MapPin, Check, X, Clock, CalendarX } from 'lucide-react'
 
 export function VenueDashboard({ userId }: { userId: string }) {
   const [venues, setVenues] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [eventRequests, setEventRequests] = useState<any[]>([])
+  const [confirmedEvents, setConfirmedEvents] = useState<any[]>([])
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -36,7 +38,7 @@ export function VenueDashboard({ userId }: { userId: string }) {
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
 
-    const [appRes, eventReqRes] = await Promise.all([
+    const [appRes, eventReqRes, confirmedRes] = await Promise.all([
       slotIds.length > 0
         ? supabase
             .from('applications')
@@ -48,16 +50,26 @@ export function VenueDashboard({ userId }: { userId: string }) {
       venueIds.length > 0
         ? supabase
             .from('events')
-            .select('id, title, event_date, start_time, end_time, created_at, artists(id, stage_name)')
+            .select('id, title, event_date, start_time, end_time, created_at, artists(id, stage_name), bands(name)')
             .eq('status', 'pending')
             .in('venue_id', venueIds)
             .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      venueIds.length > 0
+        ? supabase
+            .from('events')
+            .select('id, title, event_date, start_time, end_time, cancel_requested, artists(stage_name), bands(name), venues(name)')
+            .eq('status', 'confirmed')
+            .in('venue_id', venueIds)
+            .gte('event_date', new Date().toISOString().split('T')[0])
+            .order('event_date', { ascending: true })
         : Promise.resolve({ data: [] }),
     ])
 
     setVenues(venueData ?? [])
     setApplications(appRes.data ?? [])
     setEventRequests(eventReqRes.data ?? [])
+    setConfirmedEvents(confirmedRes.data ?? [])
     setLoading(false)
   }
 
@@ -92,6 +104,12 @@ export function VenueDashboard({ userId }: { userId: string }) {
       .update({ status: approve ? 'confirmed' : 'cancelled' } as any)
       .eq('id', eventId)
     setEventRequests(prev => prev.filter(e => e.id !== eventId))
+  }
+
+  async function requestCancel(eventId: string) {
+    await supabase.from('events').update({ cancel_requested: true } as any).eq('id', eventId)
+    setConfirmedEvents(prev => prev.map(e => e.id === eventId ? { ...e, cancel_requested: true } : e))
+    setCancelConfirm(null)
   }
 
   if (loading) return <div className="text-text-muted text-sm">Yükleniyor...</div>
@@ -166,6 +184,48 @@ export function VenueDashboard({ userId }: { userId: string }) {
                       <X size={14} />
                     </button>
                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {confirmedEvents.length > 0 && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">ONAYLANAN ETKİNLİKLER</h2>
+          <div className="space-y-3">
+            {confirmedEvents.map((ev: any) => (
+              <div key={ev.id} className={`card p-4 ${ev.cancel_requested ? 'border-yellow-400/30' : ''}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary text-sm truncate">{ev.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                    </p>
+                    {ev.cancel_requested && (
+                      <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
+                        İptal onayı bekleniyor
+                      </span>
+                    )}
+                  </div>
+                  {!ev.cancel_requested && (
+                    cancelConfirm === ev.id ? (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-text-muted">İptal talebi gönderilsin mi?</span>
+                        <button onClick={() => requestCancel(ev.id)} className="text-xs text-red-400 hover:text-red-300 font-medium">Evet</button>
+                        <button onClick={() => setCancelConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">Vazgeç</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCancelConfirm(ev.id)}
+                        className="flex-shrink-0 flex items-center gap-1.5 text-xs text-text-muted hover:text-red-400 transition-colors"
+                      >
+                        <CalendarX size={13} />
+                        İptal Talebi
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ))}

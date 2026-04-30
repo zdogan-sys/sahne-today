@@ -63,7 +63,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
 
       let eventsQ = supabase
         .from('events')
-        .select('id, event_date, title, start_time, end_time, status, venue_name, venues(name, city), bands(name)')
+        .select('id, event_date, title, start_time, end_time, status, cancel_requested, venue_name, venues(name, city), bands(name)')
         .in('status', ['confirmed', 'pending'])
         .order('event_date', { ascending: true })
 
@@ -88,6 +88,17 @@ export function ArtistDashboard({ userId }: { userId: string }) {
     const next = !artist.looking_for_band
     await supabase.from('artists').update({ looking_for_band: next } as any).eq('id', artist.id)
     setArtist((prev: any) => ({ ...prev, looking_for_band: next }))
+  }
+
+  async function handleCancelRequest(eventId: string, approve: boolean) {
+    await supabase.from('events').update({
+      ...(approve ? { status: 'cancelled' } : {}),
+      cancel_requested: false,
+    } as any).eq('id', eventId)
+    setEvents(prev => approve
+      ? prev.filter(e => e.id !== eventId)
+      : prev.map(e => e.id === eventId ? { ...e, cancel_requested: false } : e)
+    )
   }
 
   async function respondInvite(memberId: string, accept: boolean) {
@@ -214,8 +225,46 @@ export function ArtistDashboard({ userId }: { userId: string }) {
         </div>
       )}
 
+      {/* Cancel requests from venues */}
+      {events.filter((e: any) => e.cancel_requested).length > 0 && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">İPTAL TALEPLERİ</h2>
+          <p className="text-text-muted text-xs mb-3">Mekan sahibi aşağıdaki etkinlikleri iptal etmek istiyor.</p>
+          <div className="space-y-3">
+            {events.filter((e: any) => e.cancel_requested).map((ev: any) => (
+              <div key={ev.id} className="card p-4 border-yellow-400/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary text-sm truncate">{ev.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {ev.venues?.name ?? ev.venue_name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleCancelRequest(ev.id, false)}
+                      title="Reddet"
+                      className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleCancelRequest(ev.id, true)}
+                      title="Onayla — etkinlik iptal edilir"
+                      className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Bands */}
-      <BandSection 
+      <BandSection
         userId={userId} 
         artistId={artist.id} 
         lookingForBand={artist.looking_for_band}
