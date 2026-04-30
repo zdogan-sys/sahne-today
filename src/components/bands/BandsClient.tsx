@@ -7,8 +7,7 @@ import { MapPin, Users, UserPlus } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { cn } from '@/lib/utils'
 
-const GENRE_OPTIONS = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'Pop', 'Folk', 'Elektronik', 'R&B', 'Rap']
-const CITY_OPTIONS = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri']
+import { ALL_GENRES, CITY_OPTIONS } from '@/lib/constants'
 
 interface Band {
   id: string
@@ -68,7 +67,7 @@ export function BandsClient({ initialBands, isArtist }: { initialBands: Band[]; 
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          {GENRE_OPTIONS.map((g) => (
+          {ALL_GENRES.map((g) => (
             <button
               key={g}
               onClick={() => setGenre(genre === g ? '' : g)}

@@ -32,15 +32,6 @@ export function AudienceDashboard() {
         </Link>
       </div>
 
-      <div className="card p-6 text-center">
-        <p className="text-text-muted text-sm mb-4">
-          Sanatçı veya mekan mı olacaksınız?
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Link href="/artists/register" className="btn-accent text-sm py-2 px-4">Sanatçı Ol</Link>
-          <Link href="/venues/register" className="btn-outline text-sm py-2 px-4">Mekan Ekle</Link>
-        </div>
-      </div>
     </div>
   )
 }

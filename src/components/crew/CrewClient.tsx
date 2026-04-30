@@ -8,10 +8,11 @@ import { createClient } from '@/lib/supabase/client'
 import type { CrewListing, Profile } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
+import { ALL_GENRES } from '@/lib/constants'
+
 type ListingFull = CrewListing & { profiles: Pick<Profile, 'display_name' | 'city'> | null }
 
 const ROLE_OPTIONS = ['Basçı', 'Davulcu', 'Gitarist', 'Klavyeci', 'Vokal', 'Komedyen Ortağı', 'Kemancı', 'Yapımcı', 'DJ']
-const GENRE_OPTIONS = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Pop', 'Folk', 'Elektronik']
 
 export function CrewClient({ initialListings }: { initialListings: ListingFull[] }) {
   const [listings, setListings] = useState<ListingFull[]>(initialListings)
@@ -163,9 +164,9 @@ function CrewListingForm({ open, onClose, onCreated }: {
           </div>
         </div>
         <div>
-          <label className="label">Müzik Türleri</label>
+          <label className="label">Müzik / Sahne Türleri</label>
           <div className="flex flex-wrap gap-1.5">
-            {GENRE_OPTIONS.map((g) => (
+            {ALL_GENRES.map((g) => (
               <button key={g} type="button" onClick={() => toggle(genres, setGenres, g)}
                 className={cn('chip border transition-colors', genres.includes(g) ? 'bg-accent/10 text-accent border-accent/30' : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]')}>
                 {g}

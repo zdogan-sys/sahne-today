@@ -12,6 +12,7 @@ import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VenueCoverEditor } from '@/components/venues/VenueCoverEditor'
 import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
+import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import type { Venue, Slot, Event } from '@/lib/supabase/types'
@@ -62,6 +63,26 @@ export default async function VenuePage({ params }: Props) {
     <div className="max-w-4xl mx-auto">
       {/* Hero / cover */}
       <div className="relative h-64 md:h-96 bg-surface">
+        {isOwner && (
+          <VenueProfileEditor
+            venueId={venue.id}
+            initialData={{
+              name: venue.name,
+              city: venue.city,
+              district: venue.district,
+              address: venue.address,
+              phone: venue.phone,
+              email: venue.email,
+              venue_type: venue.venue_type,
+              capacity_seated: venue.capacity_seated,
+              capacity_standing: venue.capacity_standing,
+              stage_area_m2: venue.stage_area_m2,
+              equipment: venue.equipment ?? [],
+              genres: venue.genres ?? [],
+              description: venue.description,
+            }}
+          />
+        )}
         <VenueCoverEditor
           venueId={venue.id}
           initialUrl={venue.photo_url ?? ''}

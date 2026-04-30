@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Plus, Trash2 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
+import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { DAY_NAMES, VENUE_TYPE_LABELS, cn } from '@/lib/utils'
+import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
 type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
 type FeeModel = 'free' | 'door_share' | 'guarantee' | 'negotiable'
@@ -24,7 +26,6 @@ interface SlotEntry {
 }
 
 const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
-const GENRE_OPTIONS = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'Pop', 'Folk', 'Elektronik']
 const CITY_OPTIONS = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir']
 
 function ProgressBar({ step }: { step: number }) {
@@ -107,13 +108,13 @@ export function VenueRegisterForm() {
 
   const [slots, setSlots] = useState<SlotEntry[]>([{
     day_of_week: 5, start_time: '21:00', end_time: '23:00',
-    recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: 'Konser'
+    recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: ''
   }])
 
   function addSlot() {
     setSlots([...slots, {
       day_of_week: 5, start_time: '21:00', end_time: '23:00',
-      recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: 'Konser'
+      recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: ''
     }])
   }
 
@@ -174,13 +175,13 @@ export function VenueRegisterForm() {
         fee_value: s.fee_value ? parseFloat(s.fee_value) : null,
         max_performers: s.max_performers ? parseInt(s.max_performers) : null,
         notes: s.notes || null,
-        event_type: s.event_type || 'Konser',
+        event_type: s.event_type || null,
         status: 'open' as const,
       }))
       await supabase.from('slots').insert(slotInserts as any)
     }
 
-    router.push(`/venues/${venue.id}`)
+    window.location.href = '/dashboard'
   }
 
   return (
@@ -263,7 +264,7 @@ export function VenueRegisterForm() {
           <ChipSelector options={EQUIPMENT_OPTIONS} selected={equipment}
             onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
             label="Mevcut Ekipman" />
-          <ChipSelector options={GENRE_OPTIONS} selected={genres}
+          <TabbedGenreSelector selected={genres}
             onToggle={(v) => setGenres((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
             label="Ağırlıklı Türler" />
           <div>
@@ -344,10 +345,18 @@ export function VenueRegisterForm() {
               </div>
               <div>
                 <label className="label">Etkinlik Türü</label>
-                <select value={slot.event_type} onChange={(e) => updateSlot(idx, 'event_type', e.target.value)} className="input-field">
-                  {['Konser', 'Akustik Set', 'Canlı Müzik', 'Stand-Up', 'Türkü Gecesi', 'Jam Session', 'DJ Seti'].map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                <select value={slot.event_type} onChange={(e) => updateSlot(idx, 'event_type', e.target.value)} className="input-field text-sm">
+                  <option value="">Seçin</option>
+                  <optgroup label="Müzik">
+                    {MUSIC_GENRES.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Sahne">
+                    {STAGE_GENRES.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
               <div>

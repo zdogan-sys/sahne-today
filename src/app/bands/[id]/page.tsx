@@ -9,6 +9,9 @@ import { LookingForEditor } from '@/components/bands/LookingForEditor'
 import { BandLogoEditor } from '@/components/bands/BandLogoEditor'
 import { BandVideoEditor } from '@/components/bands/BandVideoEditor'
 import { BandSocialEditor } from '@/components/bands/BandSocialEditor'
+import { BandInviteButton } from '@/components/bands/BandInviteButton'
+import { BandApplyButton } from '@/components/bands/BandApplyButton'
+import { BandProfileEditor } from '@/components/bands/BandProfileEditor'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
 import { EventCalendar } from '@/components/ui/EventCalendar'
@@ -39,7 +42,7 @@ export default async function BandPage({ params }: Props) {
   const [bandRes, artistRes, eventsRes] = await Promise.all([
     supabase
       .from('bands')
-      .select('*, band_members(id, role, status, artists(id, stage_name, instruments, city, profiles(avatar_url)))')
+      .select('*, band_members(id, artist_id, role, status, artists(id, stage_name, instruments, city, profiles(avatar_url)))')
       .eq('id', id)
       .single(),
     user
@@ -58,9 +61,20 @@ export default async function BandPage({ params }: Props) {
   const b = bandRes.data as any
   const isCreator = user?.id === b.creator_id
   const isArtist = !!artistRes.data
+  const currentArtistId = artistRes.data?.id
   const bandEvents = (eventsRes.data ?? []) as any[]
   const members = (b.band_members ?? []).filter((m: any) => m.status === 'accepted')
   const lookingFor: string[] = b.looking_for ?? []
+  
+  let currentArtistStatus: string | null = null
+  let currentArtistRole: string | null = null
+  if (currentArtistId) {
+    const mem = (b.band_members ?? []).find((m: any) => m.artists?.id === currentArtistId)
+    if (mem) {
+      currentArtistStatus = mem.status
+      currentArtistRole = mem.role
+    }
+  }
   const videoUrls: string[] = b.video_urls ?? []
   const socialLinks = (b.social_links ?? {}) as SocialLinksData
 
@@ -89,6 +103,14 @@ export default async function BandPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {(b.genres ?? []).map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
+          {isCreator && (
+            <div className="mt-3">
+              <BandProfileEditor 
+                bandId={b.id} 
+                initialData={{ name: b.name, city: b.city, genres: b.genres, bio: b.bio }} 
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -105,11 +127,19 @@ export default async function BandPage({ params }: Props) {
         ) : isArtist && lookingFor.length > 0 ? (
           <div>
             <h3 className="label">Aranan Enstrümanlar</h3>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 mb-4">
               {lookingFor.map((item: string) => (
                 <span key={item} className="chip bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">{item}</span>
               ))}
             </div>
+            {currentArtistId && (
+              <BandApplyButton
+                bandId={b.id}
+                artistId={currentArtistId}
+                existingStatus={currentArtistStatus}
+                existingRole={currentArtistRole}
+              />
+            )}
           </div>
         ) : null}
 
@@ -138,15 +168,32 @@ export default async function BandPage({ params }: Props) {
                       ) : initials}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-text-primary text-sm font-medium">{artist?.stage_name}</p>
-                      <p className="text-text-muted text-xs truncate">
-                        {m.role ?? artist?.instruments?.slice(0, 2).join(', ')}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-text-primary text-sm font-medium">{artist?.stage_name}</p>
+                        {m.role && <span className="text-[10px] text-accent bg-accent/10 px-1.5 py-0.5 rounded">{m.role}</span>}
+                      </div>
+                      {artist?.instruments && artist.instruments.length > 0 && (
+                        <p className="text-text-muted text-xs truncate mt-0.5">
+                          {artist.instruments.join(', ')}
+                        </p>
+                      )}
                     </div>
                     {artist?.city && <span className="text-text-muted text-xs flex-shrink-0">{artist.city}</span>}
                   </Link>
                 )
               })}
+            </div>
+          )}
+          {isCreator && (
+            <div className="mt-4 border-t border-[rgba(228,224,216,0.1)] pt-4">
+              <BandInviteButton 
+                bandId={b.id} 
+                existingMembers={(b.band_members ?? []).map((m: any) => ({
+                  artist_id: m.artist_id,
+                  status: m.status,
+                  role: m.role
+                }))} 
+              />
             </div>
           )}
         </div>

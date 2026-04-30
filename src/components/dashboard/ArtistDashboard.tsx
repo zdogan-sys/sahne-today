@@ -7,12 +7,14 @@ import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
 import { Clock, Check, X, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BandSection } from '@/components/bands/BandSection'
+import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
+import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 
 export function ArtistDashboard({ userId }: { userId: string }) {
   const [artist, setArtist] = useState<any>(null)
   const [applications, setApplications] = useState<any[]>([])
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -39,8 +41,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
     setArtist(artistData)
 
     if (artistData) {
-      const today = new Date().toISOString().slice(0, 10)
-      const [appRes, inviteRes, eventRes] = await Promise.all([
+      const [appRes, inviteRes, membershipRes] = await Promise.all([
         supabase
           .from('applications')
           .select('*, slots(*, venues(name, city, district))')
@@ -48,21 +49,37 @@ export function ArtistDashboard({ userId }: { userId: string }) {
           .order('created_at', { ascending: false }),
         supabase
           .from('band_members')
-          .select('id, invited_at, bands(id, name, genres, city)')
+          .select('id, invited_at, role, bands(id, name, genres, city)')
           .eq('artist_id', artistData.id)
           .eq('status', 'invited'),
         supabase
-          .from('events')
-          .select('id, title, event_date, start_time, venues(name, city)')
+          .from('band_members')
+          .select('band_id')
           .eq('artist_id', artistData.id)
-          .eq('status', 'confirmed')
-          .gte('event_date', today)
-          .order('event_date', { ascending: true })
-          .limit(5),
+          .eq('status', 'accepted')
       ])
+
+      const bandIds = (membershipRes.data ?? []).map((m: any) => m.band_id as string)
+
+      let eventsQ = supabase
+        .from('events')
+        .select('id, event_date, title, start_time, end_time, status, venue_name, venues(name, city), bands(name)')
+        .in('status', ['confirmed', 'pending'])
+        .order('event_date', { ascending: true })
+
+      if (bandIds.length > 0) {
+        eventsQ = eventsQ.or(`artist_id.eq.${artistData.id},band_id.in.(${bandIds.join(',')})`)
+      } else {
+        eventsQ = eventsQ.eq('artist_id', artistData.id)
+      }
+
+      const { data: evData } = await eventsQ
+
       setApplications(appRes.data ?? [])
-      setPendingInvites(inviteRes.data ?? [])
-      setUpcomingEvents(eventRes.data ?? [])
+      
+      const realInvites = (inviteRes.data ?? []).filter((inv: any) => inv.role !== 'Applicant')
+      setPendingInvites(realInvites)
+      setEvents(evData ?? [])
     }
     setLoading(false)
   }
@@ -112,28 +129,45 @@ export function ArtistDashboard({ userId }: { userId: string }) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bebas text-2xl text-text-primary">PROFİLİM</h2>
-          <Link href={`/artists/${artist.id}`} className="text-accent text-sm hover:underline">Profili Gör →</Link>
+          <ArtistProfileEditor
+            artistId={artist.id}
+            initialData={{
+              stage_name: artist.stage_name,
+              city: artist.city,
+              genres: artist.genres,
+              instruments: artist.instruments,
+              bio: artist.bio
+            }}
+          />
         </div>
-        <div className="card p-4">
-          <h3 className="font-semibold text-text-primary">{artist.stage_name}</h3>
-          <p className="text-text-muted text-xs mt-0.5">{artist.city}</p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {artist.genres?.map((g: string) => (
-              <span key={g} className="chip bg-accent/10 text-accent border border-accent/20">{g}</span>
-            ))}
+        <div className="card p-4 space-y-4">
+          <div>
+            <h3 className="font-semibold text-text-primary text-xl">{artist.stage_name}</h3>
+            {artist.city && <p className="text-text-muted text-sm mt-0.5">{artist.city}</p>}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {artist.genres?.map((g: string) => (
+                <span key={g} className="chip bg-accent/10 text-accent border border-accent/20">{g}</span>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={toggleLfb}
-            className={cn(
-              'mt-3 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors',
-              artist.looking_for_band
-                ? 'bg-accent/10 text-accent border-accent/30'
-                : 'bg-transparent text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary'
-            )}
-          >
-            <Search size={11} />
-            {artist.looking_for_band ? 'Grup arıyorum · Aktif' : 'Grup arıyorum'}
-          </button>
+
+          {artist.bio && (
+            <div className="pt-4 border-t border-[rgba(228,224,216,0.1)]">
+              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Hakkında</h4>
+              <p className="text-sm text-text-primary leading-relaxed">{artist.bio}</p>
+            </div>
+          )}
+
+          {artist.instruments && artist.instruments.length > 0 && (
+            <div className="pt-4 border-t border-[rgba(228,224,216,0.1)]">
+              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Enstrümanlar</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {artist.instruments.map((i: string) => (
+                  <span key={i} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{i}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -179,28 +213,29 @@ export function ArtistDashboard({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* Upcoming events */}
-      {upcomingEvents.length > 0 && (
-        <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">YAKLAŞAN ETKİNLİKLER</h2>
-          <div className="space-y-2">
-            {upcomingEvents.map((ev: any) => (
-              <Link key={ev.id} href={`/events/${ev.id}`} className="card p-4 flex items-center justify-between gap-3 hover:border-accent/30 transition-colors block">
-                <div>
-                  <p className="font-medium text-text-primary text-sm">{ev.title}</p>
-                  <p className="text-text-muted text-xs mt-0.5">
-                    {ev.venues?.name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
-                  </p>
-                </div>
-                <span className="chip bg-success/10 text-success border-success/20 flex-shrink-0">Onaylandı</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Bands */}
-      <BandSection userId={userId} artistId={artist.id} />
+      <BandSection 
+        userId={userId} 
+        artistId={artist.id} 
+        lookingForBand={artist.looking_for_band}
+        onToggleLfb={toggleLfb}
+      />
+
+      <div className="mt-8">
+        <ArtistCalendarSection
+          artistId={artist.id}
+          isOwner={true}
+          initialEvents={events.map((ev) => ({
+            id: ev.id,
+            event_date: ev.event_date,
+            title: ev.title,
+            start_time: ev.start_time,
+            end_time: ev.end_time ?? null,
+            subtitle: ev.venue_name ?? ev.venues?.name ?? ev.bands?.name ?? null,
+            status: ev.status,
+          }))}
+        />
+      </div>
 
       {/* Slot applications */}
       <div>

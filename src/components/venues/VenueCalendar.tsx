@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, X, Music2, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn } from '@/lib/utils'
+import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
 interface SlotEntry {
   id: string
@@ -77,13 +78,25 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   const [error, setError] = useState('')
   const [mounted, setMounted] = useState(false)
 
-  // Owner add-event form
+  // Owner add form state
+  const [ownerAddType, setOwnerAddType] = useState<'event' | 'slot'>('event')
+  
+  // Event form
   const [ownerTitle, setOwnerTitle] = useState('')
   const [ownerStartTime, setOwnerStartTime] = useState('20:00')
   const [ownerEndTime, setOwnerEndTime] = useState('')
   const [ownerLoading, setOwnerLoading] = useState(false)
   const [ownerSuccess, setOwnerSuccess] = useState(false)
   const [ownerError, setOwnerError] = useState('')
+
+  // Slot form
+  const [slotRecurrence, setSlotRecurrence] = useState('weekly')
+  const [slotStartTime, setSlotStartTime] = useState('21:00')
+  const [slotEndTime, setSlotEndTime] = useState('23:00')
+  const [slotFeeModel, setSlotFeeModel] = useState('free')
+  const [slotFeeValue, setSlotFeeValue] = useState('')
+  const [slotNotes, setSlotNotes] = useState('')
+  const [slotEventType, setSlotEventType] = useState('')
 
   // Performer search
   const [performerQuery, setPerformerQuery] = useState('')
@@ -145,6 +158,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   }
 
   function resetOwnerForm() {
+    setOwnerAddType('event')
     setOwnerTitle('')
     setOwnerStartTime('20:00')
     setOwnerEndTime('')
@@ -153,6 +167,14 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     setPerformerQuery('')
     setSelectedPerformer(null)
     setShowPerformerList(false)
+    
+    setSlotRecurrence('weekly')
+    setSlotStartTime('21:00')
+    setSlotEndTime('23:00')
+    setSlotFeeModel('free')
+    setSlotFeeValue('')
+    setSlotNotes('')
+    setSlotEventType('')
   }
 
   function handleDayClick(date: Date) {
@@ -161,7 +183,10 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     const daySlots = getSlotsForDate(date)
     const hasClickableSlot = daySlots.length > 0 && date >= today && artistId
 
-    if (!isOwner && dayEvents.length === 0 && !hasClickableSlot) return
+    if (!isOwner && dayEvents.length === 0 && !hasClickableSlot) {
+      alert("Bu güne tıklama yetkiniz yok veya gün boş.")
+      return
+    }
 
     const slot = hasClickableSlot ? daySlots[0] : daySlots[0] ?? null
 
@@ -206,6 +231,36 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       setSuccess(true)
     }
     setLoading(false)
+  }
+
+  async function handleOwnerAddSlot() {
+    if (!selectedDate) return
+    setOwnerLoading(true)
+    setOwnerError('')
+
+    const slotInsert = {
+      venue_id: venueId,
+      day_of_week: selectedDate.getDay(),
+      start_time: slotStartTime,
+      end_time: slotEndTime,
+      recurrence: slotRecurrence,
+      fee_model: slotFeeModel,
+      fee_value: slotFeeValue ? parseFloat(slotFeeValue) : null,
+      notes: slotNotes || null,
+      event_type: slotEventType,
+      status: 'open',
+    }
+
+    const { error: err } = await supabase.from('slots').insert(slotInsert as any)
+
+    if (err) {
+      setOwnerError('Slot eklenemedi.')
+    } else {
+      setOwnerSuccess(true)
+      // Note: Ideally we'd update the local slots state here, but `slots` is passed as a prop.
+      // A page reload or router refresh would be needed to see it in the list if they go back.
+    }
+    setOwnerLoading(false)
   }
 
   async function handleOwnerAdd() {
@@ -304,97 +359,169 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           {ownerSuccess ? (
             <div className="px-5 py-8 text-center">
               <p className="text-success text-2xl mb-2">✓</p>
-              <p className="text-text-primary text-sm font-medium">Etkinlik eklendi</p>
-              <button onClick={() => setOwnerSuccess(false)} className="text-text-muted text-xs mt-2 hover:text-text-primary underline">
-                Başka etkinlik ekle
+              <p className="text-text-primary text-sm font-medium">{ownerAddType === 'event' ? 'Etkinlik' : 'Açık Slot'} eklendi</p>
+              <button onClick={() => { setOwnerSuccess(false); window.location.reload() }} className="text-text-muted text-xs mt-2 hover:text-text-primary underline">
+                Kapat ve Yenile
               </button>
             </div>
           ) : (
             <div className="px-5 py-4 space-y-4">
-              {selectedDayEvents.length > 0 && (
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide">Etkinlik Ekle</p>
-              )}
+              <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)] mb-2">
+                <button
+                  type="button"
+                  onClick={() => setOwnerAddType('event')}
+                  className={cn('flex-1 py-2 text-xs font-medium transition-colors', ownerAddType === 'event' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
+                >
+                  Etkinlik
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOwnerAddType('slot')}
+                  className={cn('flex-1 py-2 text-xs font-medium transition-colors border-l border-[rgba(228,224,216,0.15)]', ownerAddType === 'slot' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
+                >
+                  Açık Slot
+                </button>
+              </div>
+
+              {ownerAddType === 'event' ? (
+                <>
               {selectedSlot && (
                 <div className="text-xs text-text-muted bg-accent/5 border border-accent/15 rounded-lg px-3 py-2">
-                  Boş sahne: {selectedSlot.event_type ?? 'Konser'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
+                  Boş sahne: {selectedSlot.event_type ?? 'Belirtilmemiş'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
                 </div>
               )}
 
-              <div>
-                <label className="label">Etkinlik Adı *</label>
-                <input
-                  value={ownerTitle}
-                  onChange={e => setOwnerTitle(e.target.value)}
-                  placeholder="Konser adı..."
-                  className="input-field text-sm"
-                  autoFocus
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Başlangıç *</label>
-                  <input type="time" value={ownerStartTime} onChange={e => setOwnerStartTime(e.target.value)} className="input-field text-sm" />
-                </div>
-                <div>
-                  <label className="label">Bitiş</label>
-                  <input type="time" value={ownerEndTime} onChange={e => setOwnerEndTime(e.target.value)} className="input-field text-sm" />
-                </div>
-              </div>
-
-              {/* Performer search */}
-              <div>
-                <label className="label">Sanatçı / Grup</label>
-                {selectedPerformer ? (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
-                    {selectedPerformer.type === 'artist'
-                      ? <Music2 size={13} className="text-accent flex-shrink-0" />
-                      : <Users size={13} className="text-accent flex-shrink-0" />
-                    }
-                    <span className="text-text-primary text-sm flex-1">{selectedPerformer.name}</span>
-                    <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedPerformer(null); setPerformerQuery(''); setShowPerformerList(false) }}
-                      className="text-text-muted hover:text-text-primary ml-1"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative">
+                  <div>
+                    <label className="label">Etkinlik Adı *</label>
                     <input
-                      value={performerQuery}
-                      onChange={e => { setPerformerQuery(e.target.value); setShowPerformerList(true) }}
-                      onFocus={() => setShowPerformerList(true)}
-                      onBlur={() => setTimeout(() => setShowPerformerList(false), 150)}
-                      placeholder="Sanatçı veya grup adı yazın..."
+                      value={ownerTitle}
+                      onChange={e => setOwnerTitle(e.target.value)}
+                      placeholder="Konser adı..."
                       className="input-field text-sm"
-                      autoComplete="off"
+                      autoFocus
                     />
-                    {showPerformerList && filteredPerformers.length > 0 && (
-                      <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg overflow-hidden shadow-xl max-h-56 overflow-y-auto">
-                        {filteredPerformers.map(p => (
-                          <button
-                            key={`${p.type}-${p.id}`}
-                            type="button"
-                            onMouseDown={e => { e.preventDefault(); setSelectedPerformer(p); setPerformerQuery(p.name); setShowPerformerList(false) }}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] transition-colors"
-                          >
-                            <span className="text-text-primary text-sm flex-1 truncate">{p.name}</span>
-                            <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
-                          </button>
-                        ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Başlangıç *</label>
+                      <input type="time" value={ownerStartTime} onChange={e => setOwnerStartTime(e.target.value)} className="input-field text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">Bitiş</label>
+                      <input type="time" value={ownerEndTime} onChange={e => setOwnerEndTime(e.target.value)} className="input-field text-sm" />
+                    </div>
+                  </div>
+
+                  {/* Performer search */}
+                  <div>
+                    <label className="label">Sanatçı / Grup</label>
+                    {selectedPerformer ? (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
+                        {selectedPerformer.type === 'artist'
+                          ? <Music2 size={13} className="text-accent flex-shrink-0" />
+                          : <Users size={13} className="text-accent flex-shrink-0" />
+                        }
+                        <span className="text-text-primary text-sm flex-1">{selectedPerformer.name}</span>
+                        <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedPerformer(null); setPerformerQuery(''); setShowPerformerList(false) }}
+                          className="text-text-muted hover:text-text-primary ml-1"
+                        >
+                          <X size={13} />
+                        </button>
                       </div>
-                    )}
-                    {showPerformerList && performerQuery.trim() && filteredPerformers.length === 0 && (
-                      <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 shadow-xl">
-                        <p className="text-text-muted text-xs">Kayıtlı sanatçı/grup bulunamadı — ad olarak kaydedilecek</p>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          value={performerQuery}
+                          onChange={e => { setPerformerQuery(e.target.value); setShowPerformerList(true) }}
+                          onFocus={() => setShowPerformerList(true)}
+                          onBlur={() => setTimeout(() => setShowPerformerList(false), 150)}
+                          placeholder="Sanatçı veya grup adı yazın..."
+                          className="input-field text-sm"
+                          autoComplete="off"
+                        />
+                        {showPerformerList && filteredPerformers.length > 0 && (
+                          <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg overflow-hidden shadow-xl max-h-56 overflow-y-auto">
+                            {filteredPerformers.map(p => (
+                              <button
+                                key={`${p.type}-${p.id}`}
+                                type="button"
+                                onMouseDown={e => { e.preventDefault(); setSelectedPerformer(p); setPerformerQuery(p.name); setShowPerformerList(false) }}
+                                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] transition-colors"
+                              >
+                                <span className="text-text-primary text-sm flex-1 truncate">{p.name}</span>
+                                <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {showPerformerList && performerQuery.trim() && filteredPerformers.length === 0 && (
+                          <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 shadow-xl">
+                            <p className="text-text-muted text-xs">Kayıtlı sanatçı/grup bulunamadı – ad olarak kaydedilecek</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Etkinlik Türü</label>
+                      <select value={slotEventType} onChange={(e) => setSlotEventType(e.target.value)} className="input-field text-sm">
+                        <option value="">Seçin</option>
+                        <optgroup label="Müzik">
+                          {MUSIC_GENRES.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Sahne">
+                          {STAGE_GENRES.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Tekrar</label>
+                      <select value={slotRecurrence} onChange={(e) => setSlotRecurrence(e.target.value)} className="input-field text-sm">
+                        <option value="weekly">Haftalık</option>
+                        <option value="biweekly">2 Haftada Bir</option>
+                        <option value="once">Tek Sefer</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Başlangıç</label>
+                      <input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} className="input-field text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">Bitiş</label>
+                      <input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} className="input-field text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">Ücret Modeli</label>
+                      <select value={slotFeeModel} onChange={(e) => setSlotFeeModel(e.target.value)} className="input-field text-sm">
+                        <option value="free">Ücretsiz</option>
+                        <option value="door_share">Kapı Paylaşımı</option>
+                        <option value="guarantee">Garanti</option>
+                        <option value="negotiable">Pazarlığa Açık</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Tutar (₺)</label>
+                      <input type="number" value={slotFeeValue} onChange={(e) => setSlotFeeValue(e.target.value)} placeholder="0" className="input-field text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label">Notlar</label>
+                    <input value={slotNotes} onChange={(e) => setSlotNotes(e.target.value)} placeholder="Özel koşullar..." className="input-field text-sm" />
+                  </div>
+                </>
+              )}
 
               {ownerError && <p className="text-red-400 text-xs">{ownerError}</p>}
             </div>
@@ -404,8 +531,8 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
         {!ownerSuccess && (
           <div className="px-5 py-4 border-t border-[rgba(228,224,216,0.08)] flex-shrink-0">
             <button
-              onClick={handleOwnerAdd}
-              disabled={ownerLoading || !ownerTitle || !ownerStartTime}
+              onClick={ownerAddType === 'event' ? handleOwnerAdd : handleOwnerAddSlot}
+              disabled={ownerLoading || (ownerAddType === 'event' && (!ownerTitle || !ownerStartTime))}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
               {ownerLoading ? 'Ekleniyor...' : 'Takvime Ekle'}
@@ -451,13 +578,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           const isPast = date < today
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
-          const isClickable = isOwner || hasOpenSlot || hasEvent
+          const isClickable = true // Temporarily allow all clicks to debug isOwner status
 
           return (
             <button
               key={dateStr}
               onClick={() => handleDayClick(date)}
-              disabled={!isClickable}
               className={cn(
                 'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
@@ -537,7 +663,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
               <div>
                 <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-1">Boş Sahne</p>
                 <p className="text-text-muted text-xs">
-                  {selectedSlot.event_type ?? 'Konser'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
+                  {selectedSlot.event_type ?? 'Belirtilmemiş'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
                   {selectedSlot.fee_value ? ` · ${selectedSlot.fee_value}₺` : ''}
                   {selectedSlot.notes ? ` · ${selectedSlot.notes}` : ''}
                 </p>

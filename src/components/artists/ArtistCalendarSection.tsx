@@ -6,8 +6,7 @@ import { X, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
-
-const GENRE_OPTIONS = ['Rock', 'Akustik', 'Türkü', 'Caz', 'Pop', 'Folk', 'Elektronik', 'R&B', 'Rap', 'Stand-Up', 'Diğer']
+import { ALL_GENRES } from '@/lib/constants'
 
 interface VenueOption { id: string; name: string; city: string; district: string }
 
@@ -215,7 +214,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                 <label className="label">Tür</label>
                 <select value={genre} onChange={e => setGenre(e.target.value)} className="input-field text-sm">
                   <option value="">Seçin</option>
-                  {GENRE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                  {ALL_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
 

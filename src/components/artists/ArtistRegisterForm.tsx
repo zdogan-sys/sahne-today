@@ -8,9 +8,8 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { cn } from '@/lib/utils'
 
-const GENRE_OPTIONS = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'Pop', 'Folk', 'Elektronik', 'R&B', 'Rap']
-const INSTRUMENT_OPTIONS = ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
-const CITY_OPTIONS = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri']
+import { INSTRUMENT_OPTIONS, CITY_OPTIONS } from '@/lib/constants'
+import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 
 function ProgressBar({ step }: { step: number }) {
   return (
@@ -194,6 +193,7 @@ export function ArtistRegisterForm() {
   const [genres, setGenres] = useState<string[]>([])
   const [instruments, setInstruments] = useState<string[]>([])
   const [city, setCity] = useState('')
+  const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
 
   // Step 2
   const [bio, setBio] = useState('')
@@ -243,8 +243,7 @@ export function ArtistRegisterForm() {
       await supabase.from('profiles').update({ avatar_url: avatarUrl } as any).eq('id', user.id)
     }
 
-    await supabase.from('profiles').update({ role: 'artist' } as any).eq('id', user.id)
-    router.push(`/artists/${artist.id}`)
+    window.location.href = '/dashboard'
   }
 
   return (
@@ -258,8 +257,10 @@ export function ArtistRegisterForm() {
             <label className="label">Sahne Adı *</label>
             <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Murat Boz" className="input-field" />
           </div>
-          <ChipToggle options={GENRE_OPTIONS} selected={genres} onToggle={(v) => toggleItem(genres, setGenres, v)} label="Müzik Türleri *" />
-          <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label="Enstrümanlar" />
+          <TabbedGenreSelector selected={genres} onToggle={(v) => toggleItem(genres, setGenres, v)} label="Performans Türleri *" onTabChange={setActiveTab} />
+          {activeTab === 'music' && (
+            <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label="Enstrümanlar" />
+          )}
           <div>
             <label className="label">Şehir</label>
             <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field">

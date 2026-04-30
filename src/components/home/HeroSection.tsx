@@ -31,16 +31,16 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                   Etkinlikleri Keşfet
                 </Link>
                 <Link href="/dashboard" className="btn-outline text-center py-3 px-6 text-base font-semibold">
-                  Dashboard
+                  Panelim
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/artists/register" className="btn-accent text-center py-3 px-6 text-base font-semibold">
-                  Sanatçı Ol
+                <Link href="/auth?tab=signup" className="btn-accent text-center py-3 px-6 text-base font-semibold">
+                  Hemen Kayıt Ol
                 </Link>
-                <Link href="/venues/register" className="btn-outline text-center py-3 px-6 text-base font-semibold">
-                  Mekan Ekle
+                <Link href="/auth" className="btn-outline text-center py-3 px-6 text-base font-semibold">
+                  Giriş Yap
                 </Link>
               </>
             )}

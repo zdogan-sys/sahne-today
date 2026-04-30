@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Mic2, Store } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const navLinks = [
@@ -64,13 +64,21 @@ export function TopNav() {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
+              <Link href="/artists/portal" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.1)] px-3 py-1.5 rounded-full hover:border-accent/40">
+                <Mic2 size={14} />
+                Sanatçı Girişi
+              </Link>
+              <Link href="/venues/portal" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.1)] px-3 py-1.5 rounded-full hover:border-accent/40">
+                <Store size={14} />
+                Mekan Girişi
+              </Link>
+              <div className="w-px h-4 bg-[rgba(228,224,216,0.1)] mx-1"></div>
               <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
                 <LayoutDashboard size={14} />
                 {displayName}
               </Link>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 btn-outline text-sm py-1.5">
+              <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-400 py-1.5 ml-2 hover:text-red-300">
                 <LogOut size={13} />
-                Çıkış
               </button>
             </>
           ) : (
@@ -105,6 +113,17 @@ export function TopNav() {
           <div className="pt-2 border-t border-[rgba(228,224,216,0.08)]">
             {user ? (
               <div className="space-y-1">
+                <Link href="/artists/portal" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
+                  <Mic2 size={14} />
+                  Sanatçı Girişi
+                </Link>
+                <Link href="/venues/portal" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
+                  <Store size={14} />
+                  Mekan Girişi
+                </Link>
+                <div className="my-1 border-t border-[rgba(228,224,216,0.08)]"></div>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-text-primary">
                   <LayoutDashboard size={14} />

@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import { ArtistRegisterForm } from '@/components/artists/ArtistRegisterForm'
 
 export const metadata: Metadata = {
@@ -6,7 +8,25 @@ export const metadata: Metadata = {
   description: 'Sanatçı profilinizi oluşturun ve mekan tekliflerini kabul edin.',
 }
 
-export default function ArtistRegisterPage() {
+export default async function ArtistRegisterPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    redirect('/auth')
+  }
+
+  // Eğer kullanıcının zaten sanatçı profili varsa, dashboard'a yönlendir.
+  const { data: artist } = await supabase
+    .from('artists')
+    .select('id')
+    .eq('profile_id', user.id)
+    .maybeSingle()
+
+  if (artist) {
+    redirect('/dashboard')
+  }
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-lg mx-auto">
