@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, MapPin } from 'lucide-react'
+import { X, MapPin, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
@@ -24,6 +24,8 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
 
   const [title, setTitle] = useState('')
   const [startTime, setStartTime] = useState('20:00')
@@ -70,7 +72,23 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
   function closePanel() {
     setSelectedDate(null)
     setDayEvents([])
+    setCancelConfirm(null)
     resetForm()
+  }
+
+  async function handleCancel(eventId: string) {
+    setCancelling(true)
+    const { error: err } = await supabase
+      .from('events')
+      .update({ status: 'cancelled' } as any)
+      .eq('id', eventId)
+
+    if (!err) {
+      setEvents(prev => prev.filter(e => e.id !== eventId))
+      setDayEvents(prev => prev.filter(e => e.id !== eventId))
+    }
+    setCancelConfirm(null)
+    setCancelling(false)
   }
 
   function selectVenue(v: VenueOption) {
@@ -153,7 +171,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
             <div className="px-5 py-4 space-y-2 border-b border-[rgba(228,224,216,0.08)]">
               {dayEvents.map(ev => (
                 <div key={ev.id} className="flex items-start gap-3">
-                  <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${ev.status === 'pending' ? 'bg-yellow-400' : 'bg-success'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${ev.status === 'pending' ? 'bg-yellow-400' : 'bg-success'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-text-primary text-sm font-medium">{ev.title}</p>
@@ -167,7 +185,34 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                       {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
                       {ev.subtitle ? ` · ${ev.subtitle}` : ''}
                     </p>
+                    {isOwner && cancelConfirm === ev.id ? (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs text-text-muted">İptal edilsin mi?</span>
+                        <button
+                          onClick={() => handleCancel(ev.id)}
+                          disabled={cancelling}
+                          className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
+                        >
+                          {cancelling ? 'İptal ediliyor...' : 'Evet, iptal et'}
+                        </button>
+                        <button
+                          onClick={() => setCancelConfirm(null)}
+                          className="text-xs text-text-muted hover:text-text-primary"
+                        >
+                          Vazgeç
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
+                  {isOwner && cancelConfirm !== ev.id && (
+                    <button
+                      onClick={() => setCancelConfirm(ev.id)}
+                      className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors mt-0.5"
+                      title="Etkinliği iptal et"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
