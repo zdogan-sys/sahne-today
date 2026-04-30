@@ -48,7 +48,7 @@ export function BandApplyButton({ bandId, artistId, existingStatus, existingRole
       return (
         <button disabled className="btn-outline w-full py-3 flex items-center justify-center gap-2 text-text-muted border-[rgba(228,224,216,0.1)] cursor-default">
           <Check size={16} />
-          Başvurun Gönderildi
+          Katılım İsteği Gönderildi
         </button>
       )
     }
@@ -68,7 +68,7 @@ export function BandApplyButton({ bandId, artistId, existingStatus, existingRole
         className="btn-accent w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50"
       >
         <Send size={16} />
-        {loading ? 'Gönderiliyor...' : 'Gruba Başvur'}
+        {loading ? 'Gönderiliyor...' : 'Gruba Katıl'}
       </button>
       {errorMsg && <p className="text-red-400 text-xs text-center">{errorMsg}</p>}
     </div>
