@@ -240,10 +240,10 @@ export function ArtistDashboard({ userId }: { userId: string }) {
 
       {/* Slot applications */}
       <div>
-        <h2 className="font-bebas text-2xl text-text-primary mb-4">BAŞVURULARIM</h2>
+        <h2 className="font-bebas text-2xl text-text-primary mb-4">SAHNE TALEPLERİM</h2>
         {applications.length === 0 ? (
           <div className="card p-6 text-center text-text-muted text-sm">
-            <p>Henüz başvurunuz yok.</p>
+            <p>Henüz sahne talebiniz yok.</p>
             <Link href="/venues" className="text-accent mt-2 block hover:underline">Mekan ara →</Link>
           </div>
         ) : (
