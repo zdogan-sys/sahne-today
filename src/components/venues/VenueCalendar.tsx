@@ -546,6 +546,8 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
   return (
     <div>
+      {/* Calendar grid constrained to keep cells small and square */}
+      <div className="max-w-[320px]">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={prevMonth} className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
@@ -569,7 +571,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="h-9" />
+          if (!date) return <div key={`e-${i}`} className="aspect-square" />
           const dateStr = toISO(date)
           const daySlots = getSlotsForDate(date)
           const dayEvents = eventsByDate.get(dateStr) ?? []
@@ -578,14 +580,13 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           const isPast = date < today
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
-          const isClickable = true // Temporarily allow all clicks to debug isOwner status
 
           return (
             <button
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative h-9 rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
                   ? 'bg-accent text-white'
                   : hasOpenSlot
@@ -627,6 +628,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           <span>Etkinlik Planlandı</span>
         </div>
       </div>
+      </div>{/* end max-w-[320px] */}
 
       {/* Owner popup */}
       {ownerPopup}

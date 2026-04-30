@@ -79,6 +79,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
 
   return (
     <div>
+      <div className="max-w-[320px]">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={prevMonth} className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
@@ -102,7 +103,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="h-9" />
+          if (!date) return <div key={`e-${i}`} className="aspect-square" />
           const dateStr = toISO(date)
           const dayEvents = byDate.get(dateStr) ?? []
           const hasEvent = dayEvents.length > 0
@@ -116,7 +117,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative h-9 rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
                   ? 'bg-success/20 text-white ring-1 ring-success/40'
                   : hasEvent
@@ -134,6 +135,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
           )
         })}
       </div>
+      </div>{/* end max-w-[320px] */}
 
       {/* Internal detail panel (only when onDayClick is NOT provided) */}
       {!onDayClick && internalSelected && internalDayEvents.length > 0 && (
