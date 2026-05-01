@@ -166,7 +166,7 @@ export default async function ArtistPage({ params }: Props) {
               title: ev.title,
               start_time: ev.start_time,
               end_time: (ev as any).end_time ?? null,
-              subtitle: (ev as any).venue_name ?? (ev as any).venues?.name ?? (ev as any).bands?.name ?? null,
+              subtitle: (ev as any).venues?.name ?? (ev as any).venue_name ?? (ev as any).bands?.name ?? null,
               status: (ev as any).status,
             }))}
         />

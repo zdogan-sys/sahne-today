@@ -274,7 +274,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
             title: ev.title,
             start_time: ev.start_time,
             end_time: ev.end_time ?? null,
-            subtitle: ev.venue_name ?? ev.venues?.name ?? ev.bands?.name ?? null,
+            subtitle: ev.venues?.name ?? ev.venue_name ?? ev.bands?.name ?? null,
             status: ev.status,
           }))}
         />
