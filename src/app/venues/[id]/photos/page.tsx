@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { isAdminUser } from '@/lib/admin'
 import { VenuePhotoAlbum } from '@/components/venues/VenuePhotoAlbum'
 
 interface Props {
@@ -32,7 +33,7 @@ export default async function VenuePhotosPage({ params }: Props) {
   if (!venue) notFound()
 
   const v = venue as any
-  const isOwner = user?.id === v.owner_id
+  const isOwner = user?.id === v.owner_id || isAdminUser(user)
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24">

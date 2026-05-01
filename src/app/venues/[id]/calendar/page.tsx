@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { isAdminUser } from '@/lib/admin'
 import { VenueCalendar } from '@/components/venues/VenueCalendar'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
 
@@ -38,7 +39,7 @@ export default async function VenueCalendarPage({ params }: Props) {
     ? await supabase.from('artists').select('id').eq('profile_id', user.id).single()
     : null
   const artistId = artistRes?.data?.id ?? null
-  const isOwner = user?.id === v.owner_id
+  const isOwner = user?.id === v.owner_id || isAdminUser(user)
 
   const canApply = !!artistId
   const canSeeSlots = canApply || isOwner

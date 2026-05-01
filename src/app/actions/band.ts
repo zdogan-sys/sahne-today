@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { ADMIN_EMAIL } from '@/lib/admin'
 
 export async function applyToBand(bandId: string, artistId: string) {
   const supabaseAuth = await createServerClient()
@@ -38,7 +39,7 @@ export async function respondToApplication(membershipId: string, bandId: string,
 
   const { data: band } = await supabaseAuth.from('bands').select('creator_id').eq('id', bandId).single()
 
-  if (!band || band.creator_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
 
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -62,7 +63,7 @@ export async function inviteToBand(bandId: string, artistId: string) {
 
   const { data: band } = await supabaseAuth.from('bands').select('creator_id').eq('id', bandId).single()
 
-  if (!band || band.creator_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
 
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 

@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { ADMIN_EMAIL } from '@/lib/admin'
 
 export async function closeSlot(slotId: string) {
   const supabaseAuth = await createServerClient()
@@ -27,7 +28,7 @@ export async function closeSlot(slotId: string) {
     .eq('id', slot.venue_id)
     .single()
 
-  if (!venue || venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await supabaseAdmin
     .from('slots')
@@ -63,7 +64,7 @@ export async function addBandEvent(payload: {
     .eq('id', payload.bandId)
     .single()
 
-  if (!band || band.creator_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
 
   const status = payload.venueId ? 'pending' : 'confirmed'
 
@@ -105,7 +106,7 @@ export async function cancelBandEvent(eventId: string) {
     .single()
 
   const creatorId = (event as any)?.bands?.creator_id
-  if (!creatorId || creatorId !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!creatorId || (creatorId !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await supabaseAdmin
     .from('events')

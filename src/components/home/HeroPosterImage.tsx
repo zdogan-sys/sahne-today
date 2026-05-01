@@ -39,7 +39,7 @@ export function HeroPosterImage({ url: initialUrl, isAdmin }: Props) {
 
   return (
     <div className="relative group w-full h-full">
-      <div className="w-full h-full rounded-2xl overflow-hidden border border-[rgba(228,224,216,0.12)] shadow-2xl">
+      <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl">
         {url ? (
           <Image
             src={url}
@@ -59,9 +59,17 @@ export function HeroPosterImage({ url: initialUrl, isAdmin }: Props) {
           </div>
         )}
 
+        {/* Edge fade overlays */}
+        <div className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{ background: 'linear-gradient(to right, #0a0a0b 0%, transparent 25%, transparent 75%, #0a0a0b 100%)' }}
+        />
+        <div className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{ background: 'linear-gradient(to bottom, #0a0a0b 0%, transparent 20%, transparent 75%, #0a0a0b 100%)' }}
+        />
+
         {/* Admin upload overlay */}
         {isAdmin && (
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
             <button
               onClick={() => inputRef.current?.click()}
               disabled={uploading}

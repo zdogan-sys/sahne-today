@@ -14,6 +14,7 @@ import { BandApplyButton } from '@/components/bands/BandApplyButton'
 import { BandProfileEditor } from '@/components/bands/BandProfileEditor'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
+import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 
 export const dynamic = 'force-dynamic'
@@ -59,7 +60,7 @@ export default async function BandPage({ params }: Props) {
   if (!bandRes.data) notFound()
 
   const b = bandRes.data as any
-  const isCreator = user?.id === b.creator_id
+  const isCreator = user?.id === b.creator_id || isAdminUser(user)
   const isArtist = !!artistRes.data
   const currentArtistId = artistRes.data?.id
   const bandEvents = (eventsRes.data ?? []) as any[]

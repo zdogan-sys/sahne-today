@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { isAdminUser } from '@/lib/admin'
 import { BandPhotoAlbum } from '@/components/bands/BandPhotoAlbum'
 
 interface Props {
@@ -32,7 +33,7 @@ export default async function BandPhotosPage({ params }: Props) {
   if (!band) notFound()
 
   const b = band as any
-  const isCreator = user?.id === b.creator_id
+  const isCreator = user?.id === b.creator_id || isAdminUser(user)
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24">

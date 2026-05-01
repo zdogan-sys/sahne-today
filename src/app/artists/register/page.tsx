@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ArtistRegisterForm } from '@/components/artists/ArtistRegisterForm'
+import { isAdminUser } from '@/lib/admin'
 
 export const metadata: Metadata = {
   title: 'Sanatçı Ol',
@@ -23,7 +24,7 @@ export default async function ArtistRegisterPage() {
     .eq('profile_id', user.id)
     .maybeSingle()
 
-  if (artist) {
+  if (artist && !isAdminUser(user)) {
     redirect('/dashboard')
   }
 

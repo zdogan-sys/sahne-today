@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VENUE_TYPE_LABELS, formatDate } from '@/lib/utils'
 import { MapPin, Phone, Mail, Users, Zap, ArrowLeft, Music, Images, CalendarDays } from 'lucide-react'
+import { isAdminUser } from '@/lib/admin'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VenueCoverEditor } from '@/components/venues/VenueCoverEditor'
 import { VenueLogoEditor } from '@/components/venues/VenueLogoEditor'
@@ -58,7 +59,7 @@ export default async function VenuePage({ params }: Props) {
   const venue = venueRes.data as unknown as Venue
   const slots = (slotsRes.data ?? []) as unknown as Slot[]
   const events = (eventsRes.data ?? []) as unknown as (Event & { artists: { stage_name: string } | null })[]
-  const isOwner = user?.id === venue.owner_id
+  const isOwner = user?.id === venue.owner_id || isAdminUser(user)
   const canSeeSlots = isOwner || isArtist
   const photos: string[] = (venue as any).photos ?? []
   const videoUrls: string[] = (venue as any).video_urls ?? []

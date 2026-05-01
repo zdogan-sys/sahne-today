@@ -10,6 +10,7 @@ import { MapPin, ArrowLeft, ChevronDown, Mail, Building2 } from 'lucide-react'
 import type { Artist, Profile, Event, Venue } from '@/lib/supabase/types'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
+import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 
@@ -70,7 +71,7 @@ export default async function ArtistPage({ params }: Props) {
   const artist = artistRes.data as unknown as ArtistFull
   const events = (eventsRes.data ?? []) as unknown as EventFull[]
   const profile = artist.profiles
-  const isOwner = user?.id === artist.profile_id
+  const isOwner = user?.id === artist.profile_id || isAdminUser(user)
   const ownedVenue = venueRes.data as any
 
   const initials = artist.stage_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
