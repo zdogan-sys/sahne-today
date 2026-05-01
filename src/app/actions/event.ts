@@ -31,7 +31,7 @@ export async function closeSlot(slotId: string) {
 
   const { error } = await supabaseAdmin
     .from('slots')
-    .update({ status: 'closed' })
+    .delete()
     .eq('id', slotId)
 
   if (error) return { success: false, error: error.message }
