@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, X, Music2, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Music2, Users, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn } from '@/lib/utils'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
@@ -603,12 +603,14 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
 
+          const isEmptyFuture = isOwner && !isPast && !hasEvent && !hasOpenSlot && !isSelected
+
           return (
             <button
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'group relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
                 isSelected
                   ? 'bg-accent text-white'
                   : hasOpenSlot
@@ -617,8 +619,8 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   ? 'text-white hover:bg-success/15 cursor-pointer'
                   : isOwner
                   ? isPast
-                    ? 'text-white/35 hover:bg-white/5 cursor-pointer'
-                    : 'text-white/55 hover:bg-white/5 cursor-pointer'
+                    ? 'text-white/30 hover:bg-white/5 cursor-pointer'
+                    : 'text-white/50 hover:bg-accent/10 hover:text-accent/80 cursor-pointer'
                   : isPast
                   ? 'text-white/35 cursor-default'
                   : 'text-white/55 cursor-default',
@@ -631,6 +633,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
               )}
               {hasEvent && (
                 <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-success" />
+              )}
+              {isEmptyFuture && (
+                <Plus
+                  size={13}
+                  className="absolute bottom-0.5 right-0.5 opacity-0 group-hover:opacity-60 transition-opacity text-accent"
+                />
               )}
             </button>
           )

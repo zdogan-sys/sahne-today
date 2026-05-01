@@ -30,6 +30,35 @@ async function isEventParty(userId: string, userEmail: string | undefined, event
   )
 }
 
+export async function updateEvent(eventId: string, payload: {
+  title: string
+  event_date: string
+  start_time: string
+  end_time: string | null
+  genre: string | null
+  entry_type: string
+  entry_fee: number | null
+  description: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  if (!(await isEventParty(user.id, user.email ?? undefined, eventId))) return { success: false, error: 'Yetkiniz yok.' }
+  const admin = await getAdminClient()
+  const { error } = await admin.from('events').update({
+    title: payload.title,
+    event_date: payload.event_date,
+    start_time: payload.start_time,
+    end_time: payload.end_time,
+    genre: payload.genre,
+    entry_type: payload.entry_type,
+    entry_fee: payload.entry_fee,
+    description: payload.description,
+  } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function updateEventPoster(eventId: string, url: string) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()

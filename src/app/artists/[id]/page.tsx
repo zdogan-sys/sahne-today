@@ -42,7 +42,7 @@ export default async function ArtistPage({ params }: Props) {
 
   const [artistRes, membershipsRes] = await Promise.all([
     supabase.from('artists').select('*, profiles(*)').eq('id', id).single(),
-    supabase.from('band_members').select('band_id').eq('artist_id', id).eq('status', 'accepted'),
+    supabase.from('band_members').select('band_id, role, bands(id, name, photo_url, genres, city)').eq('artist_id', id).eq('status', 'accepted'),
   ])
 
   if (!artistRes.data) notFound()
@@ -54,6 +54,7 @@ export default async function ArtistPage({ params }: Props) {
     .maybeSingle()
 
   const bandIds = (membershipsRes.data ?? []).map((m: any) => m.band_id as string)
+  const bands = (membershipsRes.data ?? []).map((m: any) => ({ ...(m.bands as any), role: m.role })).filter(Boolean)
 
   const eventsRes = await (bandIds.length > 0
     ? supabase.from('events')
@@ -160,6 +161,35 @@ export default async function ArtistPage({ params }: Props) {
             <div className="flex flex-wrap gap-2">
               {artist.past_venues.map((v: string) => (
                 <span key={v} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{v}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {bands.length > 0 && (
+          <div>
+            <h3 className="label">Gruplar</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {bands.map((band: any) => (
+                <Link
+                  key={band.id}
+                  href={`/bands/${band.id}`}
+                  className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors text-center"
+                >
+                  {band.photo_url ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 relative">
+                      <Image src={band.photo_url} alt={band.name} width={64} height={64} className="object-cover w-full h-full" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-xl flex-shrink-0">
+                      {band.name?.[0]}
+                    </div>
+                  )}
+                  <div className="min-w-0 w-full">
+                    <p className="font-medium text-text-primary text-xs truncate">{band.name}</p>
+                    {band.city && <p className="text-text-muted text-xs truncate">{band.city}</p>}
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
