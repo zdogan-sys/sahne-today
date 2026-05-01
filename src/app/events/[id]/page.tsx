@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
@@ -5,9 +7,8 @@ import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Clock, Ticket, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import type { Event, Venue, Artist } from '@/lib/supabase/types'
-
-type EventFull = Event & { venues: Venue | null; artists: Artist | null }
+import { isAdminUser } from '@/lib/admin'
+import { EventMediaSection } from '@/components/events/EventMediaSection'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -29,16 +30,31 @@ export default async function EventPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data } = await supabase
     .from('events')
-    .select('*, venues(*), artists(*)')
+    .select('*, venues(*), artists(*), bands(id, name, creator_id)')
     .eq('id', id)
     .single()
 
   if (!data) notFound()
-  const event = data as unknown as EventFull
+  const event = data as any
   const venue = event.venues
   const artist = event.artists
+  const band = event.bands
+
+  const posterUrl: string | null = event.poster_url ?? null
+  const photos: string[] = event.photos ?? []
+
+  // Check if current user is a party to this event
+  let isParty = isAdminUser(user)
+  if (!isParty && user) {
+    const isVenueOwner = venue?.owner_id === user.id
+    const isBandCreator = band?.creator_id === user.id
+    const isArtistOwner = artist?.profile_id === user.id
+    isParty = isVenueOwner || isBandCreator || isArtistOwner
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -56,7 +72,7 @@ export default async function EventPage({ params }: Props) {
           <div className="flex flex-wrap gap-4 text-sm text-text-muted">
             <span className="flex items-center gap-1.5">
               <Clock size={14} />
-              {formatDate(event.event_date)} · {formatTime(event.start_time)} – {formatTime(event.end_time)}
+              {formatDate(event.event_date)} · {formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
             </span>
             <span className="flex items-center gap-1.5">
               <Ticket size={14} />
@@ -98,6 +114,18 @@ export default async function EventPage({ params }: Props) {
             </div>
           )}
 
+          {band && (
+            <div>
+              <h3 className="label">Grup</h3>
+              <Link href={`/bands/${band.id}`} className="flex items-center gap-3 p-3 rounded-lg bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm">
+                  {band.name?.[0]}
+                </div>
+                <p className="font-medium text-text-primary text-sm">{band.name}</p>
+              </Link>
+            </div>
+          )}
+
           {venue && (
             <div>
               <h3 className="label">Mekan</h3>
@@ -111,6 +139,13 @@ export default async function EventPage({ params }: Props) {
               </Link>
             </div>
           )}
+
+          <EventMediaSection
+            eventId={id}
+            initialPoster={posterUrl}
+            initialPhotos={photos}
+            isParty={isParty}
+          />
         </div>
       </div>
 

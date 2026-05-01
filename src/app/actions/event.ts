@@ -4,6 +4,69 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ADMIN_EMAIL } from '@/lib/admin'
 
+async function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+async function isEventParty(userId: string, userEmail: string | undefined, eventId: string): Promise<boolean> {
+  if (userEmail === ADMIN_EMAIL) return true
+  const admin = await getAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('artist_id, band_id, venue_id, artists(profile_id), bands(creator_id), venues(owner_id)')
+    .eq('id', eventId)
+    .single()
+  if (!ev) return false
+  const a = ev.artists as any
+  const b = ev.bands as any
+  const v = ev.venues as any
+  return (
+    a?.profile_id === userId ||
+    b?.creator_id === userId ||
+    v?.owner_id === userId
+  )
+}
+
+export async function updateEventPoster(eventId: string, url: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  if (!(await isEventParty(user.id, user.email ?? undefined, eventId))) return { success: false, error: 'Yetkiniz yok.' }
+  const admin = await getAdminClient()
+  const { error } = await admin.from('events').update({ poster_url: url } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function addEventPhoto(eventId: string, url: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  if (!(await isEventParty(user.id, user.email ?? undefined, eventId))) return { success: false, error: 'Yetkiniz yok.' }
+  const admin = await getAdminClient()
+  const { data: ev } = await admin.from('events').select('photos').eq('id', eventId).single()
+  const current: string[] = (ev as any)?.photos ?? []
+  const { error } = await admin.from('events').update({ photos: [...current, url] } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function removeEventPhoto(eventId: string, url: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  if (!(await isEventParty(user.id, user.email ?? undefined, eventId))) return { success: false, error: 'Yetkiniz yok.' }
+  const admin = await getAdminClient()
+  const { data: ev } = await admin.from('events').select('photos').eq('id', eventId).single()
+  const current: string[] = (ev as any)?.photos ?? []
+  const { error } = await admin.from('events').update({ photos: current.filter(p => p !== url) } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function closeSlot(slotId: string) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
