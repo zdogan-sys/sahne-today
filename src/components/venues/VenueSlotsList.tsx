@@ -52,6 +52,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
     const res = await closeSlot(slotId)
     if (res.success) {
       setSlots(prev => prev.filter(s => s.id !== slotId))
+      setError('')
     } else {
       setError(res.error ?? 'Slot silinemedi.')
     }
