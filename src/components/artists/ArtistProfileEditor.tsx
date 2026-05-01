@@ -17,6 +17,7 @@ interface Props {
     instruments: string[]
     bio: string | null
     social_links?: SocialLinksData | null
+    is_hidden?: boolean
   }
 }
 
@@ -31,6 +32,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const [instruments, setInstruments] = useState<string[]>(initialData.instruments || [])
   const [bio, setBio] = useState(initialData.bio || '')
   const [socialLinks, setSocialLinks] = useState<SocialLinksData>(initialData.social_links ?? {})
+  const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
   const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
 
   async function handleSave() {
@@ -52,6 +54,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
         instruments: activeTab === 'music' ? instruments : [],
         bio: bio || null,
         social_links: socialLinks,
+        is_hidden: isHidden,
       } as any)
       .eq('id', artistId)
 
@@ -142,6 +145,26 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
           </div>
 
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
+
+          <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
+            <div>
+              <p className="text-sm text-text-primary">Profili Gizle</p>
+              <p className="text-xs text-text-muted">Profilin sanatçı listesinde görünmez</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsHidden(!isHidden)}
+              className={cn(
+                'relative w-11 h-6 rounded-full transition-colors',
+                isHidden ? 'bg-red-500/70' : 'bg-[rgba(228,224,216,0.15)]'
+              )}
+            >
+              <span className={cn(
+                'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
+                isHidden ? 'translate-x-5' : 'translate-x-0'
+              )} />
+            </button>
+          </div>
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 

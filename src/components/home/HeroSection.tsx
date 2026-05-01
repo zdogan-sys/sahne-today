@@ -1,6 +1,13 @@
 import Link from 'next/link'
+import { HeroPosterImage } from './HeroPosterImage'
 
-export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
+interface Props {
+  isLoggedIn: boolean
+  isAdmin: boolean
+  posterUrl: string | null
+}
+
+export function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
   return (
     <section className="relative overflow-hidden px-4 pt-12 pb-10 md:pt-20 md:pb-16">
       {/* Gradient orb */}
@@ -12,7 +19,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto">
+      <div className="relative max-w-7xl mx-auto flex items-start">
         <div className="max-w-2xl">
           <p className="text-accent text-sm font-medium uppercase tracking-widest mb-3">
             Türkiye'nin Performans Ekosistemi
@@ -45,6 +52,11 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               </>
             )}
           </div>
+        </div>
+
+        {/* Poster — desktop only */}
+        <div className="hidden lg:block flex-shrink-0 w-80 h-[480px] -ml-36">
+          <HeroPosterImage url={posterUrl} isAdmin={isAdmin} />
         </div>
       </div>
     </section>

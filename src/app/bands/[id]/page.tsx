@@ -14,7 +14,7 @@ import { BandApplyButton } from '@/components/bands/BandApplyButton'
 import { BandProfileEditor } from '@/components/bands/BandProfileEditor'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
-import { EventCalendar } from '@/components/ui/EventCalendar'
+import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -214,21 +214,19 @@ export default async function BandPage({ params }: Props) {
           </div>
         ) : null}
 
-        {bandEvents.length > 0 && (
-          <div>
-            <h3 className="label mb-4">Etkinlik Takvimi</h3>
-            <EventCalendar
-              events={bandEvents.map((ev: any) => ({
-                id: ev.id,
-                event_date: ev.event_date,
-                title: ev.title,
-                start_time: ev.start_time,
-                end_time: ev.end_time ?? null,
-                subtitle: ev.venues?.name ?? null,
-              }))}
-            />
-          </div>
-        )}
+        <BandCalendarSection
+          bandId={b.id}
+          isCreator={isCreator}
+          initialEvents={bandEvents.map((ev: any) => ({
+            id: ev.id,
+            event_date: ev.event_date,
+            title: ev.title,
+            start_time: ev.start_time,
+            end_time: ev.end_time ?? null,
+            subtitle: ev.venues?.name ?? null,
+            status: ev.status,
+          }))}
+        />
 
         <Link
           href={`/bands/${b.id}/photos`}

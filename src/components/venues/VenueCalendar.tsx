@@ -99,6 +99,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   const [slotEventType, setSlotEventType] = useState('')
 
   // Performer search
+  const [performerTab, setPerformerTab] = useState<'artist' | 'band'>('artist')
   const [performerQuery, setPerformerQuery] = useState('')
   const [allArtists, setAllArtists] = useState<{ id: string; stage_name: string; city: string | null }[]>([])
   const [allBands, setAllBands] = useState<{ id: string; name: string; city: string | null }[]>([])
@@ -121,18 +122,17 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   const filteredPerformers: Performer[] = (() => {
     const q = performerQuery.trim().toLowerCase()
     const city = venueCity?.toLowerCase()
-    const all = [
-      ...allArtists
-        .filter(a => !q || a.stage_name.toLowerCase().includes(q))
-        .map(a => ({ id: a.id, name: a.stage_name, type: 'artist' as const, city: a.city?.toLowerCase() ?? null })),
-      ...allBands
-        .filter(b => !q || b.name.toLowerCase().includes(q))
-        .map(b => ({ id: b.id, name: b.name, type: 'band' as const, city: b.city?.toLowerCase() ?? null })),
-    ]
-    if (!city) return all
+    const source = performerTab === 'artist'
+      ? allArtists
+          .filter(a => !q || a.stage_name.toLowerCase().includes(q))
+          .map(a => ({ id: a.id, name: a.stage_name, type: 'artist' as const, city: a.city?.toLowerCase() ?? null }))
+      : allBands
+          .filter(b => !q || b.name.toLowerCase().includes(q))
+          .map(b => ({ id: b.id, name: b.name, type: 'band' as const, city: b.city?.toLowerCase() ?? null }))
+    if (!city) return source
     return [
-      ...all.filter(p => p.city === city),
-      ...all.filter(p => p.city !== city),
+      ...source.filter(p => p.city === city),
+      ...source.filter(p => p.city !== city),
     ]
   })()
 
@@ -164,6 +164,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     setOwnerEndTime('')
     setOwnerSuccess(false)
     setOwnerError('')
+    setPerformerTab('artist')
     setPerformerQuery('')
     setSelectedPerformer(null)
     setShowPerformerList(false)
@@ -416,6 +417,26 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   {/* Performer search */}
                   <div>
                     <label className="label">Sanatçı / Grup</label>
+                    {!selectedPerformer && (
+                      <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)] mb-2">
+                        <button
+                          type="button"
+                          onClick={() => { setPerformerTab('artist'); setPerformerQuery('') }}
+                          className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors',
+                            performerTab === 'artist' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
+                        >
+                          <Music2 size={11} /> Sanatçı ({allArtists.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setPerformerTab('band'); setPerformerQuery('') }}
+                          className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors border-l border-[rgba(228,224,216,0.15)]',
+                            performerTab === 'band' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
+                        >
+                          <Users size={11} /> Grup ({allBands.length})
+                        </button>
+                      </div>
+                    )}
                     {selectedPerformer ? (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
                         {selectedPerformer.type === 'artist'
@@ -439,7 +460,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                           onChange={e => { setPerformerQuery(e.target.value); setShowPerformerList(true) }}
                           onFocus={() => setShowPerformerList(true)}
                           onBlur={() => setTimeout(() => setShowPerformerList(false), 150)}
-                          placeholder="Sanatçı veya grup adı yazın..."
+                          placeholder={performerTab === 'artist' ? 'Sanatçı adı yazın...' : 'Grup adı yazın...'}
                           className="input-field text-sm"
                           autoComplete="off"
                         />
@@ -460,7 +481,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                         )}
                         {showPerformerList && performerQuery.trim() && filteredPerformers.length === 0 && (
                           <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 shadow-xl">
-                            <p className="text-text-muted text-xs">Kayıtlı sanatçı/grup bulunamadı – ad olarak kaydedilecek</p>
+                            <p className="text-text-muted text-xs">
+                              {performerTab === 'artist' ? 'Kayıtlı sanatçı bulunamadı' : 'Kayıtlı grup bulunamadı'} – ad olarak kaydedilecek
+                            </p>
                           </div>
                         )}
                       </div>

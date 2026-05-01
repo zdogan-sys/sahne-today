@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VideoEmbed } from '@/components/artists/VideoEmbed'
 import { formatDate } from '@/lib/utils'
-import { MapPin, ArrowLeft, ChevronDown, Mail } from 'lucide-react'
+import { MapPin, ArrowLeft, ChevronDown, Mail, Building2 } from 'lucide-react'
 import type { Artist, Profile, Event, Venue } from '@/lib/supabase/types'
 import { SocialLinks } from '@/components/ui/SocialLinks'
+import { VENUE_TYPE_LABELS } from '@/lib/utils'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 
@@ -43,6 +44,14 @@ export default async function ArtistPage({ params }: Props) {
     supabase.from('band_members').select('band_id').eq('artist_id', id).eq('status', 'accepted'),
   ])
 
+  if (!artistRes.data) notFound()
+  const artistProfileId = (artistRes.data as any).profile_id
+  const venueRes = await supabase
+    .from('venues')
+    .select('id, name, city, district, venue_type, photo_url')
+    .eq('owner_id', artistProfileId)
+    .maybeSingle()
+
   const bandIds = (membershipsRes.data ?? []).map((m: any) => m.band_id as string)
 
   const eventsRes = await (bandIds.length > 0
@@ -58,11 +67,11 @@ export default async function ArtistPage({ params }: Props) {
         .order('event_date', { ascending: true })
   )
 
-  if (!artistRes.data) notFound()
   const artist = artistRes.data as unknown as ArtistFull
   const events = (eventsRes.data ?? []) as unknown as EventFull[]
   const profile = artist.profiles
   const isOwner = user?.id === artist.profile_id
+  const ownedVenue = venueRes.data as any
 
   const initials = artist.stage_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -170,6 +179,37 @@ export default async function ArtistPage({ params }: Props) {
               status: (ev as any).status,
             }))}
         />
+
+        {ownedVenue && (
+          <div>
+            <h3 className="label">Mekan</h3>
+            <Link
+              href={`/venues/${ownedVenue.id}`}
+              className="card p-4 flex items-center gap-4 hover:border-accent/30 transition-colors"
+            >
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-accent/10 flex items-center justify-center">
+                {ownedVenue.photo_url ? (
+                  <Image src={ownedVenue.photo_url} alt={ownedVenue.name} width={48} height={48} className="object-cover w-full h-full" />
+                ) : (
+                  <Building2 size={20} className="text-accent/50" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-text-primary text-sm">{ownedVenue.name}</p>
+                <div className="flex items-center gap-1 text-text-muted text-xs mt-0.5">
+                  <MapPin size={11} />
+                  <span>{ownedVenue.district ? `${ownedVenue.district}, ` : ''}{ownedVenue.city}</span>
+                </div>
+                {ownedVenue.venue_type && (
+                  <span className="text-xs text-text-muted mt-0.5 block">
+                    {VENUE_TYPE_LABELS[ownedVenue.venue_type] ?? ownedVenue.venue_type}
+                  </span>
+                )}
+              </div>
+              <span className="text-accent text-xs flex-shrink-0">→</span>
+            </Link>
+          </div>
+        )}
 
         {artist.social_links && Object.keys(artist.social_links).length > 0 && (
           <div>

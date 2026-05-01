@@ -8,13 +8,24 @@ import { EventFeed } from '@/components/home/EventFeed'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
+const ADMIN_EMAIL = 'z_dogan@hotmail.com'
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const { data: posterSetting } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'hero_poster_url')
+    .single()
+
+  const posterUrl = posterSetting?.value ?? null
+  const isAdmin = user?.email === ADMIN_EMAIL
+
   return (
     <div className="min-h-screen">
-      <HeroSection isLoggedIn={!!user} />
+      <HeroSection isLoggedIn={!!user} isAdmin={isAdmin} posterUrl={posterUrl} />
       <Suspense fallback={<StatsSkeleton />}>
         <StatsBarServer />
       </Suspense>

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
-import { Clock, Check, X } from 'lucide-react'
+import { DAY_NAMES, formatTime, formatDate, VENUE_TYPE_LABELS } from '@/lib/utils'
+import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { respondToCancelRequest } from '@/app/actions/event'
 import { BandSection } from '@/components/bands/BandSection'
@@ -13,6 +14,7 @@ import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSectio
 
 export function ArtistDashboard({ userId }: { userId: string }) {
   const [artist, setArtist] = useState<any>(null)
+  const [venue, setVenue] = useState<any>(null)
   const [applications, setApplications] = useState<any[]>([])
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -33,13 +35,13 @@ export function ArtistDashboard({ userId }: { userId: string }) {
   }, [])
 
   async function load() {
-    const { data: artistData } = await supabase
-      .from('artists')
-      .select('*')
-      .eq('profile_id', userId)
-      .single()
+    const [{ data: artistData }, { data: venueData }] = await Promise.all([
+      supabase.from('artists').select('*').eq('profile_id', userId).single(),
+      supabase.from('venues').select('id, name, city, district, venue_type, photo_url').eq('owner_id', userId).maybeSingle(),
+    ])
 
     setArtist(artistData)
+    setVenue(venueData)
 
     if (artistData) {
       const [appRes, inviteRes, membershipRes] = await Promise.all([
@@ -144,6 +146,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
               instruments: artist.instruments,
               bio: artist.bio,
               social_links: artist.social_links,
+              is_hidden: artist.is_hidden,
             }}
           />
         </div>
@@ -177,6 +180,35 @@ export function ArtistDashboard({ userId }: { userId: string }) {
           )}
         </div>
       </div>
+
+      {/* Venue owned by this artist */}
+      {venue && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">MEKANIM</h2>
+          <Link href={`/venues/${venue.id}`} className="card p-4 flex items-center gap-4 hover:border-accent/30 transition-colors block">
+            <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-accent/10 flex items-center justify-center">
+              {venue.photo_url ? (
+                <Image src={venue.photo_url} alt={venue.name} width={56} height={56} className="object-cover w-full h-full" />
+              ) : (
+                <Building2 size={22} className="text-accent/50" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-text-primary">{venue.name}</p>
+              <div className="flex items-center gap-1 text-text-muted text-xs mt-0.5">
+                <MapPin size={11} />
+                <span>{venue.district ? `${venue.district}, ` : ''}{venue.city}</span>
+              </div>
+              {venue.venue_type && (
+                <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)] mt-1.5 inline-block">
+                  {VENUE_TYPE_LABELS[venue.venue_type] ?? venue.venue_type}
+                </span>
+              )}
+            </div>
+            <span className="text-accent text-xs flex-shrink-0">Görüntüle →</span>
+          </Link>
+        </div>
+      )}
 
       {/* Pending band invitations */}
       {pendingInvites.length > 0 && (

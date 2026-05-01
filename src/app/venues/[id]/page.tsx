@@ -87,6 +87,7 @@ export default async function VenuePage({ params }: Props) {
               description: venue.description,
               photo_url: venue.photo_url ?? null,
               logo_url: venue.logo_url ?? null,
+              is_hidden: (venue as any).is_hidden ?? false,
             }}
           />
         )}
