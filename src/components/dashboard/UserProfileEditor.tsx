@@ -52,6 +52,8 @@ export function UserProfileEditor({ userId, initialData }: Props) {
       setSuccess('E-posta adresi değiştirildi. Lütfen gelen onay mailini kontrol edin.')
     }
 
+    await supabase.auth.updateUser({ data: { display_name: displayName.trim() } })
+
     const { error: dbErr } = await supabase
       .from('profiles')
       .update({
