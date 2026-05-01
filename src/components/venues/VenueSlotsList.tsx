@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Trash2, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
+import { closeSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
@@ -48,11 +49,8 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
 
   async function handleDelete(slotId: string) {
     setDeleting(slotId)
-    const { error } = await supabase
-      .from('slots')
-      .update({ status: 'closed' })
-      .eq('id', slotId)
-    if (!error) {
+    const res = await closeSlot(slotId)
+    if (res.success) {
       setSlots(prev => prev.filter(s => s.id !== slotId))
     }
     setDeleting(null)
