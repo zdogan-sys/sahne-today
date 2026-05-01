@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
-import { MapPin, Check, X, Clock, CalendarX } from 'lucide-react'
+import { MapPin, Check, X, Clock, CalendarX, SendHorizonal } from 'lucide-react'
+import { withdrawVenueOffer } from '@/app/actions/offer'
+import { OfferCountdown } from '@/components/ui/OfferCountdown'
 
 export function VenueDashboard({ userId }: { userId: string }) {
   const [venues, setVenues] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [eventRequests, setEventRequests] = useState<any[]>([])
   const [confirmedEvents, setConfirmedEvents] = useState<any[]>([])
+  const [offeredEvents, setOfferedEvents] = useState<any[]>([])
+  const [withdrawConfirm, setWithdrawConfirm] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -38,7 +42,7 @@ export function VenueDashboard({ userId }: { userId: string }) {
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
 
-    const [appRes, eventReqRes, confirmedRes] = await Promise.all([
+    const [appRes, eventReqRes, confirmedRes, offeredRes] = await Promise.all([
       slotIds.length > 0
         ? supabase
             .from('applications')
@@ -64,12 +68,21 @@ export function VenueDashboard({ userId }: { userId: string }) {
             .gte('event_date', new Date().toISOString().split('T')[0])
             .order('event_date', { ascending: true })
         : Promise.resolve({ data: [] }),
+      venueIds.length > 0
+        ? supabase
+            .from('events')
+            .select('id, title, event_date, start_time, expires_at, artists(id, stage_name), bands(id, name)')
+            .eq('status', 'offered')
+            .in('venue_id', venueIds)
+            .order('expires_at', { ascending: true })
+        : Promise.resolve({ data: [] }),
     ])
 
     setVenues(venueData ?? [])
     setApplications(appRes.data ?? [])
     setEventRequests(eventReqRes.data ?? [])
     setConfirmedEvents(confirmedRes.data ?? [])
+    setOfferedEvents(offeredRes.data ?? [])
     setLoading(false)
   }
 
@@ -104,6 +117,14 @@ export function VenueDashboard({ userId }: { userId: string }) {
       .update({ status: approve ? 'confirmed' : 'cancelled' } as any)
       .eq('id', eventId)
     setEventRequests(prev => prev.filter(e => e.id !== eventId))
+  }
+
+  async function handleWithdraw(eventId: string) {
+    const res = await withdrawVenueOffer(eventId)
+    if (res.success) {
+      setOfferedEvents(prev => prev.filter(e => e.id !== eventId))
+    }
+    setWithdrawConfirm(null)
   }
 
   async function requestCancel(eventId: string) {
@@ -148,6 +169,49 @@ export function VenueDashboard({ userId }: { userId: string }) {
           </div>
         )}
       </div>
+
+      {offeredEvents.length > 0 && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">GÖNDERİLEN TEKLİFLER</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">Sanatçının yanıtını bekliyorsunuz.</p>
+          <div className="space-y-3">
+            {offeredEvents.map((ev: any) => (
+              <div key={ev.id} className="card p-4 border-accent/20">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary text-sm">{ev.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20 flex items-center gap-1">
+                        <SendHorizonal size={9} /> Yanıt Bekleniyor
+                      </span>
+                      {ev.expires_at && <OfferCountdown expiresAt={ev.expires_at} />}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {withdrawConfirm === ev.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-text-muted">Geri çekilsin mi?</span>
+                        <button onClick={() => handleWithdraw(ev.id)} className="text-xs text-red-400 hover:text-red-300 font-medium">Evet</button>
+                        <button onClick={() => setWithdrawConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">Vazgeç</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setWithdrawConfirm(ev.id)}
+                        className="text-xs text-text-muted hover:text-red-400 transition-colors flex items-center gap-1"
+                      >
+                        <X size={12} /> Geri Çek
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {eventRequests.length > 0 && (
         <div>

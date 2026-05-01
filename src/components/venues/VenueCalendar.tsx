@@ -99,6 +99,8 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   const [slotNotes, setSlotNotes] = useState('')
   const [slotEventType, setSlotEventType] = useState('')
 
+  const [offerTtl, setOfferTtl] = useState<24 | 48>(48)
+
   // Performer search
   const [performerTab, setPerformerTab] = useState<'artist' | 'band'>('artist')
   const [performerQuery, setPerformerQuery] = useState('')
@@ -281,6 +283,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       artistId: selectedPerformer?.type === 'artist' ? selectedPerformer.id : null,
       bandId: selectedPerformer?.type === 'band' ? selectedPerformer.id : null,
       artistName: freeTextName,
+      ttlHours: selectedPerformer ? offerTtl : undefined,
     })
 
     if (!res.success || !res.data) {
@@ -545,6 +548,26 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                 </>
               )}
 
+              {selectedPerformer && (
+                <div>
+                  <label className="label">Teklif Geçerlilik Süresi</label>
+                  <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)]">
+                    {([24, 48] as const).map(h => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setOfferTtl(h)}
+                        className={cn('flex-1 py-1.5 text-xs font-medium transition-colors border-l border-[rgba(228,224,216,0.15)] first:border-l-0',
+                          offerTtl === h ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
+                      >
+                        {h} saat
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-text-muted text-xs mt-1">Sanatçı bu süre içinde yanıt vermezse teklif otomatik sona erer.</p>
+                </div>
+              )}
+
               {ownerError && <p className="text-red-400 text-xs">{ownerError}</p>}
             </div>
           )}
@@ -557,7 +580,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
               disabled={ownerLoading || (ownerAddType === 'event' && (!ownerTitle || !ownerStartTime))}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
-              {ownerLoading ? 'Ekleniyor...' : 'Takvime Ekle'}
+              {ownerLoading ? 'Ekleniyor...' : selectedPerformer ? `Teklif Gönder (${offerTtl}sa)` : 'Takvime Ekle'}
             </button>
           </div>
         )}

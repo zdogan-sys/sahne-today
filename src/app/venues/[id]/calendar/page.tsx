@@ -54,12 +54,19 @@ export default async function VenueCalendarPage({ params }: Props) {
           .eq('venue_id', id)
           .eq('status', 'open')
       : Promise.resolve({ data: [] }),
-    supabase
-      .from('events')
-      .select('id, event_date, title, start_time, end_time, artists(stage_name), bands(name)')
-      .eq('venue_id', id)
-      .eq('status', 'confirmed')
-      .order('event_date', { ascending: true }),
+    isOwner
+      ? supabase
+          .from('events')
+          .select('id, event_date, title, start_time, end_time, status, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .in('status', ['confirmed', 'offered'])
+          .order('event_date', { ascending: true })
+      : supabase
+          .from('events')
+          .select('id, event_date, title, start_time, end_time, status, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .eq('status', 'confirmed')
+          .order('event_date', { ascending: true }),
     canApply
       ? supabase
           .from('band_members')

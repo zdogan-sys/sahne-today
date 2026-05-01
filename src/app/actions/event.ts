@@ -143,16 +143,22 @@ export async function addVenueEvent(payload: {
   artistId: string | null
   bandId: string | null
   artistName: string | null
+  ttlHours?: number
 }) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
   if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
 
   const admin = await getAdminClient()
-  if (user.email !== ADMIN_EMAIL) {
-    const { data: venue } = await admin.from('venues').select('owner_id').eq('id', payload.venueId).single()
-    if (!venue || venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
-  }
+  const { data: venue } = await admin.from('venues').select('owner_id, name').eq('id', payload.venueId).single()
+  if (!venue) return { success: false, error: 'Mekan bulunamadı.' }
+  if (user.email !== ADMIN_EMAIL && venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+
+  const hasLinkedPerformer = !!payload.artistId || !!payload.bandId
+  const status = hasLinkedPerformer ? 'offered' : 'confirmed'
+  const expiresAt = hasLinkedPerformer
+    ? new Date(Date.now() + (payload.ttlHours ?? 48) * 3600 * 1000).toISOString()
+    : null
 
   const { data, error } = await admin.from('events').insert({
     venue_id: payload.venueId,
@@ -164,10 +170,33 @@ export async function addVenueEvent(payload: {
     band_id: payload.bandId,
     artist_name: payload.artistName,
     entry_type: 'free',
-    status: 'confirmed',
-  }).select('id, event_date, title, start_time, end_time, artist_id, band_id').single()
+    status,
+    expires_at: expiresAt,
+  } as any).select('id, event_date, title, start_time, end_time, artist_id, band_id').single()
 
   if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+
+  // Notify performer
+  if (hasLinkedPerformer) {
+    let performerProfileId: string | null = null
+    if (payload.artistId) {
+      const { data: a } = await admin.from('artists').select('profile_id').eq('id', payload.artistId).single()
+      performerProfileId = (a as any)?.profile_id ?? null
+    } else if (payload.bandId) {
+      const { data: b } = await admin.from('bands').select('creator_id').eq('id', payload.bandId).single()
+      performerProfileId = (b as any)?.creator_id ?? null
+    }
+    if (performerProfileId) {
+      await admin.from('notifications').insert({
+        user_id: performerProfileId,
+        type: 'offer_received',
+        title: 'Yeni Sahne Teklifi',
+        body: `${venue.name} sizi ${payload.eventDate} tarihine davet etti. ${payload.ttlHours ?? 48} saat içinde yanıtlayın.`,
+        data: { event_id: (data as any).id, venue_id: payload.venueId, venue_name: venue.name },
+      })
+    }
+  }
+
   return { success: true, data: data as any }
 }
 

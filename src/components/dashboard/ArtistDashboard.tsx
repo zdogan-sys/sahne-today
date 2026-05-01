@@ -8,6 +8,8 @@ import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { respondToCancelRequest } from '@/app/actions/event'
+import { respondToVenueOffer } from '@/app/actions/offer'
+import { OfferCountdown } from '@/components/ui/OfferCountdown'
 import { BandSection } from '@/components/bands/BandSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
@@ -18,6 +20,8 @@ export function ArtistDashboard({ userId }: { userId: string }) {
   const [applications, setApplications] = useState<any[]>([])
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
+  const [incomingOffers, setIncomingOffers] = useState<any[]>([])
+  const [respondingOffer, setRespondingOffer] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -44,7 +48,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
     setVenue(venueData)
 
     if (artistData) {
-      const [appRes, inviteRes, membershipRes] = await Promise.all([
+      const [appRes, inviteRes, membershipRes, offersRes] = await Promise.all([
         supabase
           .from('applications')
           .select('*, slots(*, venues(name, city, district))')
@@ -59,7 +63,13 @@ export function ArtistDashboard({ userId }: { userId: string }) {
           .from('band_members')
           .select('band_id')
           .eq('artist_id', artistData.id)
-          .eq('status', 'accepted')
+          .eq('status', 'accepted'),
+        supabase
+          .from('events')
+          .select('id, title, event_date, start_time, end_time, expires_at, venues(id, name, city, district)')
+          .eq('artist_id', artistData.id)
+          .eq('status', 'offered')
+          .order('expires_at', { ascending: true }),
       ])
 
       const bandIds = (membershipRes.data ?? []).map((m: any) => m.band_id as string)
@@ -79,7 +89,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
       const { data: evData } = await eventsQ
 
       setApplications(appRes.data ?? [])
-      
+      setIncomingOffers(offersRes.data ?? [])
       const realInvites = (inviteRes.data ?? []).filter((inv: any) => inv.role !== 'Applicant')
       setPendingInvites(realInvites)
       setEvents(evData ?? [])
@@ -91,6 +101,13 @@ export function ArtistDashboard({ userId }: { userId: string }) {
     const next = !artist.looking_for_band
     await supabase.from('artists').update({ looking_for_band: next } as any).eq('id', artist.id)
     setArtist((prev: any) => ({ ...prev, looking_for_band: next }))
+  }
+
+  async function handleOfferResponse(eventId: string, accept: boolean) {
+    setRespondingOffer(eventId)
+    await respondToVenueOffer(eventId, accept)
+    setRespondingOffer(null)
+    await load()
   }
 
   async function handleCancelRequest(eventId: string, approve: boolean) {
@@ -207,6 +224,50 @@ export function ArtistDashboard({ userId }: { userId: string }) {
             </div>
             <span className="text-accent text-xs flex-shrink-0">Görüntüle →</span>
           </Link>
+        </div>
+      )}
+
+      {/* Incoming venue offers */}
+      {incomingOffers.length > 0 && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">GELEN TEKLİFLER</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">Mekanlar sizi sahnelerine davet ediyor. Süre dolmadan yanıt verin.</p>
+          <div className="space-y-3">
+            {incomingOffers.map((ev: any) => (
+              <div key={ev.id} className="card p-4 border-accent/25">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary text-sm">{ev.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {ev.venues?.name} · {ev.venues?.district ? `${ev.venues.district}, ` : ''}{ev.venues?.city}
+                    </p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {formatDate(ev.event_date)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
+                    </p>
+                    {ev.expires_at && <div className="mt-1.5"><OfferCountdown expiresAt={ev.expires_at} /></div>}
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleOfferResponse(ev.id, false)}
+                      disabled={respondingOffer === ev.id}
+                      title="Reddet"
+                      className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors disabled:opacity-50"
+                    >
+                      <X size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleOfferResponse(ev.id, true)}
+                      disabled={respondingOffer === ev.id}
+                      title="Kabul Et"
+                      className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors disabled:opacity-50"
+                    >
+                      <Check size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

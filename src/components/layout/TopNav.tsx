@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 const navLinks = [
   { href: '/events', label: 'Etkinlikler' },
@@ -19,7 +20,7 @@ export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cityOpen, setCityOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string>('Tümü')
-  const [user, setUser] = useState<{ email?: string; display_name?: string } | null>(null)
+  const [user, setUser] = useState<{ id?: string; email?: string; display_name?: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -30,12 +31,12 @@ export function TopNav() {
     }
 
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUser({ email: user.email, display_name: user.user_metadata?.display_name })
+      if (user) setUser({ id: user.id, email: user.email, display_name: user.user_metadata?.display_name })
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser({ email: session.user.email, display_name: session.user.user_metadata?.display_name })
+        setUser({ id: session.user.id, email: session.user.email, display_name: session.user.user_metadata?.display_name })
       } else {
         setUser(null)
       }
@@ -119,6 +120,7 @@ export function TopNav() {
                 Mekan Girişi
               </Link>
               <div className="w-px h-4 bg-[rgba(228,224,216,0.1)] mx-1"></div>
+              {user.id && <NotificationBell userId={user.id} />}
               <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
                 <LayoutDashboard size={14} />
                 {displayName}

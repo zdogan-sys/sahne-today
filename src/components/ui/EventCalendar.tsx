@@ -11,7 +11,7 @@ export interface CalendarEventItem {
   start_time: string
   end_time?: string | null
   subtitle?: string | null
-  status?: 'confirmed' | 'pending' | 'cancelled'
+  status?: 'confirmed' | 'pending' | 'offered' | 'cancelled' | 'withdrawn' | 'expired' | 'rejected'
 }
 
 interface Props {
@@ -42,7 +42,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
 
   const byDate = new Map<string, CalendarEventItem[]>()
   for (const ev of events) {
-    if (ev.status === 'cancelled') continue
+    if (['cancelled', 'withdrawn', 'expired', 'rejected'].includes(ev.status ?? '')) continue
     const arr = byDate.get(ev.event_date) ?? []
     arr.push(ev)
     byDate.set(ev.event_date, arr)
@@ -107,8 +107,8 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
           const dateStr = toISO(date)
           const dayEvents = byDate.get(dateStr) ?? []
           const hasEvent = dayEvents.length > 0
-          const hasPending = dayEvents.some(e => e.status === 'pending')
-          const hasConfirmed = dayEvents.some(e => e.status !== 'pending')
+          const hasPending = dayEvents.some(e => e.status === 'pending' || e.status === 'offered')
+          const hasConfirmed = dayEvents.some(e => e.status === 'confirmed')
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
 
