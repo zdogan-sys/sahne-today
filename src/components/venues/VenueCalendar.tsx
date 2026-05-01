@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, X, Music2, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn } from '@/lib/utils'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
+import { addVenueEvent } from '@/app/actions/event'
 
 interface SlotEntry {
   id: string
@@ -271,23 +272,21 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
     const freeTextName = !selectedPerformer && performerQuery.trim() ? performerQuery.trim() : null
 
-    const { data, error: err } = await supabase.from('events').insert({
-      venue_id: venueId,
+    const res = await addVenueEvent({
+      venueId,
       title: ownerTitle,
-      event_date: toISO(selectedDate),
-      start_time: ownerStartTime,
-      end_time: ownerEndTime || null,
-      artist_id: selectedPerformer?.type === 'artist' ? selectedPerformer.id : null,
-      band_id: selectedPerformer?.type === 'band' ? selectedPerformer.id : null,
-      artist_name: freeTextName,
-      entry_type: 'free',
-      status: 'confirmed',
-    } as any).select('id, event_date, title, start_time, end_time').single()
+      eventDate: toISO(selectedDate),
+      startTime: ownerStartTime,
+      endTime: ownerEndTime || null,
+      artistId: selectedPerformer?.type === 'artist' ? selectedPerformer.id : null,
+      bandId: selectedPerformer?.type === 'band' ? selectedPerformer.id : null,
+      artistName: freeTextName,
+    })
 
-    if (err || !data) {
-      setOwnerError('Etkinlik eklenemedi.')
+    if (!res.success || !res.data) {
+      setOwnerError(res.error ?? 'Etkinlik eklenemedi.')
     } else {
-      const d = data as any
+      const d = res.data
       const newEvent: CalendarEvent = {
         id: d.id,
         event_date: d.event_date,

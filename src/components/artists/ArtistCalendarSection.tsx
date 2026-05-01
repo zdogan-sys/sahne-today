@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { ALL_GENRES } from '@/lib/constants'
+import { addArtistEvent, cancelEvent } from '@/app/actions/event'
 
 interface VenueOption { id: string; name: string; city: string; district: string }
 
@@ -78,12 +79,8 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
 
   async function handleCancel(eventId: string) {
     setCancelling(true)
-    const { error: err } = await supabase
-      .from('events')
-      .update({ status: 'cancelled' } as any)
-      .eq('id', eventId)
-
-    if (!err) {
+    const res = await cancelEvent(eventId)
+    if (res.success) {
       setEvents(prev => prev.filter(e => e.id !== eventId))
       setDayEvents(prev => prev.filter(e => e.id !== eventId))
     }
@@ -106,33 +103,29 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
     setLoading(true)
     setError('')
 
-    const isRegisteredVenue = !!selectedVenue
-    const status = isRegisteredVenue ? 'pending' : 'confirmed'
-
-    const { data, error: err } = await supabase.from('events').insert({
-      artist_id: artistId,
+    const res = await addArtistEvent({
+      artistId,
       title,
-      event_date: toISO(selectedDate),
-      start_time: startTime,
-      end_time: endTime || null,
-      venue_id: selectedVenue?.id ?? null,
-      venue_name: !selectedVenue && venueNameFree ? venueNameFree : null,
+      eventDate: toISO(selectedDate),
+      startTime,
+      endTime: endTime || null,
+      venueId: selectedVenue?.id ?? null,
+      venueName: !selectedVenue && venueNameFree ? venueNameFree : null,
       genre: genre || null,
-      entry_type: 'free' as const,
-      status,
-    } as any).select('id, event_date, title, start_time, end_time').single()
+    })
 
-    if (err || !data) {
-      setError('Etkinlik eklenemedi.')
+    if (!res.success || !res.data) {
+      setError(res.error ?? 'Etkinlik eklenemedi.')
     } else {
+      const d = res.data
       const newItem: CalendarEventItem = {
-        id: (data as any).id,
-        event_date: (data as any).event_date,
-        title: (data as any).title,
-        start_time: (data as any).start_time,
-        end_time: (data as any).end_time ?? null,
+        id: d.id,
+        event_date: d.event_date,
+        title: d.title,
+        start_time: d.start_time,
+        end_time: d.end_time ?? null,
         subtitle: selectedVenue?.name ?? (venueNameFree || null),
-        status,
+        status: d.status,
       }
       setEvents(prev => [...prev, newItem])
       setDayEvents(prev => [...prev, newItem])

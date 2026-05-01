@@ -67,6 +67,97 @@ export async function removeEventPhoto(eventId: string, url: string) {
   return { success: true }
 }
 
+export async function addArtistEvent(payload: {
+  artistId: string
+  title: string
+  eventDate: string
+  startTime: string
+  endTime: string | null
+  venueId: string | null
+  venueName: string | null
+  genre: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = await getAdminClient()
+  if (user.email !== ADMIN_EMAIL) {
+    const { data: artist } = await admin.from('artists').select('profile_id').eq('id', payload.artistId).single()
+    if (!artist || artist.profile_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  }
+
+  const status = payload.venueId ? 'pending' : 'confirmed'
+  const { data, error } = await admin.from('events').insert({
+    artist_id: payload.artistId,
+    title: payload.title,
+    event_date: payload.eventDate,
+    start_time: payload.startTime,
+    end_time: payload.endTime,
+    venue_id: payload.venueId,
+    venue_name: payload.venueName,
+    genre: payload.genre,
+    entry_type: 'free',
+    status,
+  }).select('id, event_date, title, start_time, end_time').single()
+
+  if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+  return { success: true, data: { ...(data as any), status } }
+}
+
+export async function addVenueEvent(payload: {
+  venueId: string
+  title: string
+  eventDate: string
+  startTime: string
+  endTime: string | null
+  artistId: string | null
+  bandId: string | null
+  artistName: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = await getAdminClient()
+  if (user.email !== ADMIN_EMAIL) {
+    const { data: venue } = await admin.from('venues').select('owner_id').eq('id', payload.venueId).single()
+    if (!venue || venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  }
+
+  const { data, error } = await admin.from('events').insert({
+    venue_id: payload.venueId,
+    title: payload.title,
+    event_date: payload.eventDate,
+    start_time: payload.startTime,
+    end_time: payload.endTime,
+    artist_id: payload.artistId,
+    band_id: payload.bandId,
+    artist_name: payload.artistName,
+    entry_type: 'free',
+    status: 'confirmed',
+  }).select('id, event_date, title, start_time, end_time, artist_id, band_id').single()
+
+  if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+  return { success: true, data: data as any }
+}
+
+export async function cancelEvent(eventId: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = await getAdminClient()
+  if (user.email !== ADMIN_EMAIL) {
+    const ok = await isEventParty(user.id, user.email ?? undefined, eventId)
+    if (!ok) return { success: false, error: 'Yetkiniz yok.' }
+  }
+
+  const { error } = await admin.from('events').update({ status: 'cancelled' }).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function closeSlot(slotId: string) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
