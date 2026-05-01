@@ -52,6 +52,8 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
     const res = await closeSlot(slotId)
     if (res.success) {
       setSlots(prev => prev.filter(s => s.id !== slotId))
+    } else {
+      setError(res.error ?? 'Slot silinemedi.')
     }
     setDeleting(null)
   }
@@ -105,6 +107,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
         )}
       </div>
 
+      {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
       <div className="space-y-2">
         {slots.length === 0 ? (
           <p className="text-text-muted text-sm italic">Henüz açık slot bulunmuyor.</p>

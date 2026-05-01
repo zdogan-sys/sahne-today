@@ -15,12 +15,19 @@ export async function closeSlot(slotId: string) {
 
   const { data: slot } = await supabaseAdmin
     .from('slots')
-    .select('venue_id, venues(owner_id)')
+    .select('venue_id')
     .eq('id', slotId)
     .single()
 
-  const ownerCheck = (slot as any)?.venues?.owner_id
-  if (!slot || ownerCheck !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (!slot) return { success: false, error: 'Slot bulunamadı.' }
+
+  const { data: venue } = await supabaseAdmin
+    .from('venues')
+    .select('owner_id')
+    .eq('id', slot.venue_id)
+    .single()
+
+  if (!venue || venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await supabaseAdmin
     .from('slots')
