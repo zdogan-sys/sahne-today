@@ -1,7 +1,8 @@
-import { Instagram, Twitter, Youtube, Facebook, Linkedin, Music2, ExternalLink } from 'lucide-react'
+import { Instagram, Twitter, Youtube, Facebook, Linkedin, Music2, ExternalLink, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface SocialLinksData {
+  website?: string
   instagram?: string
   twitter?: string
   youtube?: string
@@ -11,12 +12,13 @@ export interface SocialLinksData {
 }
 
 export const SOCIAL_PLATFORMS = [
+  { key: 'website',    label: 'Web Sitesi',  placeholder: 'https://mekan.com',               icon: Globe,        color: '#94a3b8' },
   { key: 'instagram',  label: 'Instagram',   placeholder: 'https://instagram.com/kullanici', icon: Instagram,    color: '#E1306C' },
   { key: 'twitter',    label: 'X / Twitter', placeholder: 'https://x.com/kullanici',         icon: Twitter,      color: '#1DA1F2' },
-  { key: 'youtube',   label: 'YouTube',      placeholder: 'https://youtube.com/@kanal',      icon: Youtube,      color: '#FF0000' },
+  { key: 'youtube',    label: 'YouTube',     placeholder: 'https://youtube.com/@kanal',      icon: Youtube,      color: '#FF0000' },
   { key: 'soundcloud', label: 'SoundCloud',  placeholder: 'https://soundcloud.com/kullanici',icon: Music2,       color: '#FF5500' },
-  { key: 'facebook',  label: 'Facebook',     placeholder: 'https://facebook.com/sayfa',      icon: Facebook,     color: '#1877F2' },
-  { key: 'linkedin',  label: 'LinkedIn',     placeholder: 'https://linkedin.com/in/profil',  icon: Linkedin,     color: '#0A66C2' },
+  { key: 'facebook',   label: 'Facebook',    placeholder: 'https://facebook.com/sayfa',      icon: Facebook,     color: '#1877F2' },
+  { key: 'linkedin',   label: 'LinkedIn',    placeholder: 'https://linkedin.com/in/profil',  icon: Linkedin,     color: '#0A66C2' },
 ] as const
 
 // Display component — profil sayfalarında
