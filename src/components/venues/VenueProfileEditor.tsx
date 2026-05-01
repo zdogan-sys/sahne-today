@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
-import { CITY_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
@@ -219,7 +219,14 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
             </div>
             <div>
               <label className="label">İlçe *</label>
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm" />
+              {city && DISTRICTS_BY_CITY[city] ? (
+                <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm">
+                  <option value="">Seçin</option>
+                  {DISTRICTS_BY_CITY[city].map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              ) : (
+                <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm" />
+              )}
             </div>
           </div>
 

@@ -7,7 +7,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { VENUE_TYPE_LABELS, cn } from '@/lib/utils'
-import { CITY_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 
 const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
 
@@ -158,7 +158,14 @@ export function VenueRegisterForm() {
             </div>
             <div>
               <label className="label">İlçe *</label>
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Kadıköy" className="input-field" />
+              {city && DISTRICTS_BY_CITY[city] ? (
+                <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field">
+                  <option value="">Seçin</option>
+                  {DISTRICTS_BY_CITY[city].map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              ) : (
+                <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="İlçe" className="input-field" />
+              )}
             </div>
           </div>
           <div>
