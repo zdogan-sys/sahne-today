@@ -3,36 +3,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
-import { DAY_NAMES, VENUE_TYPE_LABELS, cn } from '@/lib/utils'
-import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
-
-type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
-type FeeModel = 'free' | 'door_share' | 'guarantee' | 'negotiable'
-
-interface SlotEntry {
-  day_of_week: number
-  start_time: string
-  end_time: string
-  recurrence: 'weekly' | 'biweekly' | 'once'
-  fee_model: FeeModel
-  fee_value: string
-  max_performers: string
-  notes: string
-  event_type: string
-}
+import { VENUE_TYPE_LABELS, cn } from '@/lib/utils'
+import { CITY_OPTIONS } from '@/lib/constants'
 
 const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
-const CITY_OPTIONS = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir']
+
+type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
 
 function ProgressBar({ step }: { step: number }) {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div className={cn(
               'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors',
@@ -42,8 +27,8 @@ function ProgressBar({ step }: { step: number }) {
             )}>
               {s < step ? '✓' : s}
             </div>
-            {s < 4 && (
-              <div className={cn('flex-1 h-px w-12 md:w-24 transition-colors', s < step ? 'bg-accent' : 'bg-[rgba(228,224,216,0.1)]')} />
+            {s < 3 && (
+              <div className={cn('flex-1 h-px w-24 md:w-48 transition-colors', s < step ? 'bg-accent' : 'bg-[rgba(228,224,216,0.1)]')} />
             )}
           </div>
         ))}
@@ -51,7 +36,6 @@ function ProgressBar({ step }: { step: number }) {
       <div className="flex justify-between text-xs text-text-muted">
         <span>Temel Bilgiler</span>
         <span>Sahne & Kapasite</span>
-        <span>Açık Slotlar</span>
         <span>Önizleme</span>
       </div>
     </div>
@@ -106,26 +90,6 @@ export function VenueRegisterForm() {
   const [photoUrl, setPhotoUrl] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLinksData>({})
 
-  const [slots, setSlots] = useState<SlotEntry[]>([{
-    day_of_week: 5, start_time: '21:00', end_time: '23:00',
-    recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: ''
-  }])
-
-  function addSlot() {
-    setSlots([...slots, {
-      day_of_week: 5, start_time: '21:00', end_time: '23:00',
-      recurrence: 'weekly', fee_model: 'free', fee_value: '', max_performers: '', notes: '', event_type: ''
-    }])
-  }
-
-  function removeSlot(idx: number) {
-    setSlots(slots.filter((_, i) => i !== idx))
-  }
-
-  function updateSlot(idx: number, field: keyof SlotEntry, value: string | number) {
-    setSlots(slots.map((s, i) => i === idx ? { ...s, [field]: value } : s))
-  }
-
   async function handleSubmit() {
     setLoading(true)
     setError('')
@@ -134,25 +98,23 @@ export function VenueRegisterForm() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const venueInsert = {
-      owner_id: user.id,
-      name, city, district, address,
-      phone: phone || null,
-      email: email || null,
-      venue_type: venueType as VenueType,
-      description: description || null,
-      photo_url: photoUrl || null,
-      capacity_seated: capacitySeated ? parseInt(capacitySeated) : null,
-      capacity_standing: capacityStanding ? parseInt(capacityStanding) : null,
-      stage_area_m2: stageArea ? parseInt(stageArea) : null,
-      equipment,
-      genres,
-      social_links: socialLinks,
-    }
-
     const { data: venueData, error: venueErr } = await supabase
       .from('venues')
-      .insert(venueInsert as any)
+      .insert({
+        owner_id: user.id,
+        name, city, district, address,
+        phone: phone || null,
+        email: email || null,
+        venue_type: venueType as VenueType,
+        description: description || null,
+        photo_url: photoUrl || null,
+        capacity_seated: capacitySeated ? parseInt(capacitySeated) : null,
+        capacity_standing: capacityStanding ? parseInt(capacityStanding) : null,
+        stage_area_m2: stageArea ? parseInt(stageArea) : null,
+        equipment,
+        genres,
+        social_links: socialLinks,
+      } as any)
       .select()
       .single()
 
@@ -162,26 +124,6 @@ export function VenueRegisterForm() {
       return
     }
 
-    const venue = venueData as { id: string }
-
-    if (slots.length > 0) {
-      const slotInserts = slots.map((s) => ({
-        venue_id: venue.id,
-        day_of_week: s.day_of_week,
-        start_time: s.start_time,
-        end_time: s.end_time,
-        recurrence: s.recurrence,
-        fee_model: s.fee_model,
-        fee_value: s.fee_value ? parseFloat(s.fee_value) : null,
-        max_performers: s.max_performers ? parseInt(s.max_performers) : null,
-        notes: s.notes || null,
-        event_type: s.event_type || null,
-        status: 'open' as const,
-      }))
-      await supabase.from('slots').insert(slotInserts as any)
-    }
-
-    // Sanatçı profili yoksa role'ü venue olarak güncelle
     const { data: artistProfile } = await supabase
       .from('artists')
       .select('id')
@@ -189,10 +131,7 @@ export function VenueRegisterForm() {
       .maybeSingle()
 
     if (!artistProfile) {
-      await supabase
-        .from('profiles')
-        .update({ role: 'venue' } as any)
-        .eq('id', user.id)
+      await supabase.from('profiles').update({ role: 'venue' } as any).eq('id', user.id)
     }
 
     window.location.href = '/dashboard'
@@ -286,109 +225,16 @@ export function VenueRegisterForm() {
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
               placeholder="Mekanınızı anlatan kısa bir metin..." className="input-field resize-none" />
           </div>
-          <ImageUpload
-            value={photoUrl}
-            onChange={setPhotoUrl}
-            bucket="venues"
-            label="Mekan Fotoğrafı"
-          />
+          <ImageUpload value={photoUrl} onChange={setPhotoUrl} bucket="venues" label="Mekan Fotoğrafı" />
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} className="btn-outline flex-1 py-3">← Geri</button>
-            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">Devam Et →</button>
+            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">Önizleme →</button>
           </div>
         </div>
       )}
 
       {step === 3 && (
-        <div className="card p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-text-primary">Açık Slotlar</h2>
-            <button type="button" onClick={addSlot} className="flex items-center gap-1 text-accent text-sm hover:text-accent/80">
-              <Plus size={16} />
-              Slot Ekle
-            </button>
-          </div>
-
-          {slots.map((slot, idx) => (
-            <div key={idx} className="p-4 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-primary">Slot {idx + 1}</span>
-                {slots.length > 1 && (
-                  <button type="button" onClick={() => removeSlot(idx)} className="text-text-muted hover:text-red-400">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="label">Gün</label>
-                  <select value={slot.day_of_week} onChange={(e) => updateSlot(idx, 'day_of_week', parseInt(e.target.value))} className="input-field">
-                    {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Başlangıç</label>
-                  <input type="time" value={slot.start_time} onChange={(e) => updateSlot(idx, 'start_time', e.target.value)} className="input-field" />
-                </div>
-                <div>
-                  <label className="label">Bitiş</label>
-                  <input type="time" value={slot.end_time} onChange={(e) => updateSlot(idx, 'end_time', e.target.value)} className="input-field" />
-                </div>
-                <div>
-                  <label className="label">Tekrar</label>
-                  <select value={slot.recurrence} onChange={(e) => updateSlot(idx, 'recurrence', e.target.value)} className="input-field">
-                    <option value="weekly">Haftalık</option>
-                    <option value="biweekly">2 Haftada Bir</option>
-                    <option value="once">Tek Sefer</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Ücret Modeli</label>
-                  <select value={slot.fee_model} onChange={(e) => updateSlot(idx, 'fee_model', e.target.value)} className="input-field">
-                    <option value="free">Ücretsiz</option>
-                    <option value="door_share">Kapı Paylaşımı</option>
-                    <option value="guarantee">Garanti</option>
-                    <option value="negotiable">Pazarlığa Açık</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Tutar (₺)</label>
-                  <input type="number" value={slot.fee_value} onChange={(e) => updateSlot(idx, 'fee_value', e.target.value)} placeholder="0" className="input-field" />
-                </div>
-              </div>
-              <div>
-                <label className="label">Etkinlik Türü</label>
-                <select value={slot.event_type} onChange={(e) => updateSlot(idx, 'event_type', e.target.value)} className="input-field text-sm">
-                  <option value="">Seçin</option>
-                  <optgroup label="Müzik">
-                    {MUSIC_GENRES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Sahne">
-                    {STAGE_GENRES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-              <div>
-                <label className="label">Notlar</label>
-                <input value={slot.notes} onChange={(e) => updateSlot(idx, 'notes', e.target.value)}
-                  placeholder="Teknik gereksinimler, özel koşullar..." className="input-field" />
-              </div>
-            </div>
-          ))}
-
-          <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">← Geri</button>
-            <button onClick={() => setStep(4)} className="btn-accent flex-1 py-3">Önizleme →</button>
-          </div>
-        </div>
-      )}
-
-      {step === 4 && (
         <div className="space-y-4">
           <div className="card p-6">
             <h2 className="font-semibold text-text-primary mb-4">Önizleme</h2>
@@ -397,12 +243,11 @@ export function VenueRegisterForm() {
               <div className="flex gap-2"><span className="text-text-muted w-28">Konum:</span><span className="text-text-primary">{district}, {city}</span></div>
               <div className="flex gap-2"><span className="text-text-muted w-28">Tür:</span><span className="text-text-primary">{VENUE_TYPE_LABELS[venueType as VenueType]}</span></div>
               {genres.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">Türler:</span><span className="text-text-primary">{genres.join(', ')}</span></div>}
-              <div className="flex gap-2"><span className="text-text-muted w-28">Slot Sayısı:</span><span className="text-text-primary">{slots.length}</span></div>
             </div>
           </div>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <div className="flex gap-3">
-            <button onClick={() => setStep(3)} className="btn-outline flex-1 py-3">← Geri</button>
+            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">← Geri</button>
             <button onClick={handleSubmit} disabled={loading} className="btn-accent flex-1 py-3 disabled:opacity-50">
               {loading ? 'Kaydediliyor...' : 'Yayınla'}
             </button>
