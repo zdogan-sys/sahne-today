@@ -15,6 +15,7 @@ interface Props {
   initialData: {
     stage_name: string
     city: string | null
+    active_cities?: string[]
     genres: string[]
     instruments: string[]
     bio: string | null
@@ -32,6 +33,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
 
   const [stageName, setStageName] = useState(initialData.stage_name)
   const [city, setCity] = useState(initialData.city || '')
+  const [activeCities, setActiveCities] = useState<string[]>(initialData.active_cities ?? [])
   const [genres, setGenres] = useState<string[]>(initialData.genres || [])
   const [instruments, setInstruments] = useState<string[]>(initialData.instruments || [])
   const [bio, setBio] = useState(initialData.bio || '')
@@ -52,6 +54,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
     const result = await updateArtistProfile(artistId, {
       stage_name: stageName.trim(),
       city: city || null,
+      active_cities: activeCities,
       genres,
       instruments: activeTab === 'music' ? instruments : [],
       bio: bio || null,
@@ -113,6 +116,26 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="label">Etkin Olduğum Şehirler</label>
+            <p className="text-xs text-text-muted mb-2">Birden fazla şehirde performans gösteriyorsanız seçin.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {CITY_OPTIONS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setActiveCities(activeCities.includes(c) ? activeCities.filter((x) => x !== c) : [...activeCities, c])}
+                  className={cn('chip border transition-colors', activeCities.includes(c)
+                    ? 'bg-accent/10 text-accent border-accent/30'
+                    : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
 
           <TabbedGenreSelector

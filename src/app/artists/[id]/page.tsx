@@ -99,10 +99,13 @@ export default async function ArtistPage({ params }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-bebas text-5xl text-text-primary leading-none">{artist.stage_name}</h1>
-          {artist.city && (
-            <div className="flex items-center gap-1 text-text-muted text-sm mt-1">
-              <MapPin size={14} />
+          {(artist.city || ((artist as any).active_cities?.length > 0)) && (
+            <div className="flex items-center gap-1 text-text-muted text-sm mt-1 flex-wrap">
+              <MapPin size={14} className="flex-shrink-0" />
               <span>{artist.city}</span>
+              {(artist as any).active_cities?.filter((c: string) => c !== artist.city).map((c: string) => (
+                <span key={c} className="text-text-muted/60">· {c}</span>
+              ))}
             </div>
           )}
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -116,6 +119,7 @@ export default async function ArtistPage({ params }: Props) {
                 initialData={{
                   stage_name: artist.stage_name,
                   city: artist.city ?? null,
+                  active_cities: (artist as any).active_cities ?? [],
                   genres: artist.genres ?? [],
                   instruments: artist.instruments ?? [],
                   bio: artist.bio ?? null,

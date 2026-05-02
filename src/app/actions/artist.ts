@@ -10,6 +10,7 @@ export async function updateArtistProfile(
   payload: {
     stage_name: string
     city: string | null
+    active_cities?: string[]
     genres: string[]
     instruments: string[]
     bio: string | null
@@ -43,6 +44,7 @@ export async function updateArtistProfile(
     .update({
       stage_name: payload.stage_name,
       city: payload.city,
+      active_cities: payload.active_cities ?? [],
       genres: payload.genres,
       instruments: payload.instruments,
       bio: payload.bio,
