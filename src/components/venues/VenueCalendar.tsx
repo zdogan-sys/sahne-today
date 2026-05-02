@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight, X, Music2, Users, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn } from '@/lib/utils'
@@ -698,17 +699,18 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           {selectedDayEvents.length > 0 && (
             <div className="px-4 py-3 space-y-2">
               {selectedDayEvents.map(ev => (
-                <div key={ev.id} className="flex items-start gap-3">
+                <Link key={ev.id} href={`/events/${ev.id}`} className="flex items-start gap-3 hover:bg-[rgba(228,224,216,0.06)] -mx-2 px-2 py-1.5 rounded-lg transition-colors group">
                   <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-text-primary text-sm font-medium">{ev.title}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium group-hover:text-accent transition-colors">{ev.title}</p>
                     <p className="text-text-muted text-xs mt-0.5">
                       {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
                       {ev.artists?.stage_name ? ` · ${ev.artists.stage_name}` : ''}
                       {ev.bands?.name ? ` · ${ev.bands.name}` : ''}
                     </p>
                   </div>
-                </div>
+                  <span className="text-text-muted text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">→</span>
+                </Link>
               ))}
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { X, MapPin, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
@@ -162,7 +163,7 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
                   <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${ev.status === 'pending' ? 'bg-yellow-400' : 'bg-success'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-text-primary text-sm font-medium">{ev.title}</p>
+                      <Link href={`/events/${ev.id}`} className="text-text-primary text-sm font-medium hover:text-accent transition-colors">{ev.title}</Link>
                       {ev.status === 'pending' && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
                           Onay Bekliyor
