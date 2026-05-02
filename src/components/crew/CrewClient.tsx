@@ -56,9 +56,14 @@ function ListingCard({ listing }: { listing: ListingFull }) {
 
   return (
     <div className="card p-5">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="font-semibold text-text-primary">{listing.title}</h3>
-        <span className="text-text-muted text-xs flex-shrink-0 flex items-center gap-1">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <div>
+          {listing.profiles?.display_name && (
+            <p className="text-text-muted text-xs mb-0.5">{listing.profiles.display_name}</p>
+          )}
+          <h3 className="font-semibold text-text-primary">{listing.title}</h3>
+        </div>
+        <span className="text-text-muted text-xs flex-shrink-0 flex items-center gap-1 mt-1">
           <Calendar size={10} />
           {daysAgo === 0 ? 'Bugün' : `${daysAgo}g önce`}
         </span>
@@ -142,18 +147,19 @@ function CrewListingForm({ open, onClose, onCreated }: {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Yeni İlan Ver">
+    <BottomSheet open={open} onClose={onClose} title="Grup / Ekip Arıyorum">
       <div className="space-y-4">
+        <p className="text-text-muted text-xs -mt-2">Seni arayan gruplara kendini tanıt.</p>
         <div>
           <label className="label">Başlık *</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Akustik gruba basçı aranıyor" className="input-field" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Örn: Davulcuyum, aktif grup arıyorum" className="input-field" />
         </div>
         <div>
-          <label className="label">Açıklama</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Bandınız hakkında bilgi, deneyim beklentisi..." className="input-field resize-none" />
+          <label className="label">Hakkında</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Kendinizi tanıtın, deneyiminiz, beklentileriniz..." className="input-field resize-none" />
         </div>
         <div>
-          <label className="label">Aranan Roller</label>
+          <label className="label">Rollerim</label>
           <div className="flex flex-wrap gap-1.5">
             {ROLE_OPTIONS.map((r) => (
               <button key={r} type="button" onClick={() => toggle(roles, setRoles, r)}
@@ -164,7 +170,7 @@ function CrewListingForm({ open, onClose, onCreated }: {
           </div>
         </div>
         <div>
-          <label className="label">Müzik / Sahne Türleri</label>
+          <label className="label">Müzik Türlerim</label>
           <div className="flex flex-wrap gap-1.5">
             {ALL_GENRES.map((g) => (
               <button key={g} type="button" onClick={() => toggle(genres, setGenres, g)}

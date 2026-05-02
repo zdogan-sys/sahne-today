@@ -7,7 +7,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'Ekip Bul',
-  description: 'Bandına yeni üye bul veya üye arandığı için başvur.',
+  description: 'Grup arayan müzisyenleri keşfet veya sen de ilan ver.',
 }
 
 export default async function CrewPage() {
@@ -23,7 +23,7 @@ export default async function CrewPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
       <h1 className="font-bebas text-5xl md:text-6xl text-text-primary mb-2">EKİP BUL</h1>
-      <p className="text-text-muted text-sm mb-6">Bandına yeni üye bul veya band arayan sanatçılara katıl.</p>
+      <p className="text-text-muted text-sm mb-6">Grup arayan müzisyenleri keşfet veya sen de ilan ver.</p>
       <ErrorBoundary>
         <CrewClient initialListings={(listings ?? []) as any[]} />
       </ErrorBoundary>
