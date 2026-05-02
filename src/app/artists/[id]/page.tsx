@@ -13,6 +13,7 @@ import { VENUE_TYPE_LABELS } from '@/lib/utils'
 import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
+import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 type ArtistFull = Artist & { profiles: Profile | null; social_links?: SocialLinksData }
@@ -108,8 +109,21 @@ export default async function ArtistPage({ params }: Props) {
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
           {isOwner && (
-            <div className="mt-3">
+            <div className="mt-3 flex items-center gap-3">
               <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
+              <ArtistProfileEditor
+                artistId={artist.id}
+                initialData={{
+                  stage_name: artist.stage_name,
+                  city: artist.city ?? null,
+                  genres: artist.genres ?? [],
+                  instruments: artist.instruments ?? [],
+                  bio: artist.bio ?? null,
+                  social_links: artist.social_links ?? null,
+                  is_hidden: (artist as any).is_hidden ?? false,
+                  avatar_url: profile?.avatar_url ?? null,
+                }}
+              />
             </div>
           )}
         </div>

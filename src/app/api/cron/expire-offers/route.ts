@@ -16,10 +16,9 @@ export async function GET(req: Request) {
 
   const { error, count } = await admin
     .from('events')
-    .update({ status: 'expired' } as any)
+    .update({ status: 'expired' } as any, { count: 'exact' })
     .eq('status', 'offered')
     .lt('expires_at', new Date().toISOString())
-    .select('id', { count: 'exact', head: true })
 
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, expired: count ?? 0 })

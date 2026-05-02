@@ -1,0 +1,64 @@
+'use server'
+
+import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { isAdminUser } from '@/lib/admin'
+import type { SocialLinksData } from '@/components/ui/SocialLinks'
+
+export async function updateArtistProfile(
+  artistId: string,
+  payload: {
+    stage_name: string
+    city: string | null
+    genres: string[]
+    instruments: string[]
+    bio: string | null
+    social_links: SocialLinksData
+    is_hidden: boolean
+    avatar_url?: string | null
+  }
+) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = isAdminUser(user)
+
+  const { data: artist } = await supabaseAuth.from('artists').select('profile_id').eq('id', artistId).single()
+
+  if (!admin) {
+    if (!artist || artist.profile_id !== user.id) {
+      return { success: false, error: 'Yetkiniz yok.' }
+    }
+  }
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { error } = await supabaseAdmin
+    .from('artists')
+    .update({
+      stage_name: payload.stage_name,
+      city: payload.city,
+      genres: payload.genres,
+      instruments: payload.instruments,
+      bio: payload.bio,
+      social_links: payload.social_links,
+      is_hidden: payload.is_hidden,
+    } as any)
+    .eq('id', artistId)
+
+  if (error) return { success: false, error: error.message }
+
+  if (payload.avatar_url !== undefined && artist?.profile_id) {
+    await supabaseAdmin
+      .from('profiles')
+      .update({ avatar_url: payload.avatar_url } as any)
+      .eq('id', artist.profile_id)
+  }
+
+  return { success: true }
+}

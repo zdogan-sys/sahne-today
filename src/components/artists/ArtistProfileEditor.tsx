@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { updateArtistProfile } from '@/app/actions/artist'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
+import { ImageUpload } from '@/components/ui/ImageUpload'
 import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
@@ -18,10 +20,12 @@ interface Props {
     bio: string | null
     social_links?: SocialLinksData | null
     is_hidden?: boolean
+    avatar_url?: string | null
   }
 }
 
 export function ArtistProfileEditor({ artistId, initialData }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,6 +37,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const [bio, setBio] = useState(initialData.bio || '')
   const [socialLinks, setSocialLinks] = useState<SocialLinksData>(initialData.social_links ?? {})
   const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
+  const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url ?? '')
   const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
 
   async function handleSave() {
@@ -44,25 +49,23 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { error: err } = await supabase
-      .from('artists')
-      .update({
-        stage_name: stageName.trim(),
-        city: city || null,
-        genres,
-        instruments: activeTab === 'music' ? instruments : [],
-        bio: bio || null,
-        social_links: socialLinks,
-        is_hidden: isHidden,
-      } as any)
-      .eq('id', artistId)
+    const result = await updateArtistProfile(artistId, {
+      stage_name: stageName.trim(),
+      city: city || null,
+      genres,
+      instruments: activeTab === 'music' ? instruments : [],
+      bio: bio || null,
+      social_links: socialLinks,
+      is_hidden: isHidden,
+      avatar_url: avatarUrl || null,
+    })
 
-    if (err) {
-      setError('Bir hata oluştu: ' + err.message)
+    if (!result.success) {
+      setError('Bir hata oluştu: ' + result.error)
       setLoading(false)
     } else {
-      window.location.reload()
+      setOpen(false)
+      router.refresh()
     }
   }
 
@@ -81,6 +84,13 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title="Profili Düzenle">
         <div className="space-y-4">
+          <ImageUpload
+            value={avatarUrl}
+            onChange={setAvatarUrl}
+            bucket="avatars"
+            label="Profil Fotoğrafı"
+          />
+
           <div>
             <label className="label">Sahne Adı *</label>
             <input
