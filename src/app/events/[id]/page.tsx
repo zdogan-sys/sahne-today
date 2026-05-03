@@ -41,7 +41,8 @@ export default async function EventPage({ params }: Props) {
       venues(*),
       artists(id, stage_name, bio, genres, instruments, city, profile_id, profiles(avatar_url)),
       bands(id, name, creator_id, bio, photo_url, genres, city,
-        band_members(id, role, status, artists(id, stage_name, instruments, profiles(avatar_url))))
+        band_members(id, role, status, artists(id, stage_name, instruments, profiles(avatar_url)))),
+      event_performers(id, role, artists(id, stage_name, genres, profiles(avatar_url)), bands(id, name, photo_url, genres))
     `)
     .eq('id', id)
     .single()
@@ -61,6 +62,7 @@ export default async function EventPage({ params }: Props) {
   }
 
   const acceptedMembers = band ? (band.band_members ?? []).filter((m: any) => m.status === 'accepted') : []
+  const performers: any[] = event.event_performers ?? []
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
@@ -227,6 +229,54 @@ export default async function EventPage({ params }: Props) {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Extra performers */}
+            {performers.length > 0 && (
+              <div>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Birlikte Sahne</p>
+                <div className="space-y-1.5">
+                  {performers.map((p: any) => {
+                    const pa = p.artists
+                    const pb = p.bands
+                    if (pa) return (
+                      <Link key={p.id} href={`/artists/${pa.id}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors">
+                        {pa.profiles?.avatar_url ? (
+                          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 relative">
+                            <Image src={pa.profiles.avatar_url} alt={pa.stage_name} fill className="object-cover" sizes="36px" />
+                          </div>
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm flex-shrink-0">
+                            {pa.stage_name?.[0]}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-text-primary text-sm">{pa.stage_name}</p>
+                          {p.role && <p className="text-text-muted text-xs">{p.role}</p>}
+                        </div>
+                      </Link>
+                    )
+                    if (pb) return (
+                      <Link key={p.id} href={`/bands/${pb.id}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors">
+                        {pb.photo_url ? (
+                          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 relative">
+                            <Image src={pb.photo_url} alt={pb.name} fill className="object-cover" sizes="36px" />
+                          </div>
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm flex-shrink-0">
+                            {pb.name?.[0]}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-text-primary text-sm">{pb.name}</p>
+                          {p.role && <p className="text-text-muted text-xs">{p.role}</p>}
+                        </div>
+                      </Link>
+                    )
+                    return null
+                  })}
+                </div>
               </div>
             )}
 

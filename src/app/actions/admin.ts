@@ -106,6 +106,26 @@ export async function adminDeleteVenue(id: string) {
   return { success: true }
 }
 
+// ─── EVENT PERFORMERS ─────────────────────────────────────────────────────
+
+export async function adminAddPerformer(eventId: string, data: { artist_id?: string | null; band_id?: string | null; role?: string | null }) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('event_performers').insert({ event_id: eventId, ...data })
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
+export async function adminRemovePerformer(id: string) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('event_performers').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
 // ─── MEMBERS ──────────────────────────────────────────────────────────────
 
 export async function adminDeleteMember(id: string) {

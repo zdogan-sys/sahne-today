@@ -1,16 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
-import { Trash2, Pencil, Plus, ExternalLink } from 'lucide-react'
+import { Trash2, Pencil, Plus, ExternalLink, Users } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import {
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent,
   adminCreateArtist, adminUpdateArtist, adminDeleteArtist,
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
-  adminDeleteMember,
+  adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
@@ -157,6 +158,54 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
   const [status, setStatus] = useState(initial?.status ?? 'confirmed')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Performers (extra collaborators)
+  const [performers, setPerformers] = useState<any[]>([])
+  const [perfLoading, setPerfLoading] = useState(false)
+  const [showAddPerf, setShowAddPerf] = useState(false)
+  const [perfArtistId, setPerfArtistId] = useState('')
+  const [perfBandId, setPerfBandId] = useState('')
+  const [perfRole, setPerfRole] = useState('')
+  const [perfSaving, setPerfSaving] = useState(false)
+  const [bands, setBands] = useState<any[]>([])
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!open || !initial?.id) return
+    setPerfLoading(true)
+    supabase
+      .from('event_performers')
+      .select('id, role, artists(id, stage_name), bands(id, name)')
+      .eq('event_id', initial.id)
+      .then(({ data }) => { setPerformers(data ?? []); setPerfLoading(false) })
+    supabase.from('bands').select('id, name').order('name').then(({ data }) => setBands(data ?? []))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initial?.id])
+
+  async function addPerformer() {
+    if (!perfArtistId && !perfBandId) return
+    setPerfSaving(true)
+    const res = await adminAddPerformer(initial.id, {
+      artist_id: perfArtistId || null,
+      band_id: perfBandId || null,
+      role: perfRole || null,
+    })
+    if (res.success) {
+      const { data } = await supabase
+        .from('event_performers')
+        .select('id, role, artists(id, stage_name), bands(id, name)')
+        .eq('event_id', initial.id)
+      setPerformers(data ?? [])
+      setPerfArtistId(''); setPerfBandId(''); setPerfRole(''); setShowAddPerf(false)
+    }
+    setPerfSaving(false)
+  }
+
+  async function removePerformer(id: string) {
+    await adminRemovePerformer(id)
+    setPerformers(prev => prev.filter(p => p.id !== id))
+  }
 
   // Local copies so inline-added items appear immediately
   const [venues, setVenues] = useState<any[]>(initialVenues)
@@ -338,6 +387,68 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
         <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
           {loading ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
+
+        {/* Performers — only for existing events */}
+        {initial?.id && (
+          <div className="pt-3 border-t border-[rgba(228,224,216,0.1)]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-text-muted uppercase tracking-wide flex items-center gap-1.5">
+                <Users size={11} /> Birlikte Sahne
+              </p>
+              <button type="button" onClick={() => setShowAddPerf(!showAddPerf)}
+                className="text-xs text-accent hover:underline flex items-center gap-1">
+                <Plus size={12} /> {showAddPerf ? 'İptal' : 'Ekle'}
+              </button>
+            </div>
+
+            {perfLoading ? (
+              <p className="text-text-muted text-xs">Yükleniyor...</p>
+            ) : (
+              <div className="space-y-1.5 mb-2">
+                {performers.map((p: any) => {
+                  const label = p.artists?.stage_name ?? p.bands?.name ?? '?'
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[rgba(228,224,216,0.04)]">
+                      <span className="flex-1 text-text-primary text-xs">{label}</span>
+                      {p.role && <span className="text-text-muted text-xs">{p.role}</span>}
+                      <button onClick={() => removePerformer(p.id)} className="text-text-muted hover:text-red-400 transition-colors ml-1">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  )
+                })}
+                {performers.length === 0 && !showAddPerf && (
+                  <p className="text-text-muted text-xs">Henüz ek katılımcı yok.</p>
+                )}
+              </div>
+            )}
+
+            {showAddPerf && (
+              <div className="p-3 rounded-lg border border-accent/20 bg-accent/5 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label">Sanatçı</label>
+                    <select value={perfArtistId} onChange={e => { setPerfArtistId(e.target.value); if (e.target.value) setPerfBandId('') }} className="input-field text-xs">
+                      <option value="">Seç</option>
+                      {artists.map((a: any) => <option key={a.id} value={a.id}>{a.stage_name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Grup</label>
+                    <select value={perfBandId} onChange={e => { setPerfBandId(e.target.value); if (e.target.value) setPerfArtistId('') }} className="input-field text-xs">
+                      <option value="">Seç</option>
+                      {bands.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <input value={perfRole} onChange={e => setPerfRole(e.target.value)} placeholder="Rol (opsiyonel: solist, eşlik...)" className="input-field text-xs" />
+                <button onClick={addPerformer} disabled={perfSaving || (!perfArtistId && !perfBandId)} className="btn-accent w-full py-2 text-xs disabled:opacity-50">
+                  {perfSaving ? 'Ekleniyor...' : 'Ekle'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </BottomSheet>
   )
