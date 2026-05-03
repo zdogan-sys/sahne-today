@@ -41,14 +41,18 @@ export default async function EventPage({ params }: Props) {
       venues(*),
       artists(id, stage_name, bio, genres, instruments, city, profile_id, profiles(avatar_url)),
       bands(id, name, creator_id, bio, photo_url, genres, city,
-        band_members(id, role, status, artists(id, stage_name, instruments, profiles(avatar_url)))),
-      event_performers(id, role, artists(id, stage_name, genres, profiles(avatar_url)), bands(id, name, photo_url, genres))
+        band_members(id, role, status, artists(id, stage_name, instruments, profiles(avatar_url))))
     `)
     .eq('id', id)
     .single()
 
   if (!data) notFound()
   const event = data as any
+
+  const { data: performersData } = await supabase
+    .from('event_performers')
+    .select('id, role, artists(id, stage_name, genres, profiles(avatar_url)), bands(id, name, photo_url, genres)')
+    .eq('event_id', id)
   const venue = event.venues
   const artist = event.artists
   const band = event.bands
@@ -62,7 +66,7 @@ export default async function EventPage({ params }: Props) {
   }
 
   const acceptedMembers = band ? (band.band_members ?? []).filter((m: any) => m.status === 'accepted') : []
-  const performers: any[] = event.event_performers ?? []
+  const performers: any[] = performersData ?? []
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
