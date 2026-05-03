@@ -13,6 +13,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS } from '@/lib/constants'
 
 type EventFull = Event & {
+  poster_url?: string | null
   venues: Pick<Venue, 'name' | 'district' | 'city'> & { photo_url?: string | null } | null
   artists: Pick<Artist, 'stage_name'> & { profiles: { avatar_url: string | null } | null } | null
   bands: { name: string; photo_url?: string | null } | null
@@ -346,6 +347,12 @@ function EventListCard({ event }: { event: EventFull }) {
           ) : null}
         </div>
       </div>
+
+      {event.poster_url && (
+        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[rgba(228,224,216,0.08)]">
+          <Image src={event.poster_url} alt={event.title} width={64} height={64} className="w-full h-full object-cover" />
+        </div>
+      )}
     </Link>
   )
 }
