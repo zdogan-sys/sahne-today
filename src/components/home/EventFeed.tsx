@@ -12,9 +12,6 @@ import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 const TIME_FILTERS = ['Bugün', 'Bu Hafta', 'Bu Ay'] as const
 type TimeFilter = typeof TIME_FILTERS[number]
 
-// null = görsel bölücü
-const GENRE_FILTERS: (string | null)[] = ['Tümü', ...MUSIC_GENRES, null, ...STAGE_GENRES]
-
 type EventWithRelations = Event & {
   venues: { name: string; district: string; city: string } | null
   artists: { stage_name: string } | null
@@ -90,24 +87,31 @@ export function EventFeed() {
       </div>
 
       {/* Genre filter chips */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {GENRE_FILTERS.map((g, i) =>
-          g === null
-            ? <div key={`sep-${i}`} className="w-px h-6 bg-[rgba(228,224,216,0.15)] self-center mx-1" />
-            : (
-              <button
-                key={g}
-                onClick={() => setActiveGenre(g as string)}
-                className={`flex-shrink-0 chip transition-colors ${
-                  activeGenre === g
-                    ? 'bg-accent text-white border-accent'
-                    : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
-                } border`}
-              >
-                {g}
-              </button>
-            )
-        )}
+      <div className="space-y-3 mb-5">
+        {[
+          { label: null, genres: ['Tümü'] },
+          { label: 'Müzik', genres: MUSIC_GENRES },
+          { label: 'Sahne', genres: STAGE_GENRES },
+        ].map(({ label, genres }) => (
+          <div key={label ?? 'all'}>
+            {label && <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{label}</p>}
+            <div className="flex flex-wrap gap-1.5">
+              {genres.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setActiveGenre(g)}
+                  className={`flex-shrink-0 chip transition-colors border ${
+                    activeGenre === g
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {loading ? (
