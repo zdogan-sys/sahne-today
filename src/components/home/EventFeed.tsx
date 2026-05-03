@@ -7,12 +7,13 @@ import type { Event } from '@/lib/supabase/types'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
 import { MapPin, Clock } from 'lucide-react'
-import { ALL_GENRES } from '@/lib/constants'
+import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
 const TIME_FILTERS = ['Bugün', 'Bu Hafta', 'Bu Ay'] as const
 type TimeFilter = typeof TIME_FILTERS[number]
 
-const GENRE_FILTERS = ['Tümü', ...ALL_GENRES]
+// null = görsel bölücü
+const GENRE_FILTERS: (string | null)[] = ['Tümü', ...MUSIC_GENRES, null, ...STAGE_GENRES]
 
 type EventWithRelations = Event & {
   venues: { name: string; district: string; city: string } | null
@@ -90,19 +91,23 @@ export function EventFeed() {
 
       {/* Genre filter chips */}
       <div className="flex flex-wrap gap-2 mb-5">
-        {GENRE_FILTERS.map((g) => (
-          <button
-            key={g}
-            onClick={() => setActiveGenre(g)}
-            className={`flex-shrink-0 chip transition-colors ${
-              activeGenre === g
-                ? 'bg-accent text-white border-accent'
-                : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
-            } border`}
-          >
-            {g}
-          </button>
-        ))}
+        {GENRE_FILTERS.map((g, i) =>
+          g === null
+            ? <div key={`sep-${i}`} className="w-px h-6 bg-[rgba(228,224,216,0.15)] self-center mx-1" />
+            : (
+              <button
+                key={g}
+                onClick={() => setActiveGenre(g)}
+                className={`flex-shrink-0 chip transition-colors ${
+                  activeGenre === g
+                    ? 'bg-accent text-white border-accent'
+                    : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
+                } border`}
+              >
+                {g}
+              </button>
+            )
+        )}
       </div>
 
       {loading ? (

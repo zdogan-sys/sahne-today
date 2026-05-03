@@ -10,7 +10,7 @@ import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCale
 import { formatTime } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { ALL_GENRES, CITY_OPTIONS } from '@/lib/constants'
+import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS } from '@/lib/constants'
 
 type EventFull = Event & {
   venues: Pick<Venue, 'name' | 'district' | 'city'> & { photo_url?: string | null } | null
@@ -19,7 +19,6 @@ type EventFull = Event & {
   artist_name?: string | null
 }
 
-const GENRES = ALL_GENRES
 const CITIES = CITY_OPTIONS
 const ENTRY_TYPES = [
   { value: 'free', label: 'Ücretsiz' },
@@ -239,7 +238,8 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
 }) {
   return (
     <div className="space-y-5">
-      <FilterGroup label="Tür" options={GENRES} value={genre} onChange={setGenre} />
+      <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
+      <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
       <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
       <div>
         <label className="label">Giriş</label>

@@ -9,11 +9,10 @@ import { cn } from '@/lib/utils'
 import type { Artist, Profile } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Filter } from 'lucide-react'
-import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
+import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 
 type ArtistFull = Artist & { profiles: Pick<Profile, 'display_name' | 'avatar_url' | 'city'> | null }
 
-const GENRES = ALL_GENRES
 const CITIES = CITY_OPTIONS
 const INSTRUMENTS = INSTRUMENT_OPTIONS
 
@@ -37,7 +36,8 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
       <aside className="hidden md:block w-56 flex-shrink-0">
         <div className="card p-4 sticky top-20 space-y-5">
           <h3 className="text-sm font-semibold text-text-primary">Filtrele</h3>
-          <FilterGroup label="Tür" options={GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
           <FilterGroup label="Enstrüman" options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
         </div>
@@ -66,7 +66,8 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
 
       <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Sanatçıları Filtrele">
         <div className="space-y-5">
-          <FilterGroup label="Tür" options={GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
           <FilterGroup label="Enstrüman" options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
         </div>
