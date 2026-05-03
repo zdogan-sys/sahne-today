@@ -51,9 +51,9 @@ export async function adminDeleteEvent(id: string) {
 // ─── ARTISTS ──────────────────────────────────────────────────────────────
 
 export async function adminCreateArtist(data: Record<string, any>) {
-  const user = await assertAdmin()
+  await assertAdmin()
   const admin = await getAdmin()
-  const { data: created, error } = await admin.from('artists').insert({ ...data, profile_id: user.id }).select('id, stage_name, city, genres, instruments').single()
+  const { data: created, error } = await admin.from('artists').insert(data).select('id, stage_name, city, genres, instruments').single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
   return { success: true, item: created }
@@ -80,9 +80,9 @@ export async function adminDeleteArtist(id: string) {
 // ─── VENUES ───────────────────────────────────────────────────────────────
 
 export async function adminCreateVenue(data: Record<string, any>) {
-  const user = await assertAdmin()
+  await assertAdmin()
   const admin = await getAdmin()
-  const { data: created, error } = await admin.from('venues').insert({ ...data, owner_id: user.id }).select('id, name, city, district, venue_type').single()
+  const { data: created, error } = await admin.from('venues').insert(data).select('id, name, city, district, venue_type').single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
   return { success: true, item: created }
