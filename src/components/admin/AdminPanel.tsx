@@ -144,7 +144,7 @@ function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venu
   )
 }
 
-function EventForm({ open, onClose, initial, venues, artists, onSaved }: any) {
+function EventForm({ open, onClose, initial, venues: initialVenues, artists: initialArtists, onSaved }: any) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [venueId, setVenueId] = useState(initial?.venue_id ?? '')
   const [venueName, setVenueName] = useState(initial?.venue_name ?? '')
@@ -158,22 +158,46 @@ function EventForm({ open, onClose, initial, venues, artists, onSaved }: any) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // reset when opening for new
-  useState(() => {
-    if (open) {
-      setTitle(initial?.title ?? '')
-      setVenueId(initial?.venue_id ?? '')
-      setVenueName(initial?.venue_name ?? '')
-      setArtistId(initial?.artist_id ?? '')
-      setEventDate(initial?.event_date ?? '')
-      setStartTime(initial?.start_time?.substring(0, 5) ?? '')
-      setGenre(initial?.genre ?? '')
-      setEntryType(initial?.entry_type ?? 'free')
-      setEntryFee(initial?.entry_fee?.toString() ?? '')
-      setStatus(initial?.status ?? 'confirmed')
-      setError('')
-    }
-  })
+  // Local copies so inline-added items appear immediately
+  const [venues, setVenues] = useState<any[]>(initialVenues)
+  const [artists, setArtists] = useState<any[]>(initialArtists)
+
+  // Inline quick-add state
+  const [showVenueAdd, setShowVenueAdd] = useState(false)
+  const [showArtistAdd, setShowArtistAdd] = useState(false)
+  const [newVenueName, setNewVenueName] = useState('')
+  const [newVenueCity, setNewVenueCity] = useState('')
+  const [newVenueType, setNewVenueType] = useState('pub')
+  const [newArtistName, setNewArtistName] = useState('')
+  const [newArtistCity, setNewArtistCity] = useState('')
+  const [quickLoading, setQuickLoading] = useState(false)
+  const [quickError, setQuickError] = useState('')
+
+  async function quickAddVenue() {
+    if (!newVenueName || !newVenueCity) { setQuickError('Ad ve şehir zorunludur.'); return }
+    setQuickLoading(true); setQuickError('')
+    const res = await adminCreateVenue({ name: newVenueName, city: newVenueCity, venue_type: newVenueType })
+    setQuickLoading(false)
+    if (!res.success) { setQuickError(res.error ?? 'Hata'); return }
+    const item = (res as any).item
+    setVenues([...venues, item])
+    setVenueId(item.id)
+    setShowVenueAdd(false)
+    setNewVenueName(''); setNewVenueCity('')
+  }
+
+  async function quickAddArtist() {
+    if (!newArtistName) { setQuickError('Sahne adı zorunludur.'); return }
+    setQuickLoading(true); setQuickError('')
+    const res = await adminCreateArtist({ stage_name: newArtistName, city: newArtistCity || null, genres: [], instruments: [] })
+    setQuickLoading(false)
+    if (!res.success) { setQuickError(res.error ?? 'Hata'); return }
+    const item = (res as any).item
+    setArtists([...artists, item])
+    setArtistId(item.id)
+    setShowArtistAdd(false)
+    setNewArtistName(''); setNewArtistCity('')
+  }
 
   async function handleSave() {
     if (!title || !eventDate) { setError('Başlık ve tarih zorunludur.'); return }
@@ -215,23 +239,73 @@ function EventForm({ open, onClose, initial, venues, artists, onSaved }: any) {
             <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-field text-sm" />
           </div>
         </div>
+
+        {/* Venue select + quick add */}
         <div>
-          <label className="label">Mekan</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label">Mekan</label>
+            <button type="button" onClick={() => { setShowVenueAdd(!showVenueAdd); setQuickError('') }}
+              className="text-xs text-accent hover:underline flex items-center gap-1">
+              <Plus size={12} /> {showVenueAdd ? 'İptal' : 'Yeni Mekan Ekle'}
+            </button>
+          </div>
           <select value={venueId} onChange={(e) => setVenueId(e.target.value)} className="input-field text-sm">
             <option value="">Seç veya aşağıya yaz</option>
             {venues.map((v: any) => <option key={v.id} value={v.id}>{v.name} — {v.city}</option>)}
           </select>
+          {showVenueAdd && (
+            <div className="mt-2 p-3 rounded-lg border border-accent/20 bg-accent/5 space-y-2">
+              <p className="text-xs text-accent font-medium">Hızlı Mekan Ekle</p>
+              <input value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} placeholder="Mekan adı *" className="input-field text-sm" />
+              <div className="grid grid-cols-2 gap-2">
+                <select value={newVenueCity} onChange={(e) => setNewVenueCity(e.target.value)} className="input-field text-sm">
+                  <option value="">Şehir *</option>
+                  {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={newVenueType} onChange={(e) => setNewVenueType(e.target.value)} className="input-field text-sm">
+                  {VENUE_TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </div>
+              {quickError && <p className="text-red-400 text-xs">{quickError}</p>}
+              <button onClick={quickAddVenue} disabled={quickLoading} className="btn-accent w-full py-2 text-xs disabled:opacity-50">
+                {quickLoading ? 'Ekleniyor...' : 'Ekle ve Seç'}
+              </button>
+            </div>
+          )}
         </div>
+
         <div>
           <label className="label">Mekan Adı (serbest)</label>
           <input value={venueName} onChange={(e) => setVenueName(e.target.value)} className="input-field text-sm" placeholder="Mekan listede yoksa buraya yaz" />
         </div>
+
+        {/* Artist select + quick add */}
         <div>
-          <label className="label">Sanatçı</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label">Sanatçı</label>
+            <button type="button" onClick={() => { setShowArtistAdd(!showArtistAdd); setQuickError('') }}
+              className="text-xs text-accent hover:underline flex items-center gap-1">
+              <Plus size={12} /> {showArtistAdd ? 'İptal' : 'Yeni Sanatçı Ekle'}
+            </button>
+          </div>
           <select value={artistId} onChange={(e) => setArtistId(e.target.value)} className="input-field text-sm">
             <option value="">Seç (opsiyonel)</option>
             {artists.map((a: any) => <option key={a.id} value={a.id}>{a.stage_name}</option>)}
           </select>
+          {showArtistAdd && (
+            <div className="mt-2 p-3 rounded-lg border border-accent/20 bg-accent/5 space-y-2">
+              <p className="text-xs text-accent font-medium">Hızlı Sanatçı Ekle</p>
+              <input value={newArtistName} onChange={(e) => setNewArtistName(e.target.value)} placeholder="Sahne adı *" className="input-field text-sm" />
+              <select value={newArtistCity} onChange={(e) => setNewArtistCity(e.target.value)} className="input-field text-sm">
+                <option value="">Şehir (opsiyonel)</option>
+                {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {quickError && <p className="text-red-400 text-xs">{quickError}</p>}
+              <button onClick={quickAddArtist} disabled={quickLoading} className="btn-accent w-full py-2 text-xs disabled:opacity-50">
+                {quickLoading ? 'Ekleniyor...' : 'Ekle ve Seç'}
+              </button>
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

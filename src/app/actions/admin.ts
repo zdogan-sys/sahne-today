@@ -53,10 +53,10 @@ export async function adminDeleteEvent(id: string) {
 export async function adminCreateArtist(data: Record<string, any>) {
   const user = await assertAdmin()
   const admin = await getAdmin()
-  const { error } = await admin.from('artists').insert({ ...data, profile_id: user.id })
+  const { data: created, error } = await admin.from('artists').insert({ ...data, profile_id: user.id }).select('id, stage_name, city, genres, instruments').single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, item: created }
 }
 
 export async function adminUpdateArtist(id: string, data: Record<string, any>) {
@@ -82,10 +82,10 @@ export async function adminDeleteArtist(id: string) {
 export async function adminCreateVenue(data: Record<string, any>) {
   const user = await assertAdmin()
   const admin = await getAdmin()
-  const { error } = await admin.from('venues').insert({ ...data, owner_id: user.id })
+  const { data: created, error } = await admin.from('venues').insert({ ...data, owner_id: user.id }).select('id, name, city, district, venue_type').single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, item: created }
 }
 
 export async function adminUpdateVenue(id: string, data: Record<string, any>) {
