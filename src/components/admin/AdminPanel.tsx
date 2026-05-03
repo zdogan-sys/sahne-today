@@ -134,6 +134,7 @@ function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venu
       </div>
 
       <EventForm
+        key={editing?.id ?? 'new'}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         initial={editing}
@@ -502,7 +503,7 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
           </div>
         ))}
       </div>
-      <ArtistForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+      <ArtistForm key={editing?.id ?? 'new'} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
     </div>
   )
 }
@@ -636,7 +637,7 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
           </div>
         ))}
       </div>
-      <VenueForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+      <VenueForm key={editing?.id ?? 'new'} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
     </div>
   )
 }
