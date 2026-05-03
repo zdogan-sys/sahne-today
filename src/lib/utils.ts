@@ -5,21 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const GENRE_COLORS: Record<string, string> = {
-  Rock: '#e86042',
-  'Stand-Up': '#d4a820',
-  Türkü: '#1D9E75',
-  Caz: '#8f88d4',
-  Solist: '#D4537E',
-  Pop: '#5ba4cf',
-  Jazz: '#8f88d4',
-  Folk: '#1D9E75',
-  Elektronik: '#a78bfa',
-}
-
-export function getGenreColor(genre: string): string {
-  return GENRE_COLORS[genre] ?? '#D4537E'
-}
+export { GENRE_COLORS, getGenreColor } from '@/lib/constants'
 
 export const VENUE_TYPE_LABELS: Record<string, string> = {
   pub: 'Pub',

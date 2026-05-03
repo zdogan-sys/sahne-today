@@ -10,6 +10,7 @@ import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCale
 import { formatTime } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { ALL_GENRES, CITY_OPTIONS } from '@/lib/constants'
 
 type EventFull = Event & {
   venues: Pick<Venue, 'name' | 'district' | 'city'> & { photo_url?: string | null } | null
@@ -18,8 +19,8 @@ type EventFull = Event & {
   artist_name?: string | null
 }
 
-const GENRES = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'Pop', 'Jazz', 'Folk']
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
+const GENRES = ALL_GENRES
+const CITIES = CITY_OPTIONS
 const ENTRY_TYPES = [
   { value: 'free', label: 'Ücretsiz' },
   { value: 'paid', label: 'Ücretli' },

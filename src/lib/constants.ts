@@ -1,13 +1,37 @@
 export const MUSIC_GENRES = [
-  'Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 
-  'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk'
+  'Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik',
+  'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk',
 ]
 
 export const STAGE_GENRES = [
-  'Stand-Up', 'Doğaçlama', 'Alternatif Sahne'
+  'Stand-Up', 'Doğaçlama', 'Alternatif Sahne',
 ]
 
 export const ALL_GENRES = [...MUSIC_GENRES, ...STAGE_GENRES]
+
+export const GENRE_COLORS: Record<string, string> = {
+  Akustik:           '#9CA3AF',
+  Metal:             '#6B7280',
+  Rock:              '#e86042',
+  Blues:             '#3B82F6',
+  Caz:               '#8f88d4',
+  Pop:               '#5ba4cf',
+  Elektronik:        '#a78bfa',
+  'R&B':             '#EC4899',
+  Rap:               '#F97316',
+  Klasik:            '#8B5CF6',
+  Etnik:             '#10B981',
+  Fasıl:             '#F59E0B',
+  Türkü:             '#1D9E75',
+  Arabesk:           '#EF4444',
+  'Stand-Up':        '#d4a820',
+  Doğaçlama:         '#14B8A6',
+  'Alternatif Sahne':'#6366F1',
+}
+
+export function getGenreColor(genre: string): string {
+  return GENRE_COLORS[genre] ?? '#D4537E'
+}
 
 export const INSTRUMENT_OPTIONS = [
   'Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud'

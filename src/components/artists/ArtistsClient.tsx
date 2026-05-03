@@ -9,12 +9,13 @@ import { cn } from '@/lib/utils'
 import type { Artist, Profile } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Filter } from 'lucide-react'
+import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 
 type ArtistFull = Artist & { profiles: Pick<Profile, 'display_name' | 'avatar_url' | 'city'> | null }
 
-const GENRES = ['Rock', 'Stand-Up', 'Türkü', 'Caz', 'Solist', 'Pop', 'Folk', 'Elektronik']
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
-const INSTRUMENTS = ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz']
+const GENRES = ALL_GENRES
+const CITIES = CITY_OPTIONS
+const INSTRUMENTS = INSTRUMENT_OPTIONS
 
 export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[] }) {
   const [genre, setGenre] = useState('')
