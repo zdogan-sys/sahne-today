@@ -22,9 +22,9 @@ async function assertAdmin() {
 // ─── EVENTS ───────────────────────────────────────────────────────────────
 
 export async function adminCreateEvent(data: Record<string, any>) {
-  const user = await assertAdmin()
+  await assertAdmin()
   const admin = await getAdmin()
-  const { error } = await admin.from('events').insert({ ...data, created_by: user.id })
+  const { error } = await admin.from('events').insert(data)
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
   return { success: true }
