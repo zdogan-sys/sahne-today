@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, MapPin, Trash2 } from 'lucide-react'
+import { X, MapPin, Trash2, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
@@ -28,6 +28,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
   const [mounted, setMounted] = useState(false)
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
 
   const [title, setTitle] = useState('')
   const [startTime, setStartTime] = useState('20:00')
@@ -66,8 +67,10 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
   }
 
   function handleDayClick(date: Date, evs: CalendarEventItem[]) {
+    if (!isOwner && evs.length === 0) return
     setSelectedDate(date)
     setDayEvents(evs)
+    setShowAddForm(evs.length === 0 && isOwner)
     resetForm()
   }
 
@@ -75,6 +78,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
     setSelectedDate(null)
     setDayEvents([])
     setCancelConfirm(null)
+    setShowAddForm(false)
     resetForm()
   }
 
@@ -212,8 +216,19 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
             </div>
           )}
 
-          {/* Add form */}
-          {success ? (
+          {/* Add form — owner only, toggled */}
+          {isOwner && !showAddForm && !success && (
+            <div className="px-5 py-3 border-t border-[rgba(228,224,216,0.08)]">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors"
+              >
+                <Plus size={13} /> Etkinlik Ekle
+              </button>
+            </div>
+          )}
+
+          {isOwner && success ? (
             <div className="px-5 py-8 text-center">
               <p className="text-success text-2xl mb-2">✓</p>
               <p className="text-text-primary text-sm font-medium">Etkinlik eklendi</p>
@@ -221,7 +236,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                 Başka etkinlik ekle
               </button>
             </div>
-          ) : (
+          ) : isOwner && showAddForm ? (
             <div className="px-5 py-4 space-y-4">
               {dayEvents.length > 0 && (
                 <p className="text-text-muted text-xs font-medium uppercase tracking-wide">Etkinlik Ekle</p>
@@ -319,11 +334,11 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
 
               {error && <p className="text-red-400 text-xs">{error}</p>}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Footer */}
-        {!success && (
+        {isOwner && showAddForm && !success && (
           <div className="px-5 py-4 border-t border-[rgba(228,224,216,0.08)] flex-shrink-0">
             <button
               onClick={handleAdd}
@@ -344,7 +359,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
       <h3 className="label mb-4">Etkinlik Takvimi</h3>
       <EventCalendar
         events={events}
-        onDayClick={isOwner ? handleDayClick : undefined}
+        onDayClick={handleDayClick}
         selectedDate={selectedDate}
       />
       {popup}
