@@ -3,7 +3,34 @@
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isAdminUser } from '@/lib/admin'
+import { revalidatePath } from 'next/cache'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
+
+export async function claimArtistProfile(artistId: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Giriş yapmanız gerekiyor.' }
+
+  const { data: artist } = await supabase
+    .from('artists').select('id, profile_id').eq('id', artistId).single()
+  if (!artist) return { success: false, error: 'Profil bulunamadı.' }
+  if (artist.profile_id) return { success: false, error: 'Bu profil zaten bir hesaba bağlı.' }
+
+  const { data: existing } = await supabase
+    .from('artists').select('id').eq('profile_id', user.id).maybeSingle()
+  if (existing) return { success: false, error: 'Zaten bir sanatçı profiliniz var.' }
+
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { error } = await admin
+    .from('artists').update({ profile_id: user.id }).eq('id', artistId).is('profile_id', null)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/artists/${artistId}`)
+  return { success: true }
+}
 
 export async function updateArtistProfile(
   artistId: string,

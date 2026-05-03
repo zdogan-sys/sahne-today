@@ -14,6 +14,7 @@ import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
+import { ClaimProfileButton } from '@/components/artists/ClaimProfileButton'
 
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 type ArtistFull = Artist & { profiles: Profile | null; social_links?: SocialLinksData }
@@ -111,6 +112,11 @@ export default async function ArtistPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
+          {!artist.profile_id && user && !isOwner && (
+            <div className="mt-3">
+              <ClaimProfileButton artistId={artist.id} />
+            </div>
+          )}
           {isOwner && (
             <div className="mt-3 flex items-center gap-3">
               <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
