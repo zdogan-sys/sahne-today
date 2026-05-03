@@ -12,38 +12,42 @@ async function getAdminData() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const [eventsRes, artistsRes, venuesRes, membersRes] = await Promise.all([
-    admin.from('events')
-      .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
-      .order('event_date', { ascending: false })
-      .limit(100),
-    admin.from('artists')
-      .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profiles(display_name, avatar_url)')
-      .order('created_at', { ascending: false })
-      .limit(100),
-    admin.from('venues')
-      .select('id, name, city, district, venue_type, phone, email, description, verified, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100),
-    admin.from('profiles')
-      .select('id, display_name, city, role, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100),
-  ])
+  try {
+    const [eventsRes, artistsRes, venuesRes, membersRes] = await Promise.all([
+      admin.from('events')
+        .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
+        .order('event_date', { ascending: false })
+        .limit(50),
+      admin.from('artists')
+        .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profiles(display_name, avatar_url)')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      admin.from('venues')
+        .select('id, name, city, district, venue_type, phone, email, description, verified, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      admin.from('profiles')
+        .select('id, display_name, city, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ])
 
-  return {
-    events: eventsRes.data ?? [],
-    artists: artistsRes.data ?? [],
-    venues: venuesRes.data ?? [],
-    members: membersRes.data ?? [],
+    return {
+      events: eventsRes.data ?? [],
+      artists: artistsRes.data ?? [],
+      venues: venuesRes.data ?? [],
+      members: membersRes.data ?? [],
+    }
+  } catch {
+    return { events: [], artists: [], venues: [], members: [] }
   }
 }
 
 export default async function AdminPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (!isAdminUser(user)) redirect('/')
+  if (error || !isAdminUser(user)) redirect('/')
 
   const data = await getAdminData()
 
