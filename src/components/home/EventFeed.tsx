@@ -40,7 +40,7 @@ function getDateRange(period: TimeFilter): { from: string; to: string } {
 export function EventFeed() {
   const [events, setEvents] = useState<EventWithRelations[]>([])
   const [timePeriod, setTimePeriod] = useState<TimeFilter>('Bu Hafta')
-  const [activeGenre, setActiveGenre] = useState('Tümü')
+  const [activeGenre, setActiveGenre] = useState<string>('Tümü')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -97,7 +97,7 @@ export function EventFeed() {
             : (
               <button
                 key={g}
-                onClick={() => setActiveGenre(g)}
+                onClick={() => setActiveGenre(g as string)}
                 className={`flex-shrink-0 chip transition-colors ${
                   activeGenre === g
                     ? 'bg-accent text-white border-accent'
