@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
-import { Trash2, Pencil, Plus, ExternalLink, Users } from 'lucide-react'
+import { Trash2, Pencil, Plus, ExternalLink, Users, X } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -13,30 +13,39 @@ import {
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
+import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
 import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'events' | 'artists' | 'venues' | 'members'
+type Tab = 'events' | 'artists' | 'venues' | 'members' | 'lists'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'events', label: 'Etkinlikler' },
   { key: 'artists', label: 'Sanatçılar' },
   { key: 'venues', label: 'Mekanlar' },
   { key: 'members', label: 'Üyeler' },
+  { key: 'lists', label: 'Türler' },
 ]
 
 const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
 const EVENT_STATUSES = ['confirmed', 'pending', 'cancelled']
 const ENTRY_TYPES = ['free', 'paid', 'door']
 
+interface ListConfigs {
+  music_genres: string[]
+  stage_genres: string[]
+  instruments: string[]
+}
+
 interface Props {
   events: any[]
   artists: any[]
   venues: any[]
   members: any[]
+  listConfigs: ListConfigs
 }
 
-export function AdminPanel({ events, artists, venues, members }: Props) {
+export function AdminPanel({ events, artists, venues, members, listConfigs }: Props) {
   const [tab, setTab] = useState<Tab>('events')
   const router = useRouter()
 
@@ -75,6 +84,7 @@ export function AdminPanel({ events, artists, venues, members }: Props) {
       {tab === 'artists' && <ArtistsTab artists={artists} onRefresh={refresh} />}
       {tab === 'venues' && <VenuesTab venues={venues} onRefresh={refresh} />}
       {tab === 'members' && <MembersTab members={members} onRefresh={refresh} />}
+      {tab === 'lists' && <ListsTab configs={listConfigs} />}
     </div>
   )
 }
@@ -758,6 +768,121 @@ function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => v
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ── Türler & Enstrümanlar ─────────────────────────────────────────────────────
+
+function ListsTab({ configs }: { configs: { music_genres: string[]; stage_genres: string[]; instruments: string[] } }) {
+  return (
+    <div className="space-y-8">
+      <ListEditor
+        title="Müzik Türleri"
+        configKey="music_genres"
+        initialItems={configs.music_genres}
+      />
+      <ListEditor
+        title="Sahne Türleri"
+        configKey="stage_genres"
+        initialItems={configs.stage_genres}
+      />
+      <ListEditor
+        title="Enstrümanlar"
+        configKey="instruments"
+        initialItems={configs.instruments}
+      />
+    </div>
+  )
+}
+
+function ListEditor({
+  title,
+  configKey,
+  initialItems,
+}: {
+  title: string
+  configKey: ListConfigKey
+  initialItems: string[]
+}) {
+  const [items, setItems] = useState(initialItems)
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [savedMsg, setSavedMsg] = useState('')
+
+  async function save(next: string[]) {
+    setSaving(true)
+    setSavedMsg('')
+    const res = await updateListConfig(configKey, next)
+    setSaving(false)
+    setSavedMsg(res.success ? '✓ Kaydedildi' : (res.error ?? 'Hata'))
+    setTimeout(() => setSavedMsg(''), 2500)
+  }
+
+  async function add() {
+    const val = input.trim()
+    if (!val || items.includes(val)) return
+    const next = [...items, val]
+    setItems(next)
+    setInput('')
+    await save(next)
+  }
+
+  async function remove(item: string) {
+    const next = items.filter(i => i !== item)
+    setItems(next)
+    await save(next)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-text-primary">{title}</h3>
+        <span className={cn(
+          'text-xs transition-colors',
+          saving ? 'text-text-muted' : savedMsg.startsWith('✓') ? 'text-success' : 'text-red-400',
+        )}>
+          {saving ? 'Kaydediliyor...' : savedMsg}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
+        {items.map(item => (
+          <span
+            key={item}
+            className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-lg bg-[rgba(228,224,216,0.07)] border border-[rgba(228,224,216,0.12)] text-text-primary text-sm"
+          >
+            {item}
+            <button
+              onClick={() => remove(item)}
+              className="w-5 h-5 rounded flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          placeholder="Yeni ekle..."
+          className="input-field text-sm flex-1"
+        />
+        <button
+          onClick={add}
+          disabled={!input.trim() || items.includes(input.trim())}
+          className="btn-accent px-4 py-2 text-sm disabled:opacity-40 flex items-center gap-1.5"
+        >
+          <Plus size={14} />
+          Ekle
+        </button>
+      </div>
+      {input.trim() && items.includes(input.trim()) && (
+        <p className="text-xs text-text-muted mt-1">Bu değer zaten listede mevcut.</p>
+      )}
     </div>
   )
 }

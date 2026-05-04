@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isAdminUser } from '@/lib/admin'
 import { AdminPanel } from '@/components/admin/AdminPanel'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getListConfigs } from '@/app/actions/site'
 
 async function getAdminData() {
   const admin = createAdminClient(
@@ -49,7 +50,7 @@ export default async function AdminPage() {
 
   if (error || !isAdminUser(user)) redirect('/')
 
-  const data = await getAdminData()
+  const [data, listConfigs] = await Promise.all([getAdminData(), getListConfigs()])
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
@@ -57,7 +58,7 @@ export default async function AdminPage() {
         <div className="w-2 h-6 bg-accent rounded-full" />
         <h1 className="font-bebas text-4xl text-text-primary">Admin Paneli</h1>
       </div>
-      <AdminPanel {...data} />
+      <AdminPanel {...data} listConfigs={listConfigs} />
     </div>
   )
 }
