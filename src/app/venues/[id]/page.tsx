@@ -17,6 +17,7 @@ import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
 import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
+import { ClaimVenueButton } from '@/components/venues/ClaimVenueButton'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import type { Venue, Slot, Event } from '@/lib/supabase/types'
 
@@ -136,6 +137,11 @@ export default async function VenuePage({ params }: Props) {
                 </span>
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
+                )}
+                {!(venue as any).owner_id && user && !isOwner && (
+                  <span className="pointer-events-auto">
+                    <ClaimVenueButton venueId={venue.id} />
+                  </span>
                 )}
               </div>
             </div>
