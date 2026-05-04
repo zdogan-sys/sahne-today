@@ -16,6 +16,7 @@ import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
+import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import type { Venue, Slot, Event } from '@/lib/supabase/types'
 
@@ -44,21 +45,32 @@ export default async function VenuePage({ params }: Props) {
   const artistRes = user ? await supabase.from('artists').select('id').eq('profile_id', user.id).maybeSingle() : null
   const isArtist = !!artistRes?.data
 
-  const [venueRes, slotsRes, eventsRes] = await Promise.all([
+  const today = new Date().toISOString().split('T')[0]
+
+  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     supabase.from('slots').select('*').eq('venue_id', id).eq('status', 'open').order('day_of_week'),
     supabase.from('events')
-      .select('*, artists(stage_name)')
+      .select('id, title, event_date, genre, artists(stage_name)')
       .eq('venue_id', id)
       .eq('status', 'confirmed')
+      .gte('event_date', today)
+      .order('event_date', { ascending: true })
+      .limit(30),
+    supabase.from('events')
+      .select('id, title, event_date, genre, artists(stage_name)')
+      .eq('venue_id', id)
+      .eq('status', 'confirmed')
+      .lt('event_date', today)
       .order('event_date', { ascending: false })
-      .limit(10),
+      .limit(20),
   ])
 
   if (!venueRes.data) notFound()
   const venue = venueRes.data as unknown as Venue
   const slots = (slotsRes.data ?? []) as unknown as Slot[]
-  const events = (eventsRes.data ?? []) as unknown as (Event & { artists: { stage_name: string } | null })[]
+  const upcomingEvents = (upcomingEventsRes.data ?? []) as any[]
+  const pastEvents = (pastEventsRes.data ?? []) as any[]
   const isOwner = user?.id === venue.owner_id || isAdminUser(user)
   const canSeeSlots = isOwner || isArtist
   const photos: string[] = (venue as any).photos ?? []
@@ -249,20 +261,10 @@ export default async function VenuePage({ params }: Props) {
           />
         )}
 
-        {events.length > 0 && (
+        {(upcomingEvents.length > 0 || pastEvents.length > 0) && (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">GEÇMİŞ ETKİNLİKLER</h2>
-            <div className="space-y-2">
-              {events.map((event) => (
-                <Link key={event.id} href={`/events/${event.id}`} className="card p-3 flex items-center justify-between hover:border-accent/30 transition-colors block">
-                  <div>
-                    <p className="text-text-primary text-sm font-medium">{event.title}</p>
-                    <p className="text-text-muted text-xs">{formatDate(event.event_date)}</p>
-                  </div>
-                  {event.genre && <GenreChip genre={event.genre} />}
-                </Link>
-              ))}
-            </div>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİKLER</h2>
+            <VenueEventTabs upcoming={upcomingEvents} past={pastEvents} />
           </div>
         )}
       </div>
