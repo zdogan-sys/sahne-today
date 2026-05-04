@@ -75,15 +75,21 @@ export function ImageUpload({ value, onChange, bucket = 'avatars', label = 'Foto
       </div>
 
       {value ? (
-        <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-accent/30 mb-2">
-          <Image src={value} alt="Profil fotoğrafı" fill className="object-cover" sizes="96px" />
-          <button
-            type="button"
-            onClick={() => { onChange(''); setUrlInput('') }}
-            className="absolute top-0.5 right-0.5 w-5 h-5 bg-background/80 rounded-full flex items-center justify-center text-text-muted hover:text-red-400"
-          >
-            <X size={10} />
-          </button>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-accent/30 flex-shrink-0">
+            <Image src={value} alt="Profil fotoğrafı" fill className="object-cover" sizes="80px" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs text-text-muted">Mevcut fotoğraf</p>
+            <button
+              type="button"
+              onClick={() => { onChange(''); setUrlInput('') }}
+              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+            >
+              <X size={12} />
+              Fotoğrafı kaldır
+            </button>
+          </div>
         </div>
       ) : null}
 
