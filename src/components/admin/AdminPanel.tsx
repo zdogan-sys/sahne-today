@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,15 @@ import {
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, horizontalListSortingStrategy,
+  useSortable, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
@@ -777,22 +786,52 @@ function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => v
 function ListsTab({ configs }: { configs: { music_genres: string[]; stage_genres: string[]; instruments: string[] } }) {
   return (
     <div className="space-y-8">
-      <ListEditor
-        title="Müzik Türleri"
-        configKey="music_genres"
-        initialItems={configs.music_genres}
-      />
-      <ListEditor
-        title="Sahne Türleri"
-        configKey="stage_genres"
-        initialItems={configs.stage_genres}
-      />
-      <ListEditor
-        title="Enstrümanlar"
-        configKey="instruments"
-        initialItems={configs.instruments}
-      />
+      <ListEditor title="Müzik Türleri"  configKey="music_genres"  initialItems={configs.music_genres} />
+      <ListEditor title="Sahne Türleri"  configKey="stage_genres"  initialItems={configs.stage_genres} />
+      <ListEditor title="Enstrümanlar"   configKey="instruments"   initialItems={configs.instruments} />
     </div>
+  )
+}
+
+function SortableChip({
+  id,
+  onRemove,
+}: {
+  id: string
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+
+  return (
+    <span
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-lg bg-[rgba(228,224,216,0.07)] border border-[rgba(228,224,216,0.12)] text-text-primary text-sm select-none"
+    >
+      {/* drag handle */}
+      <span
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-text-muted hover:text-text-primary touch-none px-0.5"
+        title="Sürükle"
+      >
+        ⠿
+      </span>
+      {id}
+      <button
+        onClick={onRemove}
+        className="w-5 h-5 rounded flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+      >
+        <X size={12} />
+      </button>
+    </span>
   )
 }
 
@@ -809,14 +848,30 @@ function ListEditor({
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
 
   async function save(next: string[]) {
     setSaving(true)
     setSavedMsg('')
+    if (saveTimer.current) clearTimeout(saveTimer.current)
     const res = await updateListConfig(configKey, next)
     setSaving(false)
     setSavedMsg(res.success ? '✓ Kaydedildi' : (res.error ?? 'Hata'))
-    setTimeout(() => setSavedMsg(''), 2500)
+    saveTimer.current = setTimeout(() => setSavedMsg(''), 2500)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = items.indexOf(active.id as string)
+    const newIndex = items.indexOf(over.id as string)
+    const next = arrayMove(items, oldIndex, newIndex)
+    setItems(next)
+    save(next)
   }
 
   async function add() {
@@ -840,28 +895,21 @@ function ListEditor({
         <h3 className="font-semibold text-text-primary">{title}</h3>
         <span className={cn(
           'text-xs transition-colors',
-          saving ? 'text-text-muted' : savedMsg.startsWith('✓') ? 'text-success' : 'text-red-400',
+          saving ? 'text-text-muted' : savedMsg.startsWith('✓') ? 'text-success' : savedMsg ? 'text-red-400' : '',
         )}>
           {saving ? 'Kaydediliyor...' : savedMsg}
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
-        {items.map(item => (
-          <span
-            key={item}
-            className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-lg bg-[rgba(228,224,216,0.07)] border border-[rgba(228,224,216,0.12)] text-text-primary text-sm"
-          >
-            {item}
-            <button
-              onClick={() => remove(item)}
-              className="w-5 h-5 rounded flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-            >
-              <X size={12} />
-            </button>
-          </span>
-        ))}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={items} strategy={horizontalListSortingStrategy}>
+          <div className="flex flex-wrap gap-2 mb-3 min-h-[2.5rem]">
+            {items.map(item => (
+              <SortableChip key={item} id={item} onRemove={() => remove(item)} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <div className="flex gap-2">
         <input
