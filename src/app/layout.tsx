@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { TopNav } from '@/components/layout/TopNav'
+import { PWAInstallBanner } from '@/components/PWAInstallBanner'
 
 export const metadata: Metadata = {
   title: {
@@ -34,6 +35,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#D4537E" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Sahne.Today" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className="bg-background text-text-primary font-dm min-h-screen">
         <TopNav />
         <main className="pb-16 md:pb-0">
@@ -41,6 +50,7 @@ export default function RootLayout({
         </main>
         <MobileNav />
         {modal}
+        <PWAInstallBanner />
       </body>
     </html>
   )
