@@ -2,22 +2,51 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { CheckCircle, XCircle, AlertCircle, Camera, QrCode } from 'lucide-react'
-import dynamic from 'next/dynamic'
+import { BrowserQRCodeReader } from '@zxing/browser'
 
-const QrReader = dynamic(() => import('react-qr-reader').then(m => m.QrReader), { ssr: false })
-
-type ScanResult = { type: 'success'; name: string } | { type: 'used' | 'invalid'; message: string } | null
+type ScanResult =
+  | { type: 'success'; name: string }
+  | { type: 'used' | 'invalid'; message: string }
+  | null
 
 export default function ScanPage() {
   const [result, setResult] = useState<ScanResult>(null)
   const [scanning, setScanning] = useState(false)
   const [loading, setLoading] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const controlsRef = useRef<{ stop: () => void } | null>(null)
   const lastScanned = useRef('')
 
+  useEffect(() => {
+    if (!scanning) {
+      controlsRef.current?.stop()
+      controlsRef.current = null
+      return
+    }
+
+    const reader = new BrowserQRCodeReader()
+    let active = true
+
+    reader.decodeFromVideoDevice(undefined, videoRef.current!, (res, err, controls) => {
+      controlsRef.current = controls
+      if (!active || !res || loading) return
+      const text = res.getText()
+      if (text === lastScanned.current) return
+      lastScanned.current = text
+      handleScan(text)
+    })
+
+    return () => {
+      active = false
+      controlsRef.current?.stop()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning])
+
   const handleScan = async (qrCode: string) => {
-    if (!qrCode || qrCode === lastScanned.current || loading) return
-    lastScanned.current = qrCode
     setLoading(true)
+    controlsRef.current?.stop()
+    setScanning(false)
 
     try {
       const res = await fetch('/api/tickets/scan', {
@@ -38,7 +67,6 @@ export default function ScanPage() {
       setResult({ type: 'invalid', message: 'Bağlantı hatası' })
     } finally {
       setLoading(false)
-      setScanning(false)
     }
   }
 
@@ -74,17 +102,8 @@ export default function ScanPage() {
 
       {scanning && !result && (
         <div className="card overflow-hidden">
-          <div className="relative aspect-square w-full">
-            {typeof window !== 'undefined' && (
-              <QrReader
-                onResult={(res) => { if (res) handleScan(res.getText()) }}
-                constraints={{ facingMode: 'environment' }}
-                containerStyle={{ width: '100%', height: '100%' }}
-                videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                scanDelay={500}
-              />
-            )}
-            {/* Crosshair overlay */}
+          <div className="relative aspect-square w-full bg-black">
+            <video ref={videoRef} className="w-full h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-52 h-52 border-2 border-accent/70 rounded-xl" />
             </div>
