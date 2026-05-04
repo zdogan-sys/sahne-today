@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const unitPriceWithCommission = Math.round(unitPrice * (1 + commissionRate / 100) * 100) / 100
     const totalPrice = Math.round(unitPriceWithCommission * quantity * 100) / 100
 
-    const merchantOid = `ST-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+    const merchantOid = `ST${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 
     const adminClient = createAdminClient()
     const { data: ticket, error: ticketError } = await adminClient
