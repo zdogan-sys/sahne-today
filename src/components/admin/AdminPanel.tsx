@@ -14,6 +14,7 @@ import {
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
+import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -670,6 +671,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [district, setDistrict] = useState(initial?.district ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
   const [venueType, setVenueType] = useState(initial?.venue_type ?? 'pub')
+  const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
   const [description, setDescription] = useState(initial?.description ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [email, setEmail] = useState(initial?.email ?? '')
@@ -682,7 +684,8 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
     setLoading(true); setError('')
     const data = {
       name, city, district: district || null, address: address || '',
-      venue_type: venueType, description: description || null,
+      venue_type: venueType, genres,
+      description: description || null,
       phone: phone || null, email: email || null, verified,
     }
     const res = initial?.id
@@ -723,6 +726,11 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             {VENUE_TYPES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
         </div>
+        <TabbedGenreSelector
+          label="Müzik Türleri"
+          selected={genres}
+          onToggle={(g) => setGenres(genres.includes(g) ? genres.filter(x => x !== g) : [...genres, g])}
+        />
         <div>
           <label className="label">Açıklama</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="input-field text-sm resize-none" />
