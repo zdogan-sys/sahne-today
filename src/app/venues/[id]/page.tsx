@@ -138,7 +138,7 @@ export default async function VenuePage({ params }: Props) {
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
                 )}
-                {!(venue as any).owner_id && user && !isOwner && (
+                {!(venue as any).owner_id && user && (venue as any).owner_id !== user?.id && (
                   <span className="pointer-events-auto">
                     <ClaimVenueButton venueId={venue.id} />
                   </span>
