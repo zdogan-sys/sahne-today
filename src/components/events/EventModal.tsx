@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { X, Clock, MapPin, Ticket, Music2, ArrowUpRight } from 'lucide-react'
+import { X, Clock, MapPin, Ticket, Music2, ArrowUpRight, ShoppingCart } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
 
@@ -30,13 +30,13 @@ export function EventModal({ event }: { event: any }) {
         <div className="flex items-start justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)] flex-shrink-0">
           <h2 className="font-bebas text-2xl text-text-primary leading-tight pr-4">{event.title}</h2>
           <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-            <Link
+            <a
               href={`/events/${event.id}`}
               className="p-1.5 text-text-muted hover:text-accent transition-colors"
               title="Tam sayfada aç"
             >
               <ArrowUpRight size={16} />
-            </Link>
+            </a>
             <button
               onClick={() => router.back()}
               className="p-1.5 text-text-muted hover:text-text-primary transition-colors"
@@ -151,6 +151,26 @@ export function EventModal({ event }: { event: any }) {
           {event.description && (
             <p className="text-text-muted text-sm leading-relaxed">{event.description}</p>
           )}
+
+          {/* Ticketing */}
+          {event.ticketing_enabled && (() => {
+            const remaining = (event.ticket_count ?? 0) - (event.tickets_sold ?? 0)
+            return remaining > 0 ? (
+              <div className="flex items-center gap-3 pt-1">
+                <a
+                  href={`/events/${event.id}/tickets`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors"
+                >
+                  <ShoppingCart size={15} /> Bilet Al
+                </a>
+                <span className="text-text-muted text-xs">{remaining} bilet kaldı · {Number(event.ticket_price).toFixed(0)}₺</span>
+              </div>
+            ) : (
+              <button disabled className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(228,224,216,0.06)] text-text-muted text-sm font-semibold cursor-not-allowed">
+                <Ticket size={15} /> Tükendi
+              </button>
+            )
+          })()}
         </div>
       </div>
     </div>
