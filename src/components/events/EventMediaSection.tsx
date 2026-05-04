@@ -94,6 +94,7 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
   const [removing, setRemoving] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const ref = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
     setUploading(true)
@@ -118,27 +119,48 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
     <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="label">Etkinlik Fotoğrafları</h3>
-        {isParty && (
-          <button
-            onClick={() => ref.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50"
-          >
-            {uploading ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
-            {uploading ? 'Yükleniyor...' : 'Fotoğraf Ekle'}
-          </button>
+        {isParty && !uploading && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              className="flex items-center gap-1 text-xs text-accent border border-accent/30 rounded-lg px-2.5 py-1 hover:bg-accent/10 transition-colors"
+            >
+              <Camera size={11} /> Kamera
+            </button>
+            <button
+              onClick={() => ref.current?.click()}
+              className="flex items-center gap-1 text-xs text-text-muted border border-[rgba(228,224,216,0.15)] rounded-lg px-2.5 py-1 hover:border-accent/40 hover:text-accent transition-colors"
+            >
+              <Plus size={11} /> Galeri
+            </button>
+          </div>
+        )}
+        {isParty && uploading && (
+          <span className="flex items-center gap-1 text-xs text-text-muted">
+            <Loader2 size={11} className="animate-spin" /> Yükleniyor...
+          </span>
         )}
       </div>
 
       {photos.length === 0 ? (
-        <button
-          onClick={() => ref.current?.click()}
-          className="w-full py-8 rounded-xl border border-dashed border-[rgba(228,224,216,0.2)] bg-[rgba(228,224,216,0.03)] hover:bg-[rgba(228,224,216,0.06)] transition-colors flex flex-col items-center gap-2 text-text-muted hover:text-text-primary"
-        >
+        <div className="w-full py-8 rounded-xl border border-dashed border-[rgba(228,224,216,0.2)] bg-[rgba(228,224,216,0.03)] flex flex-col items-center gap-3 text-text-muted">
           <Camera size={20} />
-          <span className="text-sm">Fotoğraf ekle</span>
-          <span className="text-xs opacity-60">Etkinlik sırasında veya sonrasında çekilen fotoğrafları paylaş</span>
-        </button>
+          <span className="text-sm">Etkinlik fotoğrafı ekle</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              className="flex items-center gap-1.5 text-xs text-accent border border-accent/30 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors font-medium"
+            >
+              <Camera size={12} /> Kamera ile Çek
+            </button>
+            <button
+              onClick={() => ref.current?.click()}
+              className="flex items-center gap-1.5 text-xs text-text-muted border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-1.5 hover:border-accent/40 hover:text-accent transition-colors"
+            >
+              <Plus size={12} /> Galeriden Seç
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((url, i) => (
@@ -157,19 +179,33 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
             </div>
           ))}
           {isParty && (
-            <button
-              onClick={() => ref.current?.click()}
-              disabled={uploading}
-              className="aspect-square rounded-xl border border-dashed border-[rgba(228,224,216,0.2)] bg-[rgba(228,224,216,0.03)] hover:bg-[rgba(228,224,216,0.06)] transition-colors flex flex-col items-center justify-center gap-1.5 text-text-muted hover:text-text-primary disabled:opacity-50"
-            >
-              {uploading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-              <span className="text-xs">{uploading ? 'Yükleniyor...' : 'Ekle'}</span>
-            </button>
+            <div className="aspect-square rounded-xl border border-dashed border-[rgba(228,224,216,0.2)] bg-[rgba(228,224,216,0.03)] flex flex-col items-center justify-center gap-2">
+              {uploading ? (
+                <Loader2 size={18} className="animate-spin text-text-muted" />
+              ) : (
+                <>
+                  <button
+                    onClick={() => cameraRef.current?.click()}
+                    className="flex items-center gap-1 text-xs text-accent hover:underline"
+                  >
+                    <Camera size={12} /> Kamera
+                  </button>
+                  <button
+                    onClick={() => ref.current?.click()}
+                    className="flex items-center gap-1 text-xs text-text-muted hover:text-accent"
+                  >
+                    <Plus size={12} /> Galeri
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
 
       <input ref={ref} type="file" accept="image/*" className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
 
       {lightbox && (
