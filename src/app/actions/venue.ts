@@ -14,10 +14,6 @@ export async function claimVenue(venueId: string) {
   if (!venue) return { success: false, error: 'Mekan bulunamadı.' }
   if (venue.owner_id) return { success: false, error: 'Bu mekan zaten bir hesaba bağlı.' }
 
-  const { data: existing } = await supabase
-    .from('venues').select('id').eq('owner_id', user.id).maybeSingle()
-  if (existing) return { success: false, error: 'Zaten bir mekan sahibiysiniz.' }
-
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
