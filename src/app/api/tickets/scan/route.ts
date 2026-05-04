@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isAdminUser } from '@/lib/admin'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
+  const isAdmin = isAdminUser(user)
 
   const { qr_code } = await req.json()
   if (!qr_code) return NextResponse.json({ error: 'QR kod gerekli' }, { status: 400 })
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
   const event = ticket.events as any
   const ownerIdOfVenue = event?.venues?.owner_id
 
-  if (ownerIdOfVenue !== user.id) {
+  if (!isAdmin && ownerIdOfVenue !== user.id) {
     return NextResponse.json({ error: 'Bu bileti tarama yetkiniz yok' }, { status: 403 })
   }
 
