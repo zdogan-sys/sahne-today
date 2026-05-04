@@ -36,7 +36,7 @@ export function ClaimVenueButton({ venueId }: { venueId: string }) {
       <button
         onClick={handleClaim}
         disabled={loading}
-        className="flex items-center gap-1.5 text-xs text-text-muted border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 text-xs text-accent border border-accent/40 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors disabled:opacity-50 font-medium"
       >
         <Building2 size={13} />
         {loading ? 'Bağlanıyor...' : 'Bu benim mekanım'}
