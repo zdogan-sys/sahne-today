@@ -49,6 +49,8 @@ interface Props {
   artistId: string | null
   artistBands: BandOption[]
   isOwner?: boolean
+  initialArtists?: { id: string; stage_name: string; city: string | null }[]
+  initialBands?: { id: string; name: string; city: string | null }[]
 }
 
 const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
@@ -62,7 +64,7 @@ function toISO(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner }: Props) {
+export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner, initialArtists = [], initialBands = [] }: Props) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -105,10 +107,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   // Performer search
   const [performerTab, setPerformerTab] = useState<'artist' | 'band'>('artist')
   const [performerQuery, setPerformerQuery] = useState('')
-  const [allArtists, setAllArtists] = useState<{ id: string; stage_name: string; city: string | null }[]>([])
-  const [allBands, setAllBands] = useState<{ id: string; name: string; city: string | null }[]>([])
+  const [allArtists, setAllArtists] = useState<{ id: string; stage_name: string; city: string | null }[]>(initialArtists)
+  const [allBands, setAllBands] = useState<{ id: string; name: string; city: string | null }[]>(initialBands)
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null)
-  const [showPerformerList, setShowPerformerList] = useState(false)
 
   const supabase = createClient()
 
@@ -116,10 +117,14 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
   useEffect(() => {
     if (!isOwner) return
-    supabase.from('artists').select('id, stage_name, city').order('stage_name')
-      .then(({ data }) => { if (data) setAllArtists(data as any[]) })
-    supabase.from('bands').select('id, name, city').order('name')
-      .then(({ data }) => { if (data) setAllBands(data as any[]) })
+    if (initialArtists.length === 0) {
+      supabase.from('artists').select('id, stage_name, city').order('stage_name')
+        .then(({ data }) => { if (data) setAllArtists(data as any[]) })
+    }
+    if (initialBands.length === 0) {
+      supabase.from('bands').select('id, name, city').order('name')
+        .then(({ data }) => { if (data) setAllBands(data as any[]) })
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwner])
 
@@ -171,8 +176,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     setPerformerTab('artist')
     setPerformerQuery('')
     setSelectedPerformer(null)
-    setShowPerformerList(false)
-    
+
     setSlotRecurrence('weekly')
     setSlotStartTime('21:00')
     setSlotEndTime('23:00')
@@ -417,29 +421,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                     </div>
                   </div>
 
-                  {/* Performer search */}
+                  {/* Performer search — inline list, touch-friendly */}
                   <div>
                     <label className="label">Sanatçı / Grup</label>
-                    {!selectedPerformer && (
-                      <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)] mb-2">
-                        <button
-                          type="button"
-                          onClick={() => { setPerformerTab('artist'); setPerformerQuery('') }}
-                          className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors',
-                            performerTab === 'artist' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
-                        >
-                          <Music2 size={11} /> Sanatçı ({allArtists.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setPerformerTab('band'); setPerformerQuery('') }}
-                          className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors border-l border-[rgba(228,224,216,0.15)]',
-                            performerTab === 'band' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
-                        >
-                          <Users size={11} /> Grup ({allBands.length})
-                        </button>
-                      </div>
-                    )}
                     {selectedPerformer ? (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
                         {selectedPerformer.type === 'artist'
@@ -450,31 +434,48 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                         <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
                         <button
                           type="button"
-                          onClick={() => { setSelectedPerformer(null); setPerformerQuery(''); setShowPerformerList(false) }}
+                          onClick={() => { setSelectedPerformer(null); setPerformerQuery('') }}
                           className="text-text-muted hover:text-text-primary ml-1"
                         >
                           <X size={13} />
                         </button>
                       </div>
                     ) : (
-                      <div className="relative">
+                      <>
+                        <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)] mb-2">
+                          <button
+                            type="button"
+                            onClick={() => { setPerformerTab('artist'); setPerformerQuery('') }}
+                            className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors',
+                              performerTab === 'artist' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
+                          >
+                            <Music2 size={11} /> Sanatçı ({allArtists.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setPerformerTab('band'); setPerformerQuery('') }}
+                            className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors border-l border-[rgba(228,224,216,0.15)]',
+                              performerTab === 'band' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
+                          >
+                            <Users size={11} /> Grup ({allBands.length})
+                          </button>
+                        </div>
                         <input
                           value={performerQuery}
-                          onChange={e => { setPerformerQuery(e.target.value); setShowPerformerList(true) }}
-                          onFocus={() => setShowPerformerList(true)}
-                          onBlur={() => setTimeout(() => setShowPerformerList(false), 150)}
-                          placeholder={performerTab === 'artist' ? 'Sanatçı adı yazın...' : 'Grup adı yazın...'}
+                          onChange={e => setPerformerQuery(e.target.value)}
+                          placeholder={performerTab === 'artist' ? 'İsimle ara...' : 'Grup adıyla ara...'}
                           className="input-field text-sm"
                           autoComplete="off"
                         />
-                        {showPerformerList && filteredPerformers.length > 0 && (
-                          <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg overflow-hidden shadow-xl max-h-56 overflow-y-auto">
+                        {/* Inline list — no absolute positioning, not clipped by overflow */}
+                        {filteredPerformers.length > 0 && (
+                          <div className="mt-1 border border-[rgba(228,224,216,0.15)] rounded-lg overflow-hidden max-h-44 overflow-y-auto">
                             {filteredPerformers.map(p => (
                               <button
                                 key={`${p.type}-${p.id}`}
                                 type="button"
-                                onMouseDown={e => { e.preventDefault(); setSelectedPerformer(p); setPerformerQuery(p.name); setShowPerformerList(false) }}
-                                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] transition-colors"
+                                onClick={() => { setSelectedPerformer(p); setPerformerQuery(p.name) }}
+                                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] active:bg-[rgba(228,224,216,0.1)] transition-colors border-b border-[rgba(228,224,216,0.06)] last:border-b-0"
                               >
                                 <span className="text-text-primary text-sm flex-1 truncate">{p.name}</span>
                                 <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
@@ -482,14 +483,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                             ))}
                           </div>
                         )}
-                        {showPerformerList && performerQuery.trim() && filteredPerformers.length === 0 && (
-                          <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 shadow-xl">
-                            <p className="text-text-muted text-xs">
-                              {performerTab === 'artist' ? 'Kayıtlı sanatçı bulunamadı' : 'Kayıtlı grup bulunamadı'} – ad olarak kaydedilecek
-                            </p>
-                          </div>
+                        {performerQuery.trim() && filteredPerformers.length === 0 && (
+                          <p className="text-text-muted text-xs mt-1.5 px-1">
+                            {performerTab === 'artist' ? 'Kayıtlı sanatçı bulunamadı' : 'Kayıtlı grup bulunamadı'} — ad olarak kaydedilecek
+                          </p>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
                 </>

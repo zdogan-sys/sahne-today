@@ -46,7 +46,7 @@ export default async function VenueCalendarPage({ params }: Props) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const [slotsRes, eventsRes, bandsRes] = await Promise.all([
+  const [slotsRes, eventsRes, bandsRes, allArtistsRes, allBandsRes] = await Promise.all([
     canSeeSlots
       ? supabase
           .from('slots')
@@ -74,6 +74,12 @@ export default async function VenueCalendarPage({ params }: Props) {
           .eq('artist_id', artistId!)
           .eq('status', 'accepted')
       : Promise.resolve({ data: [] }),
+    isOwner
+      ? supabase.from('artists').select('id, stage_name, city').order('stage_name')
+      : Promise.resolve({ data: [] }),
+    isOwner
+      ? supabase.from('bands').select('id, name, city').order('name')
+      : Promise.resolve({ data: [] }),
   ])
 
   const slots = (slotsRes.data ?? []) as any[]
@@ -81,6 +87,8 @@ export default async function VenueCalendarPage({ params }: Props) {
   const artistBands = (bandsRes.data ?? [])
     .map((m: any) => m.bands)
     .filter(Boolean) as { id: string; name: string }[]
+  const allArtists = (allArtistsRes.data ?? []) as { id: string; stage_name: string; city: string | null }[]
+  const allBands = (allBandsRes.data ?? []) as { id: string; name: string; city: string | null }[]
 
   const upcomingEvents = events.filter((e: any) => e.event_date >= today)
   const sortedSlots = [...slots].sort((a, b) => {
@@ -171,6 +179,8 @@ export default async function VenueCalendarPage({ params }: Props) {
               artistId={artistId}
               artistBands={artistBands}
               isOwner={isOwner}
+              initialArtists={allArtists}
+              initialBands={allBands}
             />
           </div>
         </div>
