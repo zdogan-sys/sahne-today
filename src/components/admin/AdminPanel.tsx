@@ -245,7 +245,7 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
   async function quickAddVenue() {
     if (!newVenueName || !newVenueCity) { setQuickError('Ad ve şehir zorunludur.'); return }
     setQuickLoading(true); setQuickError('')
-    const res = await adminCreateVenue({ name: newVenueName, city: newVenueCity, venue_type: newVenueType })
+    const res = await adminCreateVenue({ name: newVenueName, city: newVenueCity, venue_type: newVenueType, address: '' })
     setQuickLoading(false)
     if (!res.success) { setQuickError(res.error ?? 'Hata'); return }
     const item = (res as any).item
@@ -665,6 +665,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [name, setName] = useState(initial?.name ?? '')
   const [city, setCity] = useState(initial?.city ?? '')
   const [district, setDistrict] = useState(initial?.district ?? '')
+  const [address, setAddress] = useState(initial?.address ?? '')
   const [venueType, setVenueType] = useState(initial?.venue_type ?? 'pub')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
@@ -677,9 +678,9 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
     if (!name || !city) { setError('Ad ve şehir zorunludur.'); return }
     setLoading(true); setError('')
     const data = {
-      name, city, district: district || null, venue_type: venueType,
-      description: description || null, phone: phone || null,
-      email: email || null, verified,
+      name, city, district: district || null, address: address || '',
+      venue_type: venueType, description: description || null,
+      phone: phone || null, email: email || null, verified,
     }
     const res = initial?.id
       ? await adminUpdateVenue(initial.id, data)
@@ -708,6 +709,10 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             <label className="label">İlçe</label>
             <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm" />
           </div>
+        </div>
+        <div>
+          <label className="label">Adres</label>
+          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Sokak, bina no..." className="input-field text-sm" />
         </div>
         <div>
           <label className="label">Mekan Türü</label>
