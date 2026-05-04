@@ -171,7 +171,7 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
                 <button
                   onClick={e => { e.stopPropagation(); handleRemove(url) }}
                   disabled={removing === url}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/80 z-10"
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-500/80 z-10"
                 >
                   {removing === url ? <Loader2 size={11} className="animate-spin" /> : <X size={11} />}
                 </button>
