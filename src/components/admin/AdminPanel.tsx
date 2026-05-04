@@ -706,7 +706,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             </select>
           </div>
           <div>
-            <label className="label">İlçe</label>
+            <label className="label">Bölge</label>
             <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm" />
           </div>
         </div>

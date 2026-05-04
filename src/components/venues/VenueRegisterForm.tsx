@@ -157,14 +157,14 @@ export function VenueRegisterForm() {
               </select>
             </div>
             <div>
-              <label className="label">İlçe *</label>
+              <label className="label">Bölge *</label>
               {city && DISTRICTS_BY_CITY[city] ? (
                 <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field">
                   <option value="">Seçin</option>
                   {DISTRICTS_BY_CITY[city].map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               ) : (
-                <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="İlçe" className="input-field" />
+                <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Bölge" className="input-field" />
               )}
             </div>
           </div>

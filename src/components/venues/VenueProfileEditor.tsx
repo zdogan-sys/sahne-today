@@ -221,7 +221,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
               </select>
             </div>
             <div>
-              <label className="label">İlçe *</label>
+              <label className="label">Bölge *</label>
               {city && DISTRICTS_BY_CITY[city] ? (
                 <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm">
                   <option value="">Seçin</option>
