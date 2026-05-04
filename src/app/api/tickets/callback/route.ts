@@ -1,9 +1,4 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
-export async function GET() {
-  return NextResponse.json({ ok: true, endpoint: 'paytr-callback' })
-}
+import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import QRCode from 'qrcode'
 import { Resend } from 'resend'
@@ -15,29 +10,46 @@ const MERCHANT_KEY = process.env.PAYTR_MERCHANT_KEY!
 const MERCHANT_SALT = process.env.PAYTR_MERCHANT_SALT!
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+export async function GET() {
+  return NextResponse.json({ ok: true, endpoint: 'paytr-callback' })
+}
+
 export async function POST(req: NextRequest) {
-  const formData = await req.formData()
+  let formData: FormData
+  try {
+    formData = await req.formData()
+  } catch (err) {
+    console.error('Callback formData parse error:', err)
+    return new NextResponse('OK')
+  }
+
   const merchantOid = formData.get('merchant_oid') as string
   const status = formData.get('status') as string
   const totalAmount = formData.get('total_amount') as string
   const hash = formData.get('hash') as string
 
+  console.log('PayTR callback received:', { merchantOid, status, totalAmount })
+
   const hashStr = merchantOid + MERCHANT_SALT + status + totalAmount
   const expectedHash = crypto.createHmac('sha256', MERCHANT_KEY).update(hashStr).digest('base64')
 
   if (hash !== expectedHash) {
+    console.error('PayTR hash mismatch. Received:', hash, 'Expected:', expectedHash)
     return new NextResponse('PAYTR_INVALID_HASH', { status: 400 })
   }
 
   const supabase = createAdminClient()
 
-  const { data: ticket } = await supabase
+  const { data: ticket, error: ticketFetchError } = await supabase
     .from('tickets')
     .select('*, events(title, event_date, start_time, venues(name, address, city))')
     .eq('paytr_order_id', merchantOid)
     .single()
 
-  if (!ticket) return new NextResponse('OK')
+  if (ticketFetchError || !ticket) {
+    console.error('Ticket not found for oid:', merchantOid, ticketFetchError)
+    return new NextResponse('OK')
+  }
 
   await supabase.from('ticket_payments').insert({
     ticket_id: ticket.id,
@@ -47,19 +59,36 @@ export async function POST(req: NextRequest) {
     paytr_response: Object.fromEntries(formData.entries()),
   })
 
-  if (status !== 'success') return new NextResponse('OK')
+  if (status !== 'success') {
+    await supabase.from('tickets').update({ status: 'cancelled' }).eq('id', ticket.id)
+    return new NextResponse('OK')
+  }
 
   const qrCode = crypto.randomUUID()
 
-  await supabase.from('tickets').update({ status: 'paid', qr_code: qrCode }).eq('id', ticket.id)
+  const { error: updateError } = await supabase
+    .from('tickets')
+    .update({ status: 'paid', qr_code: qrCode })
+    .eq('id', ticket.id)
+
+  if (updateError) {
+    console.error('Ticket update error:', updateError)
+    return new NextResponse('OK')
+  }
+
+  // Increment tickets_sold
+  const { data: evData } = await supabase
+    .from('events')
+    .select('tickets_sold')
+    .eq('id', ticket.event_id)
+    .single()
+  await supabase
+    .from('events')
+    .update({ tickets_sold: (evData?.tickets_sold ?? 0) + ticket.quantity })
+    .eq('id', ticket.event_id)
 
   const event = ticket.events as any
   const venue = event?.venues as any
-
-  await supabase
-    .from('events')
-    .update({ tickets_sold: (event?.tickets_sold ?? 0) + ticket.quantity })
-    .eq('id', ticket.event_id)
 
   try {
     const qrBuffer = await QRCode.toBuffer(qrCode, { width: 300, margin: 2 })
@@ -81,6 +110,7 @@ export async function POST(req: NextRequest) {
         qrCodeBase64: qrBase64,
       }),
     })
+    console.log('Ticket email sent to:', ticket.buyer_email)
   } catch (err) {
     console.error('Email send error:', err)
   }
