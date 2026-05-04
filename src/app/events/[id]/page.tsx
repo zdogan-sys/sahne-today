@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
-import { MapPin, Clock, Ticket, ArrowLeft, Music2, Users } from 'lucide-react'
+import { MapPin, Clock, Ticket, ArrowLeft, Music2, Users, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { isAdminUser } from '@/lib/admin'
@@ -45,6 +45,7 @@ export default async function EventPage({ params }: Props) {
     `)
     .eq('id', id)
     .single()
+
 
   if (!data) notFound()
   const event = data as any
@@ -131,6 +132,34 @@ export default async function EventPage({ params }: Props) {
                 </span>
               </div>
             </div>
+
+            {/* Ticketing */}
+            {event.ticketing_enabled && (
+              <div>
+                {(() => {
+                  const remaining = (event.ticket_count ?? 0) - (event.tickets_sold ?? 0)
+                  const soldOut = remaining <= 0
+                  return (
+                    <div className="flex items-center gap-3">
+                      {soldOut ? (
+                        <button disabled className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(228,224,216,0.06)] text-text-muted text-sm font-semibold cursor-not-allowed">
+                          <Ticket size={15} /> Tükendi
+                        </button>
+                      ) : (
+                        <Link href={`/events/${id}/tickets`} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors">
+                          <ShoppingCart size={15} /> Bilet Al
+                        </Link>
+                      )}
+                      {!soldOut && (
+                        <span className="text-text-muted text-xs">
+                          {remaining} bilet kaldı · {Number(event.ticket_price).toFixed(0)}₺
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
 
             {event.description && (
               <div>
