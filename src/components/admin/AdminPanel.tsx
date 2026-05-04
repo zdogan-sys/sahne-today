@@ -103,6 +103,7 @@ export function AdminPanel({ events, artists, venues, members, listConfigs }: Pr
 function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venues: any[]; artists: any[]; onRefresh: () => void }) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
+  const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
@@ -117,7 +118,7 @@ function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venu
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-text-muted text-sm">{events.length} etkinlik</p>
-        <button onClick={() => { setEditing(null); setFormOpen(true) }}
+        <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
           className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
           <Plus size={14} /> Etkinlik Ekle
         </button>
@@ -153,7 +154,7 @@ function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venu
       </div>
 
       <EventForm
-        key={editing?.id ?? 'new'}
+        key={editing?.id ?? `new-${newKey}`}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         initial={editing}
@@ -479,6 +480,7 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
 function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => void }) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
+  const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
@@ -493,7 +495,7 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-text-muted text-sm">{artists.length} sanatçı</p>
-        <button onClick={() => { setEditing(null); setFormOpen(true) }}
+        <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
           className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
           <Plus size={14} /> Sanatçı Ekle
         </button>
@@ -522,7 +524,7 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
           </div>
         ))}
       </div>
-      <ArtistForm key={editing?.id ?? 'new'} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+      <ArtistForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
     </div>
   )
 }
@@ -613,6 +615,7 @@ function ArtistForm({ open, onClose, initial, onSaved }: any) {
 function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void }) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
+  const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
@@ -627,7 +630,7 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-text-muted text-sm">{venues.length} mekan</p>
-        <button onClick={() => { setEditing(null); setFormOpen(true) }}
+        <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
           className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
           <Plus size={14} /> Mekan Ekle
         </button>
@@ -656,7 +659,7 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
           </div>
         ))}
       </div>
-      <VenueForm key={editing?.id ?? 'new'} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+      <VenueForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
     </div>
   )
 }
