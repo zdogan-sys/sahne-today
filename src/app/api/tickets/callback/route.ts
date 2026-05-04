@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
   const totalAmount = formData.get('total_amount') as string
   const hash = formData.get('hash') as string
 
-  const hashStr = MERCHANT_KEY + merchantOid + MERCHANT_SALT + status + totalAmount
-  const expectedHash = crypto.createHmac('sha256', MERCHANT_SALT).update(hashStr).digest('base64')
+  const hashStr = merchantOid + MERCHANT_SALT + status + totalAmount
+  const expectedHash = crypto.createHmac('sha256', MERCHANT_KEY).update(hashStr).digest('base64')
 
   if (hash !== expectedHash) {
     return new NextResponse('PAYTR_INVALID_HASH', { status: 400 })

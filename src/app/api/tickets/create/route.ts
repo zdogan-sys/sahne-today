@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const testMode = 1
 
     const hashStr = `${MERCHANT_ID}${userIp}${merchantOid}${buyer_email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}`
-    const paytrToken = crypto.createHmac('sha256', MERCHANT_SALT).update(hashStr + MERCHANT_SALT).digest('base64')
+    const paytrToken = crypto.createHmac('sha256', MERCHANT_KEY).update(hashStr + MERCHANT_SALT).digest('base64')
 
     const params = new URLSearchParams({
       merchant_id: MERCHANT_ID,
