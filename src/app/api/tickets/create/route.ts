@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const MERCHANT_ID = process.env.PAYTR_MERCHANT_ID!
 const MERCHANT_KEY = process.env.PAYTR_MERCHANT_KEY!
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest) {
 
     const merchantOid = `ST-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 
-    const { data: ticket, error: ticketError } = await supabase
+    const adminClient = createAdminClient()
+    const { data: ticket, error: ticketError } = await adminClient
       .from('tickets')
       .insert({
         event_id,
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (ticketError || !ticket) {
+      console.error('Ticket insert error:', ticketError)
       return NextResponse.json({ error: 'Bilet oluşturulamadı' }, { status: 500 })
     }
 
