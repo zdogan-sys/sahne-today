@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     const qrBase64 = qrBuffer.toString('base64')
 
     await resend.emails.send({
-      from: 'Sahne.Today <onboarding@resend.dev>',
+      from: 'Sahne.Today <bilet@sahne.today>',
       to: ticket.buyer_email,
       subject: `Biletiniz Hazır: ${event?.title ?? 'Etkinlik'}`,
       html: ticketEmailHtml({
