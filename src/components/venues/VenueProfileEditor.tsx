@@ -6,7 +6,6 @@ import { Edit2, Camera, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
-import { AccountSecuritySection } from '@/components/ui/AccountSecuritySection'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -15,7 +14,6 @@ const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'I
 
 interface Props {
   venueId: string
-  currentEmail?: string | null
   initialData: {
     name: string
     city: string
@@ -120,7 +118,7 @@ function ImageUploadField({
   )
 }
 
-export function VenueProfileEditor({ venueId, currentEmail, initialData }: Props) {
+export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -340,7 +338,6 @@ export function VenueProfileEditor({ venueId, currentEmail, initialData }: Props
             {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
           </button>
 
-          <AccountSecuritySection currentEmail={currentEmail} />
         </div>
       </BottomSheet>
     </>

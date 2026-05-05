@@ -85,7 +85,6 @@ export default async function VenuePage({ params }: Props) {
         {isOwner && (
           <VenueProfileEditor
             venueId={venue.id}
-            currentEmail={user?.email}
             initialData={{
               name: venue.name,
               city: venue.city,

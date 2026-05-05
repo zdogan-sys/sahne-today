@@ -7,13 +7,11 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { ImageUpload } from '@/components/ui/ImageUpload'
-import { AccountSecuritySection } from '@/components/ui/AccountSecuritySection'
 import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 interface Props {
   artistId: string
-  currentEmail?: string | null
   initialData: {
     stage_name: string
     city: string | null
@@ -27,7 +25,7 @@ interface Props {
   }
 }
 
-export function ArtistProfileEditor({ artistId, currentEmail, initialData }: Props) {
+export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -211,7 +209,6 @@ export function ArtistProfileEditor({ artistId, currentEmail, initialData }: Pro
             {loading ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
 
-          <AccountSecuritySection currentEmail={currentEmail} />
         </div>
       </BottomSheet>
     </>

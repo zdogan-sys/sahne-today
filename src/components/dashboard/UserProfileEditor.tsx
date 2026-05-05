@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit2 } from 'lucide-react'
+import { Edit2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { CITY_OPTIONS } from '@/lib/constants'
@@ -30,6 +30,13 @@ export function UserProfileEditor({ userId, initialData }: Props) {
   const [bio, setBio] = useState(initialData.bio || '')
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url || '')
 
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
+
   async function handleSave() {
     if (!displayName.trim() || !email.trim()) {
       setError('Ad ve E-posta alanları zorunludur.')
@@ -41,7 +48,6 @@ export function UserProfileEditor({ userId, initialData }: Props) {
     setSuccess('')
     const supabase = createClient()
 
-    // Email update logic (requires auth update)
     if (email !== initialData.email) {
       const { error: authErr } = await supabase.auth.updateUser({ email })
       if (authErr) {
@@ -76,6 +82,30 @@ export function UserProfileEditor({ userId, initialData }: Props) {
     }
   }
 
+  async function handlePasswordChange() {
+    setPasswordError('')
+    setPasswordSuccess('')
+    if (password.length < 6) {
+      setPasswordError('Şifre en az 6 karakter olmalı.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setPasswordError('Şifreler eşleşmiyor.')
+      return
+    }
+    setPasswordLoading(true)
+    const supabase = createClient()
+    const { error: err } = await supabase.auth.updateUser({ password })
+    setPasswordLoading(false)
+    if (err) {
+      setPasswordError('Şifre güncellenemedi: ' + err.message)
+    } else {
+      setPassword('')
+      setConfirmPassword('')
+      setPasswordSuccess('Şifreniz güncellendi.')
+    }
+  }
+
   return (
     <>
       <button
@@ -88,7 +118,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title="Hesap Bilgilerini Düzenle">
         <div className="space-y-4 pb-4">
-          
+
           <ImageUpload
             value={avatarUrl}
             onChange={setAvatarUrl}
@@ -114,7 +144,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
               className="input-field text-sm"
             />
             <p className="text-[10px] text-text-muted mt-1">
-              E-posta adresinizi değiştirdiğinizde, yeni adresinize bir doğrulama maili gönderilecektir.
+              Değiştirirseniz yeni adresinize doğrulama maili gönderilir.
             </p>
           </div>
 
@@ -153,6 +183,62 @@ export function UserProfileEditor({ userId, initialData }: Props) {
           >
             {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
           </button>
+
+          {/* Şifre Değiştir */}
+          <div className="border-t border-[rgba(228,224,216,0.1)] pt-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm text-text-muted mb-1">
+              <KeyRound size={13} />
+              <span>Şifre Değiştir</span>
+            </div>
+
+            <div>
+              <label className="label">Yeni Şifre</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field text-sm pr-10"
+                  placeholder="En az 6 karakter"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {password.length > 0 && (
+              <div>
+                <label className="label">Şifre Tekrar</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="Şifreyi tekrar girin"
+                  autoComplete="new-password"
+                />
+              </div>
+            )}
+
+            {passwordError && <p className="text-red-400 text-xs">{passwordError}</p>}
+            {passwordSuccess && <p className="text-green-400 text-xs">{passwordSuccess}</p>}
+
+            <button
+              type="button"
+              onClick={handlePasswordChange}
+              disabled={passwordLoading || !password}
+              className="btn-outline w-full py-2.5 text-sm disabled:opacity-50"
+            >
+              {passwordLoading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+            </button>
+          </div>
+
         </div>
       </BottomSheet>
     </>

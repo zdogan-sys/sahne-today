@@ -66,6 +66,14 @@ export async function updateArtistProfile(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  // Re-fetch via admin client to guarantee profile_id is always available
+  // (supabaseAuth may return null for profile_id due to RLS when admin edits another user's profile)
+  const { data: artistAdmin } = await supabaseAdmin
+    .from('artists')
+    .select('profile_id')
+    .eq('id', artistId)
+    .single()
+
   const { error } = await supabaseAdmin
     .from('artists')
     .update({
@@ -82,12 +90,13 @@ export async function updateArtistProfile(
 
   if (error) return { success: false, error: error.message }
 
-  if (payload.avatar_url !== undefined && artist?.profile_id) {
+  if (payload.avatar_url !== undefined && artistAdmin?.profile_id) {
     await supabaseAdmin
       .from('profiles')
       .update({ avatar_url: payload.avatar_url } as any)
-      .eq('id', artist.profile_id)
+      .eq('id', artistAdmin.profile_id)
   }
 
+  revalidatePath(`/artists/${artistId}`)
   return { success: true }
 }

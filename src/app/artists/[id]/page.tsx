@@ -122,7 +122,6 @@ export default async function ArtistPage({ params }: Props) {
               <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
               <ArtistProfileEditor
                 artistId={artist.id}
-                currentEmail={user?.email}
                 initialData={{
                   stage_name: artist.stage_name,
                   city: artist.city ?? null,
