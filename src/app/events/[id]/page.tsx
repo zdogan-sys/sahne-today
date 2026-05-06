@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { isAdminUser } from '@/lib/admin'
 import { EventPosterSection, EventPhotosSection } from '@/components/events/EventMediaSection'
 import { EventEditor } from '@/components/events/EventEditor'
+import { CalendarExport } from '@/components/events/CalendarExport'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -136,6 +137,19 @@ export default async function EventPage({ params }: Props) {
                 </span>
               </div>
             </div>
+
+            {/* Calendar export */}
+            {event.status === 'confirmed' && (
+              <CalendarExport
+                eventId={id}
+                title={event.title}
+                eventDate={event.event_date}
+                startTime={event.start_time}
+                endTime={event.end_time ?? null}
+                description={event.description ?? null}
+                location={venue ? [venue.name, venue.address, venue.district, venue.city].filter(Boolean).join(', ') : event.venue_name ?? null}
+              />
+            )}
 
             {/* Owner/admin tools */}
             {isParty && (

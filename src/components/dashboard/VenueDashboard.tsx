@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Check, X, Clock, CalendarX, SendHorizonal } from 'lucide-react'
 import { withdrawVenueOffer } from '@/app/actions/offer'
+import { respondToSlotApplication } from '@/app/actions/venue'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
 
 export function VenueDashboard({ userId }: { userId: string }) {
@@ -87,27 +88,7 @@ export function VenueDashboard({ userId }: { userId: string }) {
   }
 
   async function handleApplication(appId: string, status: 'accepted' | 'rejected') {
-    if (status === 'accepted') {
-      const app = applications.find((a) => a.id === appId)
-      if (app?.slots) {
-        const slot = app.slots
-        const artist = app.artists
-        await supabase.from('events').insert({
-          venue_id: slot.venues?.id,
-          artist_id: app.artist_id,
-          slot_id: app.slot_id,
-          band_id: app.band_id ?? null,
-          title: `${(slot as any).event_type ?? 'Konser'} — ${artist?.stage_name ?? ''}`,
-          event_date: (app as any).event_date ?? new Date().toISOString().slice(0, 10),
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-          genre: artist?.genres?.[0] ?? null,
-          entry_type: 'free' as const,
-          status: 'confirmed' as const,
-        } as any)
-      }
-    }
-    await supabase.from('applications').update({ status } as any).eq('id', appId)
+    await respondToSlotApplication(appId, status)
     setApplications((prev) => prev.filter((a) => a.id !== appId))
   }
 

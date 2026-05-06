@@ -14,7 +14,7 @@ import { BandInviteButton } from '@/components/bands/BandInviteButton'
 import { BandApplyButton } from '@/components/bands/BandApplyButton'
 import { BandProfileEditor } from '@/components/bands/BandProfileEditor'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
-import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
+import { MapPin, ArrowLeft, Users, Images, CalendarPlus } from 'lucide-react'
 import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 
@@ -245,6 +245,18 @@ export default async function BandPage({ params }: Props) {
           </div>
           <span className="text-text-muted text-xs">{(b.photos ?? []).length} fotoğraf →</span>
         </Link>
+
+        {bandEvents.filter((e: any) => e.status === 'confirmed').length > 0 && (
+          <a
+            href={`/api/bands/${b.id}/ics`}
+            download
+            className="card p-4 flex items-center gap-3 hover:border-accent/30 transition-colors"
+          >
+            <CalendarPlus size={18} className="text-text-muted" />
+            <span className="text-text-primary text-sm font-medium flex-1">Tüm Etkinlikleri Takvime Ekle</span>
+            <span className="text-text-muted text-xs">.ics →</span>
+          </a>
+        )}
       </div>
     </div>
   )

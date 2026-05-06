@@ -13,6 +13,14 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
+  async headers() {
+    return [
+      {
+        source: '/api/cron/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },
