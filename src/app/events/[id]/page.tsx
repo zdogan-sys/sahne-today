@@ -144,7 +144,7 @@ export default async function EventPage({ params }: Props) {
                   QR Tara
                 </Link>
                 <Link
-                  href={`/events/${id}/report`}
+                  href="/dashboard/venue/tickets"
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted text-xs font-semibold hover:text-text-primary hover:border-[rgba(228,224,216,0.3)] transition-colors"
                 >
                   <BarChart2 size={13} />
