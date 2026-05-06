@@ -7,7 +7,7 @@ export function ticketEmailHtml({
   venueAddress,
   quantity,
   totalPrice,
-  qrCodeBase64,
+  qrImageUrl,
 }: {
   buyerName: string
   eventTitle: string
@@ -17,7 +17,7 @@ export function ticketEmailHtml({
   venueAddress: string
   quantity: number
   totalPrice: number
-  qrCodeBase64: string
+  qrImageUrl: string
 }) {
   return `<!DOCTYPE html>
 <html lang="tr">
@@ -89,7 +89,7 @@ export function ticketEmailHtml({
                 <tr>
                   <td align="center" style="padding:0 28px 28px;">
                     <div style="background:#1A1A1A;border-radius:12px;border:1px solid rgba(228,224,216,0.1);padding:20px;display:inline-block;">
-                      <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Kod" width="200" height="200" style="display:block;" />
+                      <img src="${qrImageUrl}" alt="QR Kod" width="200" height="200" style="display:block;" />
                     </div>
                     <div style="margin-top:12px;font-size:13px;color:#8A8680;text-align:center;">
                       Bu QR kodu kapıda gösterin
