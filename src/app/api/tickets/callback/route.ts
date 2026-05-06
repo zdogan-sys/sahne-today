@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
-import QRCode from 'qrcode'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ticketEmailHtml } from '@/lib/email-templates/ticket'
@@ -91,18 +90,8 @@ export async function POST(req: NextRequest) {
   const venue = event?.venues as any
 
   try {
-    const qrBuffer = await QRCode.toBuffer(qrCode, { width: 300, margin: 2 })
-
-    // Upload QR to storage so email clients can display it (data: URIs are blocked)
-    const qrPath = `qr/${ticket.id}.png`
-    const { error: uploadError } = await supabase.storage.from('tickets').upload(qrPath, qrBuffer, {
-      contentType: 'image/png',
-      upsert: true,
-    })
-    if (uploadError) console.error('QR upload error:', uploadError)
-    const { data: qrUrlData } = supabase.storage.from('tickets').getPublicUrl(qrPath)
-    const qrUrl = qrUrlData.publicUrl
-    console.log('QR image URL:', qrUrl)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sahne.today'
+    const qrUrl = `${appUrl}/api/tickets/qr/${ticket.id}`
 
     await resend.emails.send({
       from: 'Sahne.Today <bilet@sahne.today>',
