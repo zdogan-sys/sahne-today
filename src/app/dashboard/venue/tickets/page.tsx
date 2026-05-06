@@ -18,16 +18,26 @@ export default async function VenueTicketsDashboard() {
   const db = admin ? createAdminClient() : supabase
 
   let venueName = 'Tüm Mekanlar'
-
-  let eventsData: any[] = []
+  let tickets: any[] = []
+  let events: any[] = []
 
   if (admin) {
-    // Admin: tüm biletleri olan eventleri göster
-    const { data } = await db
-      .from('events')
-      .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
-      .order('event_date', { ascending: false })
-    eventsData = data ?? []
+    // Admin: önce tüm biletleri çek, sonra ilgili eventleri
+    const { data: allTickets } = await db
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false })
+    tickets = allTickets ?? []
+
+    const eventIds = tickets.map(t => t.event_id).filter((v, i, a) => a.indexOf(v) === i)
+    if (eventIds.length > 0) {
+      const { data } = await db
+        .from('events')
+        .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
+        .in('id', eventIds)
+        .order('event_date', { ascending: false })
+      events = data ?? []
+    }
   } else {
     const { data: venue } = await supabase
       .from('venues')
@@ -38,26 +48,24 @@ export default async function VenueTicketsDashboard() {
     if (!venue) notFound()
     venueName = venue.name
 
-    const { data } = await supabase
+    const { data: eventsData } = await supabase
       .from('events')
       .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
       .eq('venue_id', venue.id)
       .eq('ticketing_enabled', true)
       .order('event_date', { ascending: false })
-    eventsData = data ?? []
-  }
+    events = eventsData ?? []
 
-  const events = eventsData
-
-  const eventIds = (events ?? []).map(e => e.id)
-
-  const { data: tickets } = eventIds.length
-    ? await supabase
+    const eventIds = events.map(e => e.id)
+    if (eventIds.length > 0) {
+      const { data: ticketsData } = await supabase
         .from('tickets')
         .select('*')
         .in('event_id', eventIds)
         .order('created_at', { ascending: false })
-    : { data: [] }
+      tickets = ticketsData ?? []
+    }
+  }
 
   const totalRevenue = (tickets ?? [])
     .filter(t => t.status === 'paid' || t.status === 'used')
