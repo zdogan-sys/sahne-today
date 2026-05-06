@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sahne.today'
     const qrUrl = `${appUrl}/api/tickets/qr/${ticket.id}`
+    const referenceNumber = `SNH-${ticket.id.slice(0, 8).toUpperCase()}`
 
     await resend.emails.send({
       from: 'Sahne.Today <bilet@sahne.today>',
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
         quantity: ticket.quantity,
         totalPrice: ticket.total_price,
         qrImageUrl: qrUrl,
+        referenceNumber,
       }),
     })
     console.log('Ticket email sent to:', ticket.buyer_email)

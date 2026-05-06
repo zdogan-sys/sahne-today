@@ -8,6 +8,7 @@ export function ticketEmailHtml({
   quantity,
   totalPrice,
   qrImageUrl,
+  referenceNumber,
 }: {
   buyerName: string
   eventTitle: string
@@ -18,6 +19,7 @@ export function ticketEmailHtml({
   quantity: number
   totalPrice: number
   qrImageUrl: string
+  referenceNumber: string
 }) {
   return `<!DOCTYPE html>
 <html lang="tr">
@@ -76,9 +78,15 @@ export function ticketEmailHtml({
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding-bottom:0;">
+                        <td style="padding-bottom:12px;">
                           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#6B6762;text-transform:uppercase;margin-bottom:3px;">BİLET</div>
                           <div style="font-size:15px;color:#E4E0D8;font-weight:500;">${quantity} adet · ${totalPrice.toFixed(2)}₺</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom:0;">
+                          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#6B6762;text-transform:uppercase;margin-bottom:3px;">REFERANS NO</div>
+                          <div style="font-size:15px;color:#D4537E;font-weight:700;letter-spacing:1px;">${referenceNumber}</div>
                         </td>
                       </tr>
                     </table>
