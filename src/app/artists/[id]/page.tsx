@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VideoEmbed } from '@/components/artists/VideoEmbed'
 import { formatDate } from '@/lib/utils'
@@ -58,16 +59,20 @@ export default async function ArtistPage({ params }: Props) {
   const bandIds = (membershipsRes.data ?? []).map((m: any) => m.band_id as string)
   const bands = (membershipsRes.data ?? []).map((m: any) => ({ ...(m.bands as any), role: m.role })).filter(Boolean)
 
+  const isOwnerEarly = user?.id === artistProfileId || isAdminUser(user)
+  const eventsDb = isOwnerEarly ? createAdminClient() : supabase
+  const statusFilter = isOwnerEarly ? ['confirmed', 'pending', 'offered'] : ['confirmed', 'pending']
+
   const eventsRes = await (bandIds.length > 0
-    ? supabase.from('events')
+    ? eventsDb.from('events')
         .select('id, event_date, title, start_time, end_time, status, venue_name, venues(name, city), bands(name)')
         .or(`artist_id.eq.${id},band_id.in.(${bandIds.join(',')})`)
-        .in('status', ['confirmed', 'pending'])
+        .in('status', statusFilter)
         .order('event_date', { ascending: true })
-    : supabase.from('events')
+    : eventsDb.from('events')
         .select('id, event_date, title, start_time, end_time, status, venue_name, venues(name, city), bands(name)')
         .eq('artist_id', id)
-        .in('status', ['confirmed', 'pending'])
+        .in('status', statusFilter)
         .order('event_date', { ascending: true })
   )
 
