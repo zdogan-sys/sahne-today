@@ -2,8 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { isAdminUser } from '@/lib/admin'
 import { formatDate } from '@/lib/utils'
-import { Ticket, Download, TrendingUp, Users, DollarSign } from 'lucide-react'
+import { Ticket, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
 import { TicketTableClient } from '@/components/tickets/TicketTableClient'
 
@@ -12,20 +14,29 @@ export default async function VenueTicketsDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: venue } = await supabase
-    .from('venues')
-    .select('id, name')
-    .eq('owner_id', user.id)
-    .single()
+  const admin = isAdminUser(user)
+  const db = admin ? createAdminClient() : supabase
 
-  if (!venue) notFound()
-
-  const { data: events } = await supabase
+  let venueName = 'Tüm Mekanlar'
+  let eventsQuery = db
     .from('events')
     .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
-    .eq('venue_id', venue.id)
     .eq('ticketing_enabled', true)
     .order('event_date', { ascending: false })
+
+  if (!admin) {
+    const { data: venue } = await supabase
+      .from('venues')
+      .select('id, name')
+      .eq('owner_id', user.id)
+      .single()
+
+    if (!venue) notFound()
+    venueName = venue.name
+    eventsQuery = eventsQuery.eq('venue_id', venue.id)
+  }
+
+  const { data: events } = await eventsQuery
 
   const eventIds = (events ?? []).map(e => e.id)
 
@@ -51,7 +62,7 @@ export default async function VenueTicketsDashboard() {
             <Ticket size={18} className="text-accent" />
             <span className="text-accent text-xs font-semibold uppercase tracking-wide">Bilet Satışları</span>
           </div>
-          <h1 className="font-bebas text-3xl text-text-primary">{venue.name}</h1>
+          <h1 className="font-bebas text-3xl text-text-primary">{venueName}</h1>
         </div>
         <Link href="/scan" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold">
           QR Tara
