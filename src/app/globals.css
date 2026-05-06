@@ -70,3 +70,12 @@ body {
     border-color: rgba(228, 224, 216, 0.1);
   }
 }
+
+@media print {
+  nav, header, .print\:hidden { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .card { border: 1px solid #ccc !important; background: white !important; box-shadow: none !important; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd !important; color: black !important; }
+  a { color: black !important; text-decoration: none !important; }
+}

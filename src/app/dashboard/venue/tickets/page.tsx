@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAdminUser } from '@/lib/admin'
 import { formatDate } from '@/lib/utils'
-import { Ticket, TrendingUp, Users } from 'lucide-react'
+import { Ticket, TrendingUp, Users, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { TicketTableClient } from '@/components/tickets/TicketTableClient'
+import { PrintButton } from '@/components/ui/PrintButton'
 
 export default async function VenueTicketsDashboard() {
   const supabase = await createClient()
@@ -83,9 +84,12 @@ export default async function VenueTicketsDashboard() {
           </div>
           <h1 className="font-bebas text-3xl text-text-primary">{venueName}</h1>
         </div>
-        <Link href="/scan" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold">
-          QR Tara
-        </Link>
+        <div className="flex items-center gap-2 print:hidden">
+          <PrintButton />
+          <Link href="/scan" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold">
+            QR Tara
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
