@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, MapPin, Trash2, Plus, Check } from 'lucide-react'
+import { X, MapPin, Trash2, Plus, Check, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatTime } from '@/lib/utils'
+import { formatTime, formatDate } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { ALL_GENRES } from '@/lib/constants'
 import { addBandEvent, cancelBandEvent } from '@/app/actions/event'
 import { respondToVenueOffer } from '@/app/actions/offer'
+import { OfferCountdown } from '@/components/ui/OfferCountdown'
 
 interface VenueOption { id: string; name: string; city: string; district: string }
 
@@ -379,14 +380,63 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
     document.body
   ) : null
 
+  const incomingOffers = isCreator ? events.filter(e => e.status === 'offered') : []
+
   return (
-    <div>
-      <h3 className="label mb-4">Etkinlik Takvimi</h3>
-      <EventCalendar
-        events={events}
-        onDayClick={handleDayClick}
-        selectedDate={selectedDate}
-      />
+    <div className="space-y-6">
+      {incomingOffers.length > 0 && (
+        <div>
+          <h3 className="label mb-1">Gelen Teklifler</h3>
+          <p className="text-text-muted text-xs mb-3">Mekanlar grubunuzu sahnelerine davet ediyor.</p>
+          <div className="space-y-3">
+            {incomingOffers.map(ev => (
+              <div key={ev.id} className="card p-4 border-accent/25">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary text-sm">{ev.title}</p>
+                    {ev.subtitle && (
+                      <p className="text-text-muted text-xs mt-0.5">{ev.subtitle}</p>
+                    )}
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {formatDate(ev.event_date)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
+                    </p>
+                    {(ev as any).expires_at && (
+                      <div className="mt-1.5"><OfferCountdown expiresAt={(ev as any).expires_at} /></div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleOfferResponse(ev.id, false)}
+                      disabled={respondingOffer === ev.id}
+                      title="Reddet"
+                      className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors disabled:opacity-50"
+                    >
+                      <X size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleOfferResponse(ev.id, true)}
+                      disabled={respondingOffer === ev.id}
+                      title="Kabul Et"
+                      className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors disabled:opacity-50"
+                    >
+                      <Check size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h3 className="label mb-4">Etkinlik Takvimi</h3>
+        <EventCalendar
+          events={events}
+          onDayClick={handleDayClick}
+          selectedDate={selectedDate}
+        />
+      </div>
       {popup}
     </div>
   )

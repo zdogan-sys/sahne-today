@@ -63,7 +63,7 @@ export default async function BandPage({ params }: Props) {
   const statusFilter = isCreator ? ['confirmed', 'offered'] : ['confirmed']
   const eventsRes = await eventsDb
     .from('events')
-    .select('id, event_date, title, start_time, end_time, status, venues(name, city)')
+    .select('id, event_date, title, start_time, end_time, status, expires_at, venues(name, city)')
     .eq('band_id', id)
     .in('status', statusFilter)
     .order('event_date', { ascending: true })
@@ -231,7 +231,8 @@ export default async function BandPage({ params }: Props) {
             end_time: ev.end_time ?? null,
             subtitle: ev.venues?.name ? `${ev.venues.name}${ev.venues.city ? `, ${ev.venues.city}` : ''}` : null,
             status: ev.status,
-          }))}
+            expires_at: ev.expires_at ?? null,
+          } as any))}
         />
 
         <Link
