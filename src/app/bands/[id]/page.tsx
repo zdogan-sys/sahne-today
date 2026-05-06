@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { LookingForEditor } from '@/components/bands/LookingForEditor'
@@ -40,7 +41,7 @@ export default async function BandPage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [bandRes, artistRes, eventsRes] = await Promise.all([
+  const [bandRes, artistRes] = await Promise.all([
     supabase
       .from('bands')
       .select('*, band_members(id, artist_id, role, status, artists(id, stage_name, instruments, city, profiles(avatar_url)))')
@@ -49,12 +50,6 @@ export default async function BandPage({ params }: Props) {
     user
       ? supabase.from('artists').select('id').eq('profile_id', user.id).single()
       : Promise.resolve({ data: null }),
-    supabase
-      .from('events')
-      .select('id, event_date, title, start_time, end_time, venues(name)')
-      .eq('band_id', id)
-      .eq('status', 'confirmed')
-      .order('event_date', { ascending: true }),
   ])
 
   if (!bandRes.data) notFound()
@@ -63,6 +58,16 @@ export default async function BandPage({ params }: Props) {
   const isCreator = user?.id === b.creator_id || isAdminUser(user)
   const isArtist = !!artistRes.data
   const currentArtistId = artistRes.data?.id
+
+  const eventsDb = isCreator ? createAdminClient() : supabase
+  const statusFilter = isCreator ? ['confirmed', 'offered'] : ['confirmed']
+  const eventsRes = await eventsDb
+    .from('events')
+    .select('id, event_date, title, start_time, end_time, status, venues(name, city)')
+    .eq('band_id', id)
+    .in('status', statusFilter)
+    .order('event_date', { ascending: true })
+
   const bandEvents = (eventsRes.data ?? []) as any[]
   const members = (b.band_members ?? []).filter((m: any) => m.status === 'accepted')
   const lookingFor: string[] = b.looking_for ?? []
@@ -224,7 +229,7 @@ export default async function BandPage({ params }: Props) {
             title: ev.title,
             start_time: ev.start_time,
             end_time: ev.end_time ?? null,
-            subtitle: ev.venues?.name ?? null,
+            subtitle: ev.venues?.name ? `${ev.venues.name}${ev.venues.city ? `, ${ev.venues.city}` : ''}` : null,
             status: ev.status,
           }))}
         />

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Edit2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { CITY_OPTIONS } from '@/lib/constants'
+import { updateBandProfile, deleteBand } from '@/app/actions/band'
 
 interface Props {
   bandId: string
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function BandProfileEditor({ bandId, initialData }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -38,33 +40,28 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { error: err } = await supabase
-      .from('bands')
-      .update({
-        name: name.trim(),
-        city: city || null,
-        genres,
-        bio: bio || null,
-      } as any)
-      .eq('id', bandId)
+    const result = await updateBandProfile(bandId, {
+      name: name.trim(),
+      city: city || null,
+      genres,
+      bio: bio || null,
+    })
 
-    if (err) {
-      setError('Bir hata oluştu: ' + err.message)
+    if (!result.success) {
+      setError('Bir hata oluştu: ' + result.error)
       setLoading(false)
     } else {
-      window.location.reload()
+      setOpen(false)
+      router.refresh()
     }
   }
 
   async function handleDelete() {
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { error: err } = await supabase.from('bands').delete().eq('id', bandId)
-    
-    if (err) {
-      setError('Grup silinirken hata oluştu: ' + err.message)
+    const result = await deleteBand(bandId)
+    if (!result.success) {
+      setError('Grup silinirken hata oluştu: ' + result.error)
       setLoading(false)
       setConfirmDelete(false)
     } else {

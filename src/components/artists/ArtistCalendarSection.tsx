@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, MapPin, Trash2, Plus } from 'lucide-react'
+import { X, MapPin, Trash2, Plus, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { ALL_GENRES } from '@/lib/constants'
 import { addArtistEvent, cancelEvent } from '@/app/actions/event'
+import { respondToVenueOffer } from '@/app/actions/offer'
 
 interface VenueOption { id: string; name: string; city: string; district: string }
 
@@ -29,6 +30,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [respondingOffer, setRespondingOffer] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
   const [startTime, setStartTime] = useState('20:00')
@@ -91,6 +93,21 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
     }
     setCancelConfirm(null)
     setCancelling(false)
+  }
+
+  async function handleOfferResponse(eventId: string, accept: boolean) {
+    setRespondingOffer(eventId)
+    const res = await respondToVenueOffer(eventId, accept)
+    if (res.success) {
+      if (accept) {
+        setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'confirmed' } : e))
+        setDayEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'confirmed' } : e))
+      } else {
+        setEvents(prev => prev.filter(e => e.id !== eventId))
+        setDayEvents(prev => prev.filter(e => e.id !== eventId))
+      }
+    }
+    setRespondingOffer(null)
   }
 
   function selectVenue(v: VenueOption) {
@@ -169,21 +186,40 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
             <div className="px-5 py-4 space-y-2 border-b border-[rgba(228,224,216,0.08)]">
               {dayEvents.map(ev => (
                 <div key={ev.id} className="flex items-start gap-3">
-                  <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${ev.status === 'pending' ? 'bg-yellow-400' : 'bg-success'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${ev.status === 'offered' ? 'bg-accent' : ev.status === 'pending' ? 'bg-yellow-400' : 'bg-success'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link href={`/events/${ev.id}`} className="text-text-primary text-sm font-medium hover:text-accent transition-colors">{ev.title}</Link>
                       {ev.status === 'pending' && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
-                          Onay Bekliyor
-                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">Onay Bekliyor</span>
+                      )}
+                      {ev.status === 'offered' && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">Teklif</span>
                       )}
                     </div>
                     <p className="text-text-muted text-xs mt-0.5">
                       {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
                       {ev.subtitle ? ` · ${ev.subtitle}` : ''}
                     </p>
-                    {isOwner && cancelConfirm === ev.id ? (
+                    {isOwner && ev.status === 'offered' && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => handleOfferResponse(ev.id, false)}
+                          disabled={respondingOffer === ev.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-400/10 text-red-400 text-xs font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50"
+                        >
+                          <X size={11} /> Reddet
+                        </button>
+                        <button
+                          onClick={() => handleOfferResponse(ev.id, true)}
+                          disabled={respondingOffer === ev.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-success/10 text-success text-xs font-medium hover:bg-success/20 transition-colors disabled:opacity-50"
+                        >
+                          <Check size={11} /> Kabul Et
+                        </button>
+                      </div>
+                    )}
+                    {isOwner && ev.status !== 'offered' && cancelConfirm === ev.id ? (
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs text-text-muted">İptal edilsin mi?</span>
                         <button
@@ -202,7 +238,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                       </div>
                     ) : null}
                   </div>
-                  {isOwner && cancelConfirm !== ev.id && (
+                  {isOwner && ev.status !== 'offered' && cancelConfirm !== ev.id && (
                     <button
                       onClick={() => setCancelConfirm(ev.id)}
                       className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors mt-0.5"

@@ -99,3 +99,42 @@ export async function inviteToBand(bandId: string, artistId: string) {
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
+
+export async function deleteBand(bandId: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: band } = await supabaseAdmin.from('bands').select('creator_id').eq('id', bandId).single()
+  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+
+  const { error } = await supabaseAdmin.from('bands').delete().eq('id', bandId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function updateBandProfile(bandId: string, payload: {
+  name: string
+  city: string | null
+  genres: string[]
+  bio: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: band } = await supabaseAdmin.from('bands').select('creator_id').eq('id', bandId).single()
+  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+
+  const { error } = await supabaseAdmin.from('bands').update({
+    name: payload.name,
+    city: payload.city,
+    genres: payload.genres,
+    bio: payload.bio,
+  } as any).eq('id', bandId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
