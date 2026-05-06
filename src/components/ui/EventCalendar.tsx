@@ -103,7 +103,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="aspect-square" />
+          if (!date) return <div key={`e-${i}`} className="h-12" />
           const dateStr = toISO(date)
           const dayEvents = byDate.get(dateStr) ?? []
           const hasEvent = dayEvents.length > 0
@@ -112,12 +112,19 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
 
+          const labelColor = hasPending ? 'text-yellow-400' : 'text-success'
+          const eventLabel = dayEvents.length === 1
+            ? dayEvents[0].title
+            : dayEvents.length > 1
+            ? `${dayEvents.length} etkinlik`
+            : null
+
           return (
             <button
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors',
+                'relative h-12 rounded-lg flex flex-col items-center justify-center gap-0.5 px-0.5 text-sm transition-colors',
                 isSelected
                   ? 'bg-success/20 text-white ring-1 ring-success/40'
                   : hasEvent
@@ -128,9 +135,12 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
                 isToday && !isSelected ? 'ring-1 ring-accent/50' : '',
               )}
             >
-              <span className="font-medium leading-none">{date.getDate()}</span>
-              {hasConfirmed && <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-success" />}
-              {hasPending && <span className={cn('absolute bottom-1 w-1.5 h-1.5 rounded-full bg-yellow-400', hasConfirmed && 'right-1.5')} />}
+              <span className="font-medium leading-none text-sm">{date.getDate()}</span>
+              {eventLabel && (
+                <span className={cn('text-[8px] leading-tight w-full text-center truncate', labelColor)}>
+                  {eventLabel}
+                </span>
+              )}
             </button>
           )
         })}
