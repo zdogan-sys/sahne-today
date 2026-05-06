@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
-import { MapPin, Clock, Ticket, ArrowLeft, Music2, Users, ShoppingCart } from 'lucide-react'
+import { MapPin, Clock, Ticket, ArrowLeft, Music2, Users, ShoppingCart, QrCode, BarChart2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { isAdminUser } from '@/lib/admin'
@@ -132,6 +132,26 @@ export default async function EventPage({ params }: Props) {
                 </span>
               </div>
             </div>
+
+            {/* Owner/admin tools */}
+            {isParty && event.ticketing_enabled && (
+              <div className="flex gap-2">
+                <Link
+                  href="/scan"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-accent/30 text-accent text-xs font-semibold hover:bg-accent/10 transition-colors"
+                >
+                  <QrCode size={13} />
+                  QR Tara
+                </Link>
+                <Link
+                  href={`/events/${id}/report`}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted text-xs font-semibold hover:text-text-primary hover:border-[rgba(228,224,216,0.3)] transition-colors"
+                >
+                  <BarChart2 size={13} />
+                  Satış Raporu
+                </Link>
+              </div>
+            )}
 
             {/* Ticketing */}
             {event.ticketing_enabled && (
