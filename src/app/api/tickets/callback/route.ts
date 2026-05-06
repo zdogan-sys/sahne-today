@@ -95,12 +95,14 @@ export async function POST(req: NextRequest) {
 
     // Upload QR to storage so email clients can display it (data: URIs are blocked)
     const qrPath = `qr/${ticket.id}.png`
-    await supabase.storage.from('tickets').upload(qrPath, qrBuffer, {
+    const { error: uploadError } = await supabase.storage.from('tickets').upload(qrPath, qrBuffer, {
       contentType: 'image/png',
       upsert: true,
     })
+    if (uploadError) console.error('QR upload error:', uploadError)
     const { data: qrUrlData } = supabase.storage.from('tickets').getPublicUrl(qrPath)
     const qrUrl = qrUrlData.publicUrl
+    console.log('QR image URL:', qrUrl)
 
     await resend.emails.send({
       from: 'Sahne.Today <bilet@sahne.today>',
