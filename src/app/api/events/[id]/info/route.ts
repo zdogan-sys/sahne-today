@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data } = await supabase
     .from('events')
-    .select('id, title, event_date, start_time, ticket_price, ticket_count, tickets_sold, ticketing_enabled, venues(name, address, commission_rate)')
+    .select('id, title, event_date, start_time, ticket_price, ticket_count, tickets_sold, ticketing_enabled, commission_included, venues(name, address, commission_rate)')
     .eq('id', id)
     .single()
 

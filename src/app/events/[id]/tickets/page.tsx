@@ -14,6 +14,7 @@ interface EventInfo {
   ticket_count: number
   tickets_sold: number
   ticketing_enabled: boolean
+  commission_included: boolean
   venues: { name: string; address?: string; commission_rate: number } | null
 }
 
@@ -52,8 +53,17 @@ export default function TicketPurchasePage() {
   }, [])
 
   const commissionRate = event?.venues?.commission_rate ?? 8
-  const unitWithCommission = event ? Math.round(event.ticket_price * (1 + commissionRate / 100) * 100) / 100 : 0
-  const total = Math.round(unitWithCommission * form.quantity * 100) / 100
+  const commissionIncluded = event?.commission_included ?? true
+  // komisyon dahil: alıcı ticket_price öder; komisyon üstüne: alıcı ticket_price * (1 + rate/100) öder
+  const unitBuyerPrice = event
+    ? commissionIncluded
+      ? event.ticket_price
+      : Math.round(event.ticket_price * (1 + commissionRate / 100) * 100) / 100
+    : 0
+  const commissionAmount = commissionIncluded
+    ? Math.round(event ? event.ticket_price * commissionRate / (100 + commissionRate) * 100 : 0) / 100
+    : Math.round((unitBuyerPrice - (event?.ticket_price ?? 0)) * 100) / 100
+  const total = Math.round(unitBuyerPrice * form.quantity * 100) / 100
   const remaining = event ? event.ticket_count - event.tickets_sold : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -187,11 +197,11 @@ export default function TicketPurchasePage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-text-muted">
                   <span>Bilet fiyatı</span>
-                  <span>{event.ticket_price.toFixed(2)}₺</span>
+                  <span>{commissionIncluded ? event.ticket_price.toFixed(2) : event.ticket_price.toFixed(2)}₺</span>
                 </div>
                 <div className="flex justify-between text-text-muted">
-                  <span>Hizmet bedeli (%{commissionRate})</span>
-                  <span>{(unitWithCommission - event.ticket_price).toFixed(2)}₺</span>
+                  <span>Hizmet bedeli {commissionIncluded ? '(dahil)' : `(%${commissionRate})`}</span>
+                  <span>{commissionIncluded ? '' : '+'}{commissionAmount.toFixed(2)}₺</span>
                 </div>
                 {form.quantity > 1 && (
                   <div className="flex justify-between text-text-muted">

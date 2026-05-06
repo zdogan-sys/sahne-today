@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const { data: event } = await supabase
       .from('events')
-      .select('id, title, ticket_price, ticket_count, tickets_sold, ticketing_enabled, venues(commission_rate)')
+      .select('id, title, ticket_price, ticket_count, tickets_sold, ticketing_enabled, commission_included, venues(commission_rate)')
       .eq('id', event_id)
       .single()
 
@@ -37,8 +37,12 @@ export async function POST(req: NextRequest) {
     const venue = event.venues as any
     const commissionRate = venue?.commission_rate ?? 8
     const unitPrice = Number(event.ticket_price)
-    const unitPriceWithCommission = Math.round(unitPrice * (1 + commissionRate / 100) * 100) / 100
-    const totalPrice = Math.round(unitPriceWithCommission * quantity * 100) / 100
+    const commissionIncluded = (event as any).commission_included ?? true
+    // komisyon dahil: alıcı unit_price öder; komisyon üstüne: alıcı unit_price * (1 + rate) öder
+    const unitBuyerPrice = commissionIncluded
+      ? unitPrice
+      : Math.round(unitPrice * (1 + commissionRate / 100) * 100) / 100
+    const totalPrice = Math.round(unitBuyerPrice * quantity * 100) / 100
 
     const merchantOid = `ST${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
         buyer_email,
         buyer_phone,
         quantity,
-        unit_price: unitPriceWithCommission,
+        unit_price: unitBuyerPrice,
         total_price: totalPrice,
         status: 'pending',
         paytr_order_id: merchantOid,
@@ -68,7 +72,7 @@ export async function POST(req: NextRequest) {
     const userIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '127.0.0.1'
     const paymentAmount = Math.round(totalPrice * 100)
     const userBasket = Buffer.from(
-      JSON.stringify([[event.title, unitPriceWithCommission.toFixed(2), quantity]])
+      JSON.stringify([[event.title, unitBuyerPrice.toFixed(2), quantity]])
     ).toString('base64')
 
     const noInstallment = 0

@@ -110,6 +110,10 @@ export default async function EventPage({ params }: Props) {
                         entry_type: event.entry_type,
                         entry_fee: event.entry_fee ?? null,
                         description: event.description ?? null,
+                        ticketing_enabled: event.ticketing_enabled ?? false,
+                        ticket_price: event.ticket_price ?? null,
+                        ticket_count: event.ticket_count ?? null,
+                        commission_included: (event as any).commission_included ?? true,
                       }}
                     />
                   )}

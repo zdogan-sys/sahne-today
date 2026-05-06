@@ -39,6 +39,10 @@ export async function updateEvent(eventId: string, payload: {
   entry_type: string
   entry_fee: number | null
   description: string | null
+  ticketing_enabled?: boolean
+  ticket_price?: number | null
+  ticket_count?: number | null
+  commission_included?: boolean
 }) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
@@ -54,6 +58,10 @@ export async function updateEvent(eventId: string, payload: {
     entry_type: payload.entry_type,
     entry_fee: payload.entry_fee,
     description: payload.description,
+    ticketing_enabled: payload.ticketing_enabled,
+    ticket_price: payload.ticket_price,
+    ticket_count: payload.ticket_count,
+    commission_included: payload.commission_included,
   } as any).eq('id', eventId)
   if (error) return { success: false, error: error.message }
   return { success: true }

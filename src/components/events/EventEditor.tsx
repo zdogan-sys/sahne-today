@@ -18,6 +18,10 @@ interface Props {
     entry_type: string
     entry_fee: number | null
     description: string | null
+    ticketing_enabled?: boolean
+    ticket_price?: number | null
+    ticket_count?: number | null
+    commission_included?: boolean
   }
 }
 
@@ -35,6 +39,10 @@ export function EventEditor({ eventId, initial }: Props) {
   const [entryType, setEntryType] = useState(initial.entry_type)
   const [entryFee, setEntryFee] = useState(initial.entry_fee?.toString() ?? '')
   const [description, setDescription] = useState(initial.description ?? '')
+  const [ticketingEnabled, setTicketingEnabled] = useState(initial.ticketing_enabled ?? false)
+  const [ticketPrice, setTicketPrice] = useState(initial.ticket_price?.toString() ?? '')
+  const [ticketCount, setTicketCount] = useState(initial.ticket_count?.toString() ?? '')
+  const [commissionIncluded, setCommissionIncluded] = useState(initial.commission_included ?? true)
 
   function handleOpen() {
     setTitle(initial.title)
@@ -45,6 +53,10 @@ export function EventEditor({ eventId, initial }: Props) {
     setEntryType(initial.entry_type)
     setEntryFee(initial.entry_fee?.toString() ?? '')
     setDescription(initial.description ?? '')
+    setTicketingEnabled(initial.ticketing_enabled ?? false)
+    setTicketPrice(initial.ticket_price?.toString() ?? '')
+    setTicketCount(initial.ticket_count?.toString() ?? '')
+    setCommissionIncluded(initial.commission_included ?? true)
     setError('')
     setOpen(true)
   }
@@ -62,6 +74,10 @@ export function EventEditor({ eventId, initial }: Props) {
       entry_type: entryType,
       entry_fee: entryType !== 'free' && entryFee ? Number(entryFee) : null,
       description: description || null,
+      ticketing_enabled: ticketingEnabled,
+      ticket_price: ticketingEnabled && ticketPrice ? Number(ticketPrice) : null,
+      ticket_count: ticketingEnabled && ticketCount ? Number(ticketCount) : null,
+      commission_included: commissionIncluded,
     })
     setLoading(false)
     if (!res.success) {
@@ -151,6 +167,73 @@ export function EventEditor({ eventId, initial }: Props) {
               rows={3}
               placeholder="Etkinlik açıklaması..."
             />
+          </div>
+
+          {/* Ticketing */}
+          <div className="border-t border-[rgba(228,224,216,0.08)] pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm text-text-primary font-medium">Online Bilet Satışı</p>
+                <p className="text-xs text-text-muted">Sahne.Today üzerinden bilet sat</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTicketingEnabled(v => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${ticketingEnabled ? 'bg-accent' : 'bg-[rgba(228,224,216,0.15)]'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${ticketingEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {ticketingEnabled && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Bilet Fiyatı (₺)</label>
+                    <input
+                      type="number"
+                      value={ticketPrice}
+                      onChange={e => setTicketPrice(e.target.value)}
+                      className="input-field text-sm"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Kontenjan</label>
+                    <input
+                      type="number"
+                      value={ticketCount}
+                      onChange={e => setTicketCount(e.target.value)}
+                      className="input-field text-sm"
+                      placeholder="Kaç bilet?"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[rgba(228,224,216,0.1)] p-3 space-y-2">
+                  <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Komisyon Modeli</p>
+                  <button
+                    type="button"
+                    onClick={() => setCommissionIncluded(true)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${commissionIncluded ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
+                  >
+                    <span className="font-medium">Komisyon dahil</span>
+                    <span className="block text-xs opacity-70 mt-0.5">Girdiğin fiyat alıcının ödediği son fiyattır</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCommissionIncluded(false)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${!commissionIncluded ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
+                  >
+                    <span className="font-medium">Komisyon üstüne eklenir</span>
+                    <span className="block text-xs opacity-70 mt-0.5">Alıcı girdiğin fiyat + hizmet bedelini öder</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
