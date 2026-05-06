@@ -18,13 +18,17 @@ export default async function VenueTicketsDashboard() {
   const db = admin ? createAdminClient() : supabase
 
   let venueName = 'Tüm Mekanlar'
-  let eventsQuery = db
-    .from('events')
-    .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
-    .eq('ticketing_enabled', true)
-    .order('event_date', { ascending: false })
 
-  if (!admin) {
+  let eventsData: any[] = []
+
+  if (admin) {
+    // Admin: tüm biletleri olan eventleri göster
+    const { data } = await db
+      .from('events')
+      .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
+      .order('event_date', { ascending: false })
+    eventsData = data ?? []
+  } else {
     const { data: venue } = await supabase
       .from('venues')
       .select('id, name')
@@ -33,10 +37,17 @@ export default async function VenueTicketsDashboard() {
 
     if (!venue) notFound()
     venueName = venue.name
-    eventsQuery = eventsQuery.eq('venue_id', venue.id)
+
+    const { data } = await supabase
+      .from('events')
+      .select('id, title, event_date, ticket_price, ticket_count, tickets_sold, ticketing_enabled')
+      .eq('venue_id', venue.id)
+      .eq('ticketing_enabled', true)
+      .order('event_date', { ascending: false })
+    eventsData = data ?? []
   }
 
-  const { data: events } = await eventsQuery
+  const events = eventsData
 
   const eventIds = (events ?? []).map(e => e.id)
 
