@@ -48,7 +48,7 @@ export function ArtistDashboard({ userId }: { userId: string }) {
     setVenue(venueData)
 
     if (artistData) {
-      const [appRes, inviteRes, membershipRes, offersRes] = await Promise.all([
+      const [appRes, inviteRes, membershipRes] = await Promise.all([
         supabase
           .from('applications')
           .select('*, slots(*, venues(name, city, district))')
@@ -64,15 +64,14 @@ export function ArtistDashboard({ userId }: { userId: string }) {
           .select('band_id')
           .eq('artist_id', artistData.id)
           .eq('status', 'accepted'),
-        supabase
-          .from('events')
-          .select('id, title, event_date, start_time, end_time, expires_at, venues(id, name, city, district)')
-          .eq('artist_id', artistData.id)
-          .eq('status', 'offered')
-          .order('expires_at', { ascending: true }),
       ])
 
       const bandIds = (membershipRes.data ?? []).map((m: any) => m.band_id as string)
+
+      // Teklifler: artist_id veya band_id eşleşenler
+      const offersFilter = bandIds.length > 0
+        ? `artist_id.eq.${artistData.id},band_id.in.(${bandIds.join(',')})`
+        : `artist_id.eq.${artistData.id}`
 
       let eventsQ = supabase
         .from('events')
@@ -86,13 +85,21 @@ export function ArtistDashboard({ userId }: { userId: string }) {
         eventsQ = eventsQ.eq('artist_id', artistData.id)
       }
 
-      const { data: evData } = await eventsQ
+      const [offersRes, evData] = await Promise.all([
+        supabase
+          .from('events')
+          .select('id, title, event_date, start_time, end_time, expires_at, venues(id, name, city, district), bands(name)')
+          .or(offersFilter)
+          .eq('status', 'offered')
+          .order('expires_at', { ascending: true }),
+        eventsQ,
+      ])
 
       setApplications(appRes.data ?? [])
       setIncomingOffers(offersRes.data ?? [])
       const realInvites = (inviteRes.data ?? []).filter((inv: any) => inv.role !== 'Applicant')
       setPendingInvites(realInvites)
-      setEvents(evData ?? [])
+      setEvents(evData.data ?? [])
     }
     setLoading(false)
   }
