@@ -21,7 +21,7 @@ export async function GET(
 
   const buffer = await QRCode.toBuffer(ticket.qr_code, { width: 300, margin: 2 })
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'image/png',
       'Cache-Control': 'public, max-age=86400',
