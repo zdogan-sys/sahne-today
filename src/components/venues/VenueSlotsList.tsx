@@ -3,9 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Trash2, Plus } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES, FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
-import { closeSlot } from '@/app/actions/event'
+import { closeSlot, createSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
@@ -52,8 +51,6 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
     event_type: ''
   })
   
-  const supabase = createClient()
-
   async function handleDelete(slotId: string) {
     setDeleting(slotId)
     const res = await closeSlot(slotId)
@@ -70,8 +67,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
     setAdding(true)
     setError('')
 
-    const slotInsert = {
-      venue_id: venueId,
+    const res = await createSlot(venueId, {
       day_of_week: newSlot.day_of_week,
       start_time: newSlot.start_time,
       end_time: newSlot.end_time,
@@ -79,21 +75,18 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
       fee_model: newSlot.fee_model,
       fee_value: newSlot.fee_value ? parseFloat(newSlot.fee_value) : null,
       notes: newSlot.notes || null,
-      event_type: newSlot.event_type,
-      status: 'open',
-    }
+      event_type: newSlot.event_type || null,
+    })
 
-    const { data, error: err } = await supabase.from('slots').insert(slotInsert as any).select().single()
-
-    if (err || !data) {
-      setError('Slot eklenirken bir hata oluştu.')
+    if (!res.success) {
+      setError(res.error ?? 'Slot eklenirken bir hata oluştu.')
     } else {
-      setSlots(prev => [...prev, data as SlotEntry])
       setShowAdd(false)
       setNewSlot({
         day_of_week: 5, start_time: '21:00', end_time: '23:00',
         recurrence: 'weekly', fee_model: 'free', fee_value: '', notes: '', event_type: ''
       })
+      window.location.reload()
     }
     setAdding(false)
   }

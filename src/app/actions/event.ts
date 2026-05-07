@@ -224,6 +224,22 @@ export async function cancelEvent(eventId: string) {
   return { success: true }
 }
 
+export async function createSlot(venueId: string, data: Record<string, any>) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = await getAdminClient()
+  const { data: venue } = await admin.from('venues').select('owner_id').eq('id', venueId).single()
+  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) {
+    return { success: false, error: 'Yetkiniz yok.' }
+  }
+
+  const { error } = await admin.from('slots').insert({ ...data, venue_id: venueId, status: 'open' })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function closeSlot(slotId: string) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
