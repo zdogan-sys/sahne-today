@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
-import { Trash2, Pencil, Plus, ExternalLink, Users, X } from 'lucide-react'
+import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -12,6 +12,7 @@ import {
   adminCreateArtist, adminUpdateArtist, adminDeleteArtist,
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
   adminCreateBand, adminUpdateBand, adminDeleteBand,
+  adminCreateSlot,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
@@ -25,7 +26,8 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
+import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
+import { DAY_NAMES, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Tab = 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
@@ -623,6 +625,7 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
   const [editing, setEditing] = useState<any>(null)
   const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [slotVenue, setSlotVenue] = useState<any>(null)
 
   async function handleDelete(id: string) {
     if (!confirm('Bu mekanı silmek istediğinizden emin misiniz?')) return
@@ -655,6 +658,9 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
               <Link href={`/venues/${v.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
                 <ExternalLink size={13} />
               </Link>
+              <button onClick={() => setSlotVenue(v)} className="p-1.5 text-text-muted hover:text-accent" title="Slot Ekle">
+                <CalendarPlus size={13} />
+              </button>
               <button onClick={() => { setEditing(v); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
                 <Pencil size={13} />
               </button>
@@ -666,6 +672,7 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
         ))}
       </div>
       <VenueForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+      <SlotForm venueId={slotVenue?.id ?? null} venueName={slotVenue?.name ?? ''} onClose={() => setSlotVenue(null)} />
     </div>
   )
 }
@@ -760,6 +767,100 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
           {loading ? 'Kaydediliyor...' : 'Kaydet'}
+        </button>
+      </div>
+    </BottomSheet>
+  )
+}
+
+function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; venueName: string; onClose: () => void }) {
+  const [slot, setSlot] = useState({
+    day_of_week: 5,
+    start_time: '21:00',
+    end_time: '23:00',
+    recurrence: 'weekly',
+    fee_model: 'free',
+    fee_value: '',
+    notes: '',
+    event_type: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    if (!venueId) return
+    setLoading(true); setError('')
+    const res = await adminCreateSlot(venueId, {
+      day_of_week: slot.day_of_week,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      recurrence: slot.recurrence,
+      fee_model: slot.fee_model,
+      fee_value: slot.fee_value ? parseFloat(slot.fee_value) : null,
+      notes: slot.notes || null,
+      event_type: slot.event_type || null,
+    })
+    setLoading(false)
+    if (!res.success) { setError(res.error ?? 'Hata'); return }
+    setSlot({ day_of_week: 5, start_time: '21:00', end_time: '23:00', recurrence: 'weekly', fee_model: 'free', fee_value: '', notes: '', event_type: '' })
+    onClose()
+  }
+
+  return (
+    <BottomSheet open={!!venueId} onClose={onClose} title={`Slot Ekle — ${venueName}`}>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Gün</label>
+            <select value={slot.day_of_week} onChange={(e) => setSlot({ ...slot, day_of_week: parseInt(e.target.value) })} className="input-field text-sm">
+              {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Tekrar</label>
+            <select value={slot.recurrence} onChange={(e) => setSlot({ ...slot, recurrence: e.target.value })} className="input-field text-sm">
+              <option value="weekly">Haftalık</option>
+              <option value="biweekly">2 Haftada Bir</option>
+              <option value="once">Tek Sefer</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Başlangıç</label>
+            <input type="time" value={slot.start_time} onChange={(e) => setSlot({ ...slot, start_time: e.target.value })} className="input-field text-sm" />
+          </div>
+          <div>
+            <label className="label">Bitiş</label>
+            <input type="time" value={slot.end_time} onChange={(e) => setSlot({ ...slot, end_time: e.target.value })} className="input-field text-sm" />
+          </div>
+          <div>
+            <label className="label">Ücret Modeli</label>
+            <select value={slot.fee_model} onChange={(e) => setSlot({ ...slot, fee_model: e.target.value })} className="input-field text-sm">
+              <option value="free">Ücretsiz</option>
+              <option value="door_share">Kapı Paylaşımı</option>
+              <option value="guarantee">Garanti</option>
+              <option value="negotiable">Pazarlığa Açık</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Tutar (₺)</label>
+            <input type="number" value={slot.fee_value} onChange={(e) => setSlot({ ...slot, fee_value: e.target.value })} placeholder="0" className="input-field text-sm" />
+          </div>
+        </div>
+        <div>
+          <label className="label">Etkinlik Türü</label>
+          <select value={slot.event_type} onChange={(e) => setSlot({ ...slot, event_type: e.target.value })} className="input-field text-sm">
+            <option value="">Seçin</option>
+            <optgroup label="Müzik">{MUSIC_GENRES.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>
+            <optgroup label="Sahne">{STAGE_GENRES.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>
+          </select>
+        </div>
+        <div>
+          <label className="label">Notlar</label>
+          <input value={slot.notes} onChange={(e) => setSlot({ ...slot, notes: e.target.value })} placeholder="Özel koşullar..." className="input-field text-sm" />
+        </div>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
+          {loading ? 'Ekleniyor...' : 'Slot Ekle'}
         </button>
       </div>
     </BottomSheet>

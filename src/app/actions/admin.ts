@@ -126,6 +126,17 @@ export async function adminRemovePerformer(id: string) {
   return { success: true }
 }
 
+// ─── SLOTS ────────────────────────────────────────────────────────────────
+
+export async function adminCreateSlot(venueId: string, data: Record<string, any>) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('slots').insert({ ...data, venue_id: venueId, status: 'open' })
+  if (error) return { success: false, error: error.message }
+  revalidatePath(`/venues/${venueId}`)
+  return { success: true }
+}
+
 // ─── BANDS ────────────────────────────────────────────────────────────────
 
 export async function adminCreateBand(data: Record<string, any>) {
