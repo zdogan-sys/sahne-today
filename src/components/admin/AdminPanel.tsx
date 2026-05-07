@@ -12,9 +12,9 @@ import {
   adminCreateArtist, adminUpdateArtist, adminDeleteArtist,
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
   adminCreateBand, adminUpdateBand, adminDeleteBand,
-  adminCreateSlot,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
+import { createSlot } from '@/app/actions/event'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import {
@@ -791,7 +791,7 @@ function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; ven
     if (!venueId) return
     setLoading(true); setError('')
     try {
-      const res = await adminCreateSlot(venueId, {
+      const res = await createSlot(venueId, {
         day_of_week: slot.day_of_week,
         start_time: slot.start_time + ':00',
         end_time: slot.end_time + ':00',
