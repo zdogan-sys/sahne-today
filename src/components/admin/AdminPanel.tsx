@@ -790,20 +790,25 @@ function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; ven
   async function handleSave() {
     if (!venueId) return
     setLoading(true); setError('')
-    const res = await adminCreateSlot(venueId, {
-      day_of_week: slot.day_of_week,
-      start_time: slot.start_time,
-      end_time: slot.end_time,
-      recurrence: slot.recurrence,
-      fee_model: slot.fee_model,
-      fee_value: slot.fee_value ? parseFloat(slot.fee_value) : null,
-      notes: slot.notes || null,
-      event_type: slot.event_type || null,
-    })
-    setLoading(false)
-    if (!res.success) { setError(res.error ?? 'Hata'); return }
-    setSlot({ day_of_week: 5, start_time: '21:00', end_time: '23:00', recurrence: 'weekly', fee_model: 'free', fee_value: '', notes: '', event_type: '' })
-    onClose()
+    try {
+      const res = await adminCreateSlot(venueId, {
+        day_of_week: slot.day_of_week,
+        start_time: slot.start_time + ':00',
+        end_time: slot.end_time + ':00',
+        recurrence: slot.recurrence,
+        fee_model: slot.fee_model,
+        fee_value: slot.fee_value ? parseFloat(slot.fee_value) : null,
+        notes: slot.notes || null,
+        event_type: slot.event_type || null,
+      })
+      if (!res.success) { setError(res.error ?? 'Hata'); return }
+      setSlot({ day_of_week: 5, start_time: '21:00', end_time: '23:00', recurrence: 'weekly', fee_model: 'free', fee_value: '', notes: '', event_type: '' })
+      onClose()
+    } catch (e: any) {
+      setError(e?.message ?? 'Beklenmeyen hata')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
