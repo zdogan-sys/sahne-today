@@ -188,7 +188,10 @@ function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; can
           </div>
         )}
         {canSeeSlots && openSlots > 0 && (
-          <div className="absolute top-2 right-2 bg-accent text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          <div
+            className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: 'rgba(29,158,117,0.85)', color: '#fff' }}
+          >
             {openSlots} açık slot
           </div>
         )}

@@ -48,9 +48,17 @@ export default async function VenuePage({ params }: Props) {
 
   const today = new Date().toISOString().split('T')[0]
 
+  const isOwnerCheck = async () => {
+    const { data: v } = await supabase.from('venues').select('owner_id').eq('id', id).single()
+    return v?.owner_id === user?.id || isAdminUser(user)
+  }
+  const ownerCheck = await isOwnerCheck()
+
   const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
-    supabase.from('slots').select('*').eq('venue_id', id).eq('status', 'open').order('day_of_week'),
+    ownerCheck
+      ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
+      : supabase.from('slots').select('*').eq('venue_id', id).eq('status', 'open').order('day_of_week'),
     supabase.from('events')
       .select('id, title, event_date, genre, artists(stage_name)')
       .eq('venue_id', id)

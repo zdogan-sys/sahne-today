@@ -137,8 +137,9 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {venues.map((venue: any) => {
-              const openSlots = venue.slots?.filter((s: any) => s.status === 'open').length ?? 0
-              const totalApps = venue.slots?.reduce((sum: number, s: any) => sum + (s.applications?.length ?? 0), 0) ?? 0
+              const openSlots    = venue.slots?.filter((s: any) => s.status === 'open').length ?? 0
+              const pendingSlots = venue.slots?.filter((s: any) => s.status === 'pending').length ?? 0
+              const bookedSlots  = venue.slots?.filter((s: any) => s.status === 'booked').length ?? 0
               return (
                 <Link key={venue.id} href={`/venues/${venue.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
                   <h3 className="font-semibold text-text-primary">{venue.name}</h3>
@@ -146,9 +147,25 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     <MapPin size={10} />
                     {venue.district}, {venue.city}
                   </div>
-                  <div className="flex gap-4 mt-3 text-xs">
-                    <div><span className="font-bebas text-lg text-accent">{openSlots}</span><span className="text-text-muted ml-1">açık slot</span></div>
-                    <div><span className="font-bebas text-lg text-text-primary">{totalApps}</span><span className="text-text-muted ml-1">başvuru</span></div>
+                  <div className="flex gap-3 mt-3 flex-wrap">
+                    {openSlots > 0 && (
+                      <span style={{ backgroundColor: 'rgba(29,158,117,0.15)', color: '#1D9E75', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                        {openSlots} Açık
+                      </span>
+                    )}
+                    {pendingSlots > 0 && (
+                      <span style={{ backgroundColor: 'rgba(212,168,32,0.15)', color: '#d4a820', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                        {pendingSlots} Bekliyor
+                      </span>
+                    )}
+                    {bookedSlots > 0 && (
+                      <span style={{ backgroundColor: 'rgba(143,136,212,0.15)', color: '#8f88d4', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                        {bookedSlots} Dolu
+                      </span>
+                    )}
+                    {openSlots === 0 && pendingSlots === 0 && bookedSlots === 0 && (
+                      <span className="text-text-muted text-xs">Slot yok</span>
+                    )}
                   </div>
                 </Link>
               )

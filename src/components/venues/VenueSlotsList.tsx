@@ -18,6 +18,13 @@ interface SlotEntry {
   fee_value: number | null
   recurrence: string
   notes: string | null
+  status: string
+}
+
+const STATUS_CONFIG: Record<string, { border: string; bg: string; color: string; label: string }> = {
+  open:    { border: '#1D9E75', bg: 'rgba(29,158,117,0.15)',  color: '#1D9E75', label: 'Açık' },
+  pending: { border: '#d4a820', bg: 'rgba(212,168,32,0.15)',  color: '#d4a820', label: 'Bekliyor' },
+  booked:  { border: '#8f88d4', bg: 'rgba(143,136,212,0.15)', color: '#8f88d4', label: 'Dolu' },
 }
 
 interface Props {
@@ -96,7 +103,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bebas text-2xl text-text-primary">AÇIK SLOTLAR</h2>
+        <h2 className="font-bebas text-2xl text-text-primary">{isOwner ? 'SLOTLAR' : 'AÇIK SLOTLAR'}</h2>
         {isOwner && (
           <button
             onClick={() => setShowAdd(true)}
@@ -111,42 +118,63 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
       {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
       <div className="space-y-2">
         {slots.length === 0 ? (
-          <p className="text-text-muted text-sm italic">Henüz açık slot bulunmuyor.</p>
-        ) : slots.map((slot) => (
-          <div key={slot.id} className="card p-4 flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-text-primary text-sm">{DAY_NAMES[slot.day_of_week]}</span>
-                <span className="text-text-muted text-sm">{formatTime(slot.start_time)} – {formatTime(slot.end_time)}</span>
-                <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
-                  {slot.recurrence === 'weekly' ? 'Haftalık' : slot.recurrence === 'biweekly' ? '2 Haftada Bir' : 'Tek Sefer'}
-                </span>
+          <p className="text-text-muted text-sm italic">Henüz slot bulunmuyor.</p>
+        ) : slots.map((slot) => {
+          const cfg = STATUS_CONFIG[slot.status] ?? STATUS_CONFIG.open
+          return (
+            <div
+              key={slot.id}
+              className="card p-4 flex items-center justify-between gap-4"
+              style={{ borderLeft: `3px solid ${cfg.border}` }}
+            >
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-text-primary text-sm">{DAY_NAMES[slot.day_of_week]}</span>
+                  <span className="text-text-muted text-sm">{formatTime(slot.start_time)} – {formatTime(slot.end_time)}</span>
+                  <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
+                    {slot.recurrence === 'weekly' ? 'Haftalık' : slot.recurrence === 'biweekly' ? '2 Haftada Bir' : 'Tek Sefer'}
+                  </span>
+                  <span
+                    style={{
+                      backgroundColor: cfg.bg,
+                      color: cfg.color,
+                      fontSize: '10px',
+                      padding: '3px 9px',
+                      borderRadius: '3px',
+                      fontWeight: 500,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    {cfg.label}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-text-muted">
+                  {FEE_MODEL_LABELS[slot.fee_model]}
+                  {slot.fee_value ? ` · ${slot.fee_value}₺` : ''}
+                  {slot.notes ? ` · ${slot.notes}` : ''}
+                </div>
               </div>
-              <div className="mt-1 text-xs text-text-muted">
-                {FEE_MODEL_LABELS[slot.fee_model]}
-                {slot.fee_value ? ` · ${slot.fee_value}₺` : ''}
-                {slot.notes ? ` · ${slot.notes}` : ''}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {isOwner && (
+                  <button
+                    onClick={() => handleDelete(slot.id)}
+                    disabled={deleting === slot.id}
+                    className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-colors disabled:opacity-50"
+                    title="Slotu kapat"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                {!isOwner && hasUser && slot.status === 'open' && (
+                  <Link href={`/venues/${venueId}/calendar`} className="btn-accent py-1.5 px-4 text-sm">
+                    Sahne Al
+                  </Link>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isOwner && (
-                <button
-                  onClick={() => handleDelete(slot.id)}
-                  disabled={deleting === slot.id}
-                  className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-colors disabled:opacity-50"
-                  title="Slotu kapat"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-              {!isOwner && hasUser && (
-                <Link href={`/venues/${venueId}/calendar`} className="btn-accent py-1.5 px-4 text-sm">
-                  Sahne Al
-                </Link>
-              )}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <BottomSheet open={showAdd} onClose={() => setShowAdd(false)} title="Yeni Slot Ekle">
