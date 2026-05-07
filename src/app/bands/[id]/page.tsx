@@ -18,6 +18,7 @@ import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
 import { BandCalendarSubscribe } from '@/components/bands/BandCalendarSubscribe'
 import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
+import { FollowButton } from '@/components/ui/FollowButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,7 @@ export default async function BandPage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [bandRes, artistRes] = await Promise.all([
+  const [bandRes, artistRes, followData] = await Promise.all([
     supabase
       .from('bands')
       .select('*, band_members(id, artist_id, role, status, artists(id, stage_name, instruments, city, profiles(avatar_url)))')
@@ -50,6 +51,9 @@ export default async function BandPage({ params }: Props) {
       .single(),
     user
       ? supabase.from('artists').select('id').eq('profile_id', user.id).single()
+      : Promise.resolve({ data: null }),
+    user
+      ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'band').eq('target_id', id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
 
@@ -59,6 +63,7 @@ export default async function BandPage({ params }: Props) {
   const isCreator = user?.id === b.creator_id || isAdminUser(user)
   const isArtist = !!artistRes.data
   const currentArtistId = artistRes.data?.id
+  const isFollowing = !!(followData as any)?.data?.id
 
   const eventsDb = isCreator ? createAdminClient() : supabase
   const statusFilter = isCreator ? ['confirmed', 'offered', 'pending'] : ['confirmed']
@@ -110,14 +115,17 @@ export default async function BandPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {(b.genres ?? []).map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
-          {isCreator && (
-            <div className="mt-3">
-              <BandProfileEditor 
-                bandId={b.id} 
-                initialData={{ name: b.name, city: b.city, genres: b.genres, bio: b.bio }} 
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {!isCreator && (
+              <FollowButton targetType="band" targetId={b.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+            )}
+            {isCreator && (
+              <BandProfileEditor
+                bandId={b.id}
+                initialData={{ name: b.name, city: b.city, genres: b.genres, bio: b.bio }}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

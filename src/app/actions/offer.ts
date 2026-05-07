@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ADMIN_EMAIL } from '@/lib/admin'
+import { notifyFollowers } from '@/app/actions/follow'
 
 async function getAdminClient() {
   return createClient(
@@ -74,6 +75,7 @@ export async function respondToVenueOffer(eventId: string, accept: boolean) {
         { event_id: eventId, event_date: ev.event_date }
       )
     }
+    notifyFollowers(eventId).catch(() => {})
   } else {
     await admin.from('events').update({ status: 'rejected' } as any).eq('id', eventId)
     if (venueOwnerId) {

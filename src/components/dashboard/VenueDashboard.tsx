@@ -99,6 +99,9 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
       .update({ status: approve ? 'confirmed' : 'cancelled' } as any)
       .eq('id', eventId)
     setEventRequests(prev => prev.filter(e => e.id !== eventId))
+    if (approve) {
+      fetch('/api/internal/notify-followers', { method: 'POST', body: JSON.stringify({ eventId }), headers: { 'Content-Type': 'application/json' } }).catch(() => {})
+    }
   }
 
   async function handleWithdraw(eventId: string) {

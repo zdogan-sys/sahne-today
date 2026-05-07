@@ -5,6 +5,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend'
 import { ADMIN_EMAIL } from '@/lib/admin'
+import { notifyFollowers } from '@/app/actions/follow'
 
 async function getAdminClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -56,7 +57,7 @@ export async function respondToSlotApplication(appId: string, status: 'accepted'
   if (status === 'accepted') {
     const slot = (app as any).slots
     const artist = (app as any).artists
-    await admin.from('events').insert({
+    const { data: newEvent } = await admin.from('events').insert({
       venue_id: venue.id,
       artist_id: (app as any).artist_id,
       slot_id: (app as any).slot_id,
@@ -68,7 +69,8 @@ export async function respondToSlotApplication(appId: string, status: 'accepted'
       genre: null,
       entry_type: 'free',
       status: 'confirmed',
-    } as any)
+    } as any).select('id').single()
+    if (newEvent) notifyFollowers((newEvent as any).id).catch(() => {})
   }
 
   // Update application status (DB trigger will create in-app notification)

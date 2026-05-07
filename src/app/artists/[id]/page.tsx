@@ -16,7 +16,7 @@ import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ClaimProfileButton } from '@/components/artists/ClaimProfileButton'
-
+import { FollowButton } from '@/components/ui/FollowButton'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 type ArtistFull = Artist & { profiles: Profile | null; social_links?: SocialLinksData }
 type EventFull = Event & { venues: Pick<Venue, 'name' | 'city'> | null; bands: { name: string } | null }
@@ -82,6 +82,11 @@ export default async function ArtistPage({ params }: Props) {
   const isOwner = user?.id === artist.profile_id || isAdminUser(user)
   const ownedVenue = venueRes.data as any
 
+  const { data: followData } = user
+    ? await supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'artist').eq('target_id', id).maybeSingle()
+    : { data: null }
+  const isFollowing = !!followData
+
   const initials = artist.stage_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
@@ -117,8 +122,13 @@ export default async function ArtistPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
-          {!artist.profile_id && user && !isOwner && (
+          {!isOwner && (
             <div className="mt-3">
+              <FollowButton targetType="artist" targetId={artist.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+            </div>
+          )}
+          {!artist.profile_id && user && !isOwner && (
+            <div className="mt-1">
               <ClaimProfileButton artistId={artist.id} />
             </div>
           )}

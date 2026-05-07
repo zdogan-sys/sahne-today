@@ -17,6 +17,7 @@ import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
 import { VenueCalendarSubscribe } from '@/components/venues/VenueCalendarSubscribe'
+import { FollowButton } from '@/components/ui/FollowButton'
 import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
 import { ClaimVenueButton } from '@/components/venues/ClaimVenueButton'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
@@ -55,7 +56,7 @@ export default async function VenuePage({ params }: Props) {
   }
   const ownerCheck = await isOwnerCheck()
 
-  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes] = await Promise.all([
+  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     ownerCheck
       ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
@@ -74,6 +75,9 @@ export default async function VenuePage({ params }: Props) {
       .lt('event_date', today)
       .order('event_date', { ascending: false })
       .limit(20),
+    user
+      ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'venue').eq('target_id', id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   if (!venueRes.data) notFound()
@@ -83,6 +87,7 @@ export default async function VenuePage({ params }: Props) {
   const pastEvents = (pastEventsRes.data ?? []) as any[]
   const isOwner = user?.id === venue.owner_id || isAdminUser(user)
   const canSeeSlots = isOwner || isArtist
+  const isFollowing = !!(followData as any)?.data?.id
   const photos: string[] = (venue as any).photos ?? []
   const videoUrls: string[] = (venue as any).video_urls ?? []
   const socialLinks = ((venue as any).social_links ?? {}) as SocialLinksData
@@ -140,12 +145,17 @@ export default async function VenuePage({ params }: Props) {
             </div>
             <div>
               <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
                   {VENUE_TYPE_LABELS[venue.venue_type]}
                 </span>
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
+                )}
+                {!isOwner && (
+                  <span className="pointer-events-auto">
+                    <FollowButton targetType="venue" targetId={venue.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+                  </span>
                 )}
                 {!(venue as any).owner_id && user && (venue as any).owner_id !== user?.id && (
                   <span className="pointer-events-auto">
