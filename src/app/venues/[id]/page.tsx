@@ -16,6 +16,7 @@ import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
+import { VenueCalendarSubscribe } from '@/components/venues/VenueCalendarSubscribe'
 import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
 import { ClaimVenueButton } from '@/components/venues/ClaimVenueButton'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
@@ -253,6 +254,9 @@ export default async function VenuePage({ params }: Props) {
           </div>
           <span className="text-text-muted text-xs">→</span>
         </Link>
+
+        {/* Calendar subscription — public, no token needed */}
+        <VenueCalendarSubscribe venueId={venue.id} venueName={venue.name} />
 
         {/* Photo album link */}
         <Link
