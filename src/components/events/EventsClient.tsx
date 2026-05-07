@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { MapPin, Clock, Filter, Music2, Building2, X } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -41,6 +42,7 @@ function groupByDate(events: EventFull[]) {
 }
 
 export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) {
+  const router = useRouter()
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
   const [entryType, setEntryType] = useState('')
@@ -76,6 +78,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
     const dateStr = toISO(date)
     const dayEvents = filtered.filter(e => e.event_date === dateStr)
     if (dayEvents.length === 0) return
+    if (dayEvents.length === 1) { router.push(`/events/${dayEvents[0].id}`); return }
     setPopupDate(date)
     setPopupEvents(dayEvents)
   }
