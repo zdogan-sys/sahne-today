@@ -141,7 +141,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
 
   async function handleSave() {
-    if (!name.trim() || !city || !district || !address || !venueType) {
+    if (!name.trim() || !city || !venueType) {
       setError('Lütfen zorunlu alanları doldurun.')
       return
     }
@@ -332,7 +332,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
           <button
             onClick={handleSave}
-            disabled={loading || !name.trim() || !city || !district || !address || !venueType}
+            disabled={loading || !name.trim() || !city || !venueType}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-4"
           >
             {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
