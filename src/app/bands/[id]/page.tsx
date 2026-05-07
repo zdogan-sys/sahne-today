@@ -244,6 +244,8 @@ export default async function BandPage({ params }: Props) {
           } as any))}
         />
 
+        <BandCalendarSubscribe bandId={b.id} bandName={b.name} />
+
         <Link
           href={`/bands/${b.id}/photos`}
           className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
@@ -254,8 +256,6 @@ export default async function BandPage({ params }: Props) {
           </div>
           <span className="text-text-muted text-xs">{(b.photos ?? []).length} fotoğraf →</span>
         </Link>
-
-        <BandCalendarSubscribe bandId={b.id} bandName={b.name} />
       </div>
     </div>
   )
