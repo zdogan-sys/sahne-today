@@ -11,6 +11,7 @@ import {
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent,
   adminCreateArtist, adminUpdateArtist, adminDeleteArtist,
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
+  adminCreateBand, adminUpdateBand, adminDeleteBand,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
@@ -27,12 +28,13 @@ import { CSS } from '@dnd-kit/utilities'
 import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'events' | 'artists' | 'venues' | 'members' | 'lists'
+type Tab = 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'events', label: 'Etkinlikler' },
   { key: 'artists', label: 'Sanatçılar' },
   { key: 'venues', label: 'Mekanlar' },
+  { key: 'bands', label: 'Gruplar' },
   { key: 'members', label: 'Üyeler' },
   { key: 'lists', label: 'Türler' },
 ]
@@ -51,11 +53,12 @@ interface Props {
   events: any[]
   artists: any[]
   venues: any[]
+  bands: any[]
   members: any[]
   listConfigs: ListConfigs
 }
 
-export function AdminPanel({ events, artists, venues, members, listConfigs }: Props) {
+export function AdminPanel({ events, artists, venues, bands, members, listConfigs }: Props) {
   const [tab, setTab] = useState<Tab>('events')
   const router = useRouter()
 
@@ -64,11 +67,12 @@ export function AdminPanel({ events, artists, venues, members, listConfigs }: Pr
   return (
     <div>
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-5 gap-3 mb-6">
         {[
           { label: 'Etkinlik', count: events.length },
           { label: 'Sanatçı', count: artists.length },
           { label: 'Mekan', count: venues.length },
+          { label: 'Grup', count: bands.length },
           { label: 'Üye', count: members.length },
         ].map((s) => (
           <div key={s.label} className="card p-4 text-center">
@@ -93,6 +97,7 @@ export function AdminPanel({ events, artists, venues, members, listConfigs }: Pr
       {tab === 'events' && <EventsTab events={events} venues={venues} artists={artists} onRefresh={refresh} />}
       {tab === 'artists' && <ArtistsTab artists={artists} onRefresh={refresh} />}
       {tab === 'venues' && <VenuesTab venues={venues} onRefresh={refresh} />}
+      {tab === 'bands' && <BandsTab bands={bands} onRefresh={refresh} />}
       {tab === 'members' && <MembersTab members={members} onRefresh={refresh} />}
       {tab === 'lists' && <ListsTab configs={listConfigs} />}
     </div>
@@ -752,6 +757,111 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', verified ? 'translate-x-5' : 'translate-x-0')} />
           </button>
         </div>
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
+          {loading ? 'Kaydediliyor...' : 'Kaydet'}
+        </button>
+      </div>
+    </BottomSheet>
+  )
+}
+
+// ─── BANDS TAB ─────────────────────────────────────────────────────────────
+
+function BandsTab({ bands, onRefresh }: { bands: any[]; onRefresh: () => void }) {
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<any>(null)
+  const [newKey, setNewKey] = useState(0)
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  async function handleDelete(id: string) {
+    if (!confirm('Bu grubu silmek istediğinizden emin misiniz?')) return
+    setDeleting(id)
+    await adminDeleteBand(id)
+    onRefresh()
+    setDeleting(null)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-text-muted text-sm">{bands.length} grup</p>
+        <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
+          className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
+          <Plus size={14} /> Grup Ekle
+        </button>
+      </div>
+      <div className="space-y-2">
+        {bands.map((b) => (
+          <div key={b.id} className="card p-3 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary text-sm font-medium truncate">{b.name}</p>
+              <p className="text-text-muted text-xs truncate">
+                {b.city ?? '—'} · {b.genres?.slice(0, 2).join(', ') || '—'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Link href={`/bands/${b.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
+                <ExternalLink size={13} />
+              </Link>
+              <button onClick={() => { setEditing(b); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
+                <Pencil size={13} />
+              </button>
+              <button onClick={() => handleDelete(b.id)} disabled={deleting === b.id} className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <BandForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
+    </div>
+  )
+}
+
+function BandForm({ open, onClose, initial, onSaved }: any) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [city, setCity] = useState(initial?.city ?? '')
+  const [bio, setBio] = useState(initial?.bio ?? '')
+  const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    if (!name) { setError('Grup adı zorunludur.'); return }
+    setLoading(true); setError('')
+    const data = { name, city: city || null, bio: bio || null, genres }
+    const res = initial?.id
+      ? await adminUpdateBand(initial.id, data)
+      : await adminCreateBand(data)
+    setLoading(false)
+    if (!res.success) { setError(res.error ?? 'Hata'); return }
+    onSaved()
+  }
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title={initial?.id ? 'Grup Düzenle' : 'Grup Ekle'}>
+      <div className="space-y-3">
+        <div>
+          <label className="label">Grup Adı *</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="input-field text-sm" />
+        </div>
+        <div>
+          <label className="label">Şehir</label>
+          <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field text-sm">
+            <option value="">Seç</option>
+            {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Bio</label>
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} className="input-field text-sm resize-none" />
+        </div>
+        <TabbedGenreSelector
+          label="Müzik Türleri"
+          selected={genres}
+          onToggle={(g) => setGenres(genres.includes(g) ? genres.filter(x => x !== g) : [...genres, g])}
+        />
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
           {loading ? 'Kaydediliyor...' : 'Kaydet'}

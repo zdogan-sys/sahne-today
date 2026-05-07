@@ -126,6 +126,35 @@ export async function adminRemovePerformer(id: string) {
   return { success: true }
 }
 
+// ─── BANDS ────────────────────────────────────────────────────────────────
+
+export async function adminCreateBand(data: Record<string, any>) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { data: created, error } = await admin.from('bands').insert(data).select('id, name, city, genres').single()
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true, item: created }
+}
+
+export async function adminUpdateBand(id: string, data: Record<string, any>) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('bands').update(data).eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
+export async function adminDeleteBand(id: string) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('bands').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
 // ─── MEMBERS ──────────────────────────────────────────────────────────────
 
 export async function adminDeleteMember(id: string) {

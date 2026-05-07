@@ -14,7 +14,7 @@ async function getAdminData() {
   )
 
   try {
-    const [eventsRes, artistsRes, venuesRes, membersRes] = await Promise.all([
+    const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes] = await Promise.all([
       admin.from('events')
         .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
         .order('event_date', { ascending: false })
@@ -31,6 +31,10 @@ async function getAdminData() {
         .select('id, display_name, city, role, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
+      admin.from('bands')
+        .select('id, name, city, genres, bio, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50),
     ])
 
     return {
@@ -38,9 +42,10 @@ async function getAdminData() {
       artists: artistsRes.data ?? [],
       venues: venuesRes.data ?? [],
       members: membersRes.data ?? [],
+      bands: bandsRes.data ?? [],
     }
   } catch {
-    return { events: [], artists: [], venues: [], members: [] }
+    return { events: [], artists: [], venues: [], members: [], bands: [] }
   }
 }
 
