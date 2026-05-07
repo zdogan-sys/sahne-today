@@ -90,10 +90,15 @@ export async function inviteToBand(bandId: string, artistId: string) {
     }
   }
 
+  const isAdmin = user.email === ADMIN_EMAIL
+  const status = isAdmin ? 'accepted' : 'invited'
+  const extra = isAdmin ? { joined_at: new Date().toISOString() } : {}
+
   const { error } = await supabaseAdmin.from('band_members').insert({
     band_id: bandId,
     artist_id: artistId,
-    status: 'invited',
+    status,
+    ...extra,
   })
 
   if (error) return { success: false, error: error.message }
