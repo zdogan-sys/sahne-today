@@ -33,8 +33,8 @@ type Tab = 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'events', label: 'Etkinlikler' },
   { key: 'artists', label: 'Sanatçılar' },
-  { key: 'venues', label: 'Mekanlar' },
   { key: 'bands', label: 'Gruplar' },
+  { key: 'venues', label: 'Mekanlar' },
   { key: 'members', label: 'Üyeler' },
   { key: 'lists', label: 'Türler' },
 ]
