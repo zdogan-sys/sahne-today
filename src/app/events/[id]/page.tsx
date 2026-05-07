@@ -83,7 +83,7 @@ export default async function EventPage({ params }: Props) {
         </div>
       )}
 
-      {event.status === 'confirmed' && (
+      {(event.status === 'confirmed' || isParty) && event.status !== 'cancelled' && (
         <div className="mb-4">
           <CalendarExport
             eventId={id}
