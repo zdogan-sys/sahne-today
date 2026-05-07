@@ -83,6 +83,20 @@ export default async function EventPage({ params }: Props) {
         </div>
       )}
 
+      {event.status === 'confirmed' && (
+        <div className="mb-4">
+          <CalendarExport
+            eventId={id}
+            title={event.title}
+            eventDate={event.event_date}
+            startTime={event.start_time}
+            endTime={event.end_time ?? null}
+            description={event.description ?? null}
+            location={venue ? [venue.name, venue.address, venue.district, venue.city].filter(Boolean).join(', ') : event.venue_name ?? null}
+          />
+        </div>
+      )}
+
       <div className="card overflow-hidden">
         {/* Poster + Info side by side */}
         <div className="flex flex-col sm:flex-row">
@@ -137,19 +151,6 @@ export default async function EventPage({ params }: Props) {
                 </span>
               </div>
             </div>
-
-            {/* Calendar export */}
-            {event.status === 'confirmed' && (
-              <CalendarExport
-                eventId={id}
-                title={event.title}
-                eventDate={event.event_date}
-                startTime={event.start_time}
-                endTime={event.end_time ?? null}
-                description={event.description ?? null}
-                location={venue ? [venue.name, venue.address, venue.district, venue.city].filter(Boolean).join(', ') : event.venue_name ?? null}
-              />
-            )}
 
             {/* Owner/admin tools */}
             {isParty && (

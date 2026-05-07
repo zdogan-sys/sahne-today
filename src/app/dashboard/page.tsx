@@ -74,14 +74,14 @@ export default async function DashboardPage() {
       {/* Eğer sanatçı profili varsa Sanatçı Panelini göster */}
       {hasArtist && (
         <section className="pt-8 border-t border-[rgba(228,224,216,0.1)]">
-          <ArtistDashboard userId={user.id} />
+          <ArtistDashboard userId={user.id} calendarToken={(profileData as any).calendar_token ?? null} />
         </section>
       )}
 
       {/* Eğer mekanları varsa Mekan Panelini göster */}
       {hasVenues && (
         <section className="pt-8 border-t border-[rgba(228,224,216,0.1)]">
-          <VenueDashboard userId={user.id} />
+          <VenueDashboard userId={user.id} calendarToken={(profileData as any).calendar_token ?? null} />
         </section>
       )}
     </div>

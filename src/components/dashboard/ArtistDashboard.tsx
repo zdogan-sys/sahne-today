@@ -13,8 +13,9 @@ import { OfferCountdown } from '@/components/ui/OfferCountdown'
 import { BandSection } from '@/components/bands/BandSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
+import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
-export function ArtistDashboard({ userId }: { userId: string }) {
+export function ArtistDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
   const [artist, setArtist] = useState<any>(null)
   const [venue, setVenue] = useState<any>(null)
   const [applications, setApplications] = useState<any[]>([])
@@ -365,6 +366,11 @@ export function ArtistDashboard({ userId }: { userId: string }) {
       />
 
       <div className="mt-8">
+        {calendarToken && (
+          <div className="mb-4">
+            <CalendarSubscribe token={calendarToken} type="artist" />
+          </div>
+        )}
         <ArtistCalendarSection
           artistId={artist.id}
           isOwner={true}

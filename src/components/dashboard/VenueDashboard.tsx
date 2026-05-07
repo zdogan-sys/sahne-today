@@ -8,8 +8,9 @@ import { MapPin, Check, X, Clock, CalendarX, SendHorizonal } from 'lucide-react'
 import { withdrawVenueOffer } from '@/app/actions/offer'
 import { respondToSlotApplication } from '@/app/actions/venue'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
+import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
-export function VenueDashboard({ userId }: { userId: string }) {
+export function VenueDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
   const [venues, setVenues] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [eventRequests, setEventRequests] = useState<any[]>([])
@@ -123,6 +124,11 @@ export function VenueDashboard({ userId }: { userId: string }) {
           <h2 className="font-bebas text-2xl text-text-primary">MEKANLARIM</h2>
           <Link href="/venues/register" className="btn-accent text-sm py-1.5">+ Mekan Ekle</Link>
         </div>
+        {calendarToken && (
+          <div className="mb-4">
+            <CalendarSubscribe token={calendarToken} type="venue" />
+          </div>
+        )}
         {venues.length === 0 ? (
           <div className="card p-6 text-center text-text-muted text-sm">
             <p>Henüz mekanınız yok.</p>
