@@ -14,7 +14,7 @@ async function getAdminData() {
   )
 
   try {
-    const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes] = await Promise.all([
+    const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes, pendingEventsRes] = await Promise.all([
       admin.from('events')
         .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
         .order('event_date', { ascending: false })
@@ -35,6 +35,10 @@ async function getAdminData() {
         .select('id, name, city, genres, bio, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
+      admin.from('events')
+        .select('id, title, event_date, start_time, status, venues(name, city), artists(stage_name), bands(name)')
+        .in('status', ['pending', 'offered'])
+        .order('event_date', { ascending: true }),
     ])
 
     return {
@@ -43,9 +47,10 @@ async function getAdminData() {
       venues: venuesRes.data ?? [],
       members: membersRes.data ?? [],
       bands: bandsRes.data ?? [],
+      pendingEvents: pendingEventsRes.data ?? [],
     }
   } catch {
-    return { events: [], artists: [], venues: [], members: [], bands: [] }
+    return { events: [], artists: [], venues: [], members: [], bands: [], pendingEvents: [] }
   }
 }
 

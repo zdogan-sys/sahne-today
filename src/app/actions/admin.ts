@@ -126,6 +126,26 @@ export async function adminRemovePerformer(id: string) {
   return { success: true }
 }
 
+// ─── EVENT STATUS ─────────────────────────────────────────────────────────
+
+export async function adminConfirmEvent(eventId: string) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('events').update({ status: 'confirmed' } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
+export async function adminRejectEvent(eventId: string) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('events').update({ status: 'cancelled' } as any).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}
+
 // ─── SLOTS ────────────────────────────────────────────────────────────────
 
 export async function adminCreateSlot(venueId: string, data: Record<string, any>) {

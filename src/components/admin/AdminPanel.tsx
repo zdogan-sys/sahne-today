@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
-import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus } from 'lucide-react'
+import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus, Check } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -12,6 +12,7 @@ import {
   adminCreateArtist, adminUpdateArtist, adminDeleteArtist,
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
   adminCreateBand, adminUpdateBand, adminDeleteBand,
+  adminConfirmEvent, adminRejectEvent,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
 import { createSlot } from '@/app/actions/event'
@@ -30,9 +31,10 @@ import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRE
 import { DAY_NAMES, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
+type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: 'pending', label: 'Bekleyenler' },
   { key: 'events', label: 'Etkinlikler' },
   { key: 'artists', label: 'Sanatçılar' },
   { key: 'bands', label: 'Gruplar' },
@@ -57,11 +59,12 @@ interface Props {
   venues: any[]
   bands: any[]
   members: any[]
+  pendingEvents: any[]
   listConfigs: ListConfigs
 }
 
-export function AdminPanel({ events, artists, venues, bands, members, listConfigs }: Props) {
-  const [tab, setTab] = useState<Tab>('events')
+export function AdminPanel({ events, artists, venues, bands, members, pendingEvents, listConfigs }: Props) {
+  const [tab, setTab] = useState<Tab>(pendingEvents.length > 0 ? 'pending' : 'events')
   const router = useRouter()
 
   function refresh() { router.refresh() }
@@ -96,12 +99,92 @@ export function AdminPanel({ events, artists, venues, bands, members, listConfig
         ))}
       </div>
 
+      {tab === 'pending' && <PendingTab pendingEvents={pendingEvents} onRefresh={refresh} />}
       {tab === 'events' && <EventsTab events={events} venues={venues} artists={artists} onRefresh={refresh} />}
       {tab === 'artists' && <ArtistsTab artists={artists} onRefresh={refresh} />}
       {tab === 'venues' && <VenuesTab venues={venues} onRefresh={refresh} />}
       {tab === 'bands' && <BandsTab bands={bands} onRefresh={refresh} />}
       {tab === 'members' && <MembersTab members={members} onRefresh={refresh} />}
       {tab === 'lists' && <ListsTab configs={listConfigs} />}
+    </div>
+  )
+}
+
+// ─── PENDING TAB ───────────────────────────────────────────────────────────
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  pending: { label: 'Mekan Onayı Bekliyor', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
+  offered: { label: 'Sanatçı Onayı Bekliyor', color: 'text-accent bg-accent/10 border-accent/20' },
+}
+
+function PendingTab({ pendingEvents, onRefresh }: { pendingEvents: any[]; onRefresh: () => void }) {
+  const [acting, setActing] = useState<string | null>(null)
+
+  async function handleConfirm(id: string) {
+    setActing(id)
+    await adminConfirmEvent(id)
+    onRefresh()
+    setActing(null)
+  }
+
+  async function handleReject(id: string) {
+    if (!confirm('Bu etkinliği iptal etmek istediğinizden emin misiniz?')) return
+    setActing(id)
+    await adminRejectEvent(id)
+    onRefresh()
+    setActing(null)
+  }
+
+  return (
+    <div>
+      <p className="text-text-muted text-sm mb-4">{pendingEvents.length} bekleyen etkinlik</p>
+      {pendingEvents.length === 0 ? (
+        <div className="text-center py-10 text-text-muted text-sm">Bekleyen etkinlik yok.</div>
+      ) : (
+        <div className="space-y-2">
+          {pendingEvents.map((ev) => {
+            const cfg = STATUS_LABELS[ev.status] ?? STATUS_LABELS.pending
+            const performer = ev.artists?.stage_name ?? ev.bands?.name ?? '—'
+            const venue = ev.venues?.name ? `${ev.venues.name}${ev.venues.city ? `, ${ev.venues.city}` : ''}` : '—'
+            return (
+              <div key={ev.id} className="card p-3 flex items-center gap-3">
+                <div className="flex-shrink-0 text-center w-10">
+                  <p className="text-accent font-bold text-sm">{new Date(ev.event_date).getDate()}</p>
+                  <p className="text-text-muted text-[10px]">{new Date(ev.event_date).toLocaleDateString('tr-TR', { month: 'short' })}</p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-primary text-sm font-medium truncate">{ev.title}</p>
+                  <p className="text-text-muted text-xs truncate">{performer} · {venue}</p>
+                  <span className={cn('inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded border', cfg.color)}>
+                    {cfg.label}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Link href={`/events/${ev.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
+                    <ExternalLink size={13} />
+                  </Link>
+                  <button
+                    onClick={() => handleConfirm(ev.id)}
+                    disabled={acting === ev.id}
+                    className="w-8 h-8 rounded-lg bg-success/10 text-success hover:bg-success/20 flex items-center justify-center transition-colors disabled:opacity-40"
+                    title="Onayla"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleReject(ev.id)}
+                    disabled={acting === ev.id}
+                    className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-colors disabled:opacity-40"
+                    title="Reddet / İptal"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
