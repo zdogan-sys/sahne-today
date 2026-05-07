@@ -129,9 +129,9 @@ export async function adminRemovePerformer(id: string) {
 // ─── BANDS ────────────────────────────────────────────────────────────────
 
 export async function adminCreateBand(data: Record<string, any>) {
-  await assertAdmin()
+  const user = await assertAdmin()
   const admin = await getAdmin()
-  const { data: created, error } = await admin.from('bands').insert(data).select('id, name, city, genres').single()
+  const { data: created, error } = await admin.from('bands').insert({ ...data, creator_id: user.id }).select('id, name, city, genres').single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin')
   return { success: true, item: created }
