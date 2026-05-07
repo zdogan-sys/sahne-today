@@ -61,7 +61,7 @@ export default async function BandPage({ params }: Props) {
   const currentArtistId = artistRes.data?.id
 
   const eventsDb = isCreator ? createAdminClient() : supabase
-  const statusFilter = isCreator ? ['confirmed', 'offered'] : ['confirmed']
+  const statusFilter = isCreator ? ['confirmed', 'offered', 'pending'] : ['confirmed']
   const eventsRes = await eventsDb
     .from('events')
     .select('id, event_date, title, start_time, end_time, status, expires_at, venues(name, city)')
