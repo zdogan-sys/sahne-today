@@ -144,18 +144,20 @@ export default async function VenuePage({ params }: Props) {
               />
             </div>
             <div>
-              <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
+                {user?.id !== venue.owner_id && (
+                  <span className="pointer-events-auto mt-1">
+                    <FollowButton targetType="venue" targetId={venue.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
                   {VENUE_TYPE_LABELS[venue.venue_type]}
                 </span>
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
-                )}
-                {user?.id !== venue.owner_id && (
-                  <span className="pointer-events-auto">
-                    <FollowButton targetType="venue" targetId={venue.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
-                  </span>
                 )}
                 {!(venue as any).owner_id && user && (venue as any).owner_id !== user?.id && (
                   <span className="pointer-events-auto">

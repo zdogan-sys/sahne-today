@@ -109,7 +109,12 @@ export default async function ArtistPage({ params }: Props) {
           ) : initials}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-bebas text-5xl text-text-primary leading-none">{artist.stage_name}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-bebas text-5xl text-text-primary leading-none">{artist.stage_name}</h1>
+            {user?.id !== artist.profile_id && (
+              <FollowButton targetType="artist" targetId={artist.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+            )}
+          </div>
           {(artist.city || ((artist as any).active_cities?.length > 0)) && (
             <div className="flex items-center gap-1 text-text-muted text-sm mt-1 flex-wrap">
               <MapPin size={14} className="flex-shrink-0" />
@@ -122,11 +127,6 @@ export default async function ArtistPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
-          {user?.id !== artist.profile_id && (
-            <div className="mt-3">
-              <FollowButton targetType="artist" targetId={artist.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
-            </div>
-          )}
           {!artist.profile_id && user && !isOwner && (
             <div className="mt-1">
               <ClaimProfileButton artistId={artist.id} />

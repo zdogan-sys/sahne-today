@@ -105,7 +105,12 @@ export default async function BandPage({ params }: Props) {
           isCreator={isCreator}
         />
         <div className="flex-1 min-w-0">
-          <h1 className="font-bebas text-5xl text-text-primary leading-none">{b.name}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-bebas text-5xl text-text-primary leading-none">{b.name}</h1>
+            {user?.id !== b.creator_id && (
+              <FollowButton targetType="band" targetId={b.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
+            )}
+          </div>
           {b.city && (
             <div className="flex items-center gap-1 text-text-muted text-sm mt-1">
               <MapPin size={14} />
@@ -116,9 +121,6 @@ export default async function BandPage({ params }: Props) {
             {(b.genres ?? []).map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            {user?.id !== b.creator_id && (
-              <FollowButton targetType="band" targetId={b.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
-            )}
             {isCreator && (
               <BandProfileEditor
                 bandId={b.id}

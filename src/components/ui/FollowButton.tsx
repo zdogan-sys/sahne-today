@@ -30,14 +30,14 @@ export function FollowButton({ targetType, targetId, initialFollowing, userId }:
     <button
       onClick={handleClick}
       disabled={loading}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-50 ${
         following
           ? 'bg-accent/15 text-accent border border-accent/30 hover:bg-red-400/10 hover:text-red-400 hover:border-red-400/30'
-          : 'bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.15)] hover:bg-accent/10 hover:text-accent hover:border-accent/30'
+          : 'bg-accent text-white hover:bg-accent/80'
       }`}
       title={following ? 'Takibi bırak' : 'Takip et — yeni etkinliklerde bildirim al'}
     >
-      {following ? <BellOff size={13} /> : <Bell size={13} />}
+      {following ? <BellOff size={12} /> : <Bell size={12} />}
       {following ? 'Takip Ediliyor' : 'Takip Et'}
     </button>
   )
