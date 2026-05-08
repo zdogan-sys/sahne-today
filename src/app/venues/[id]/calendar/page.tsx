@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { isAdminUser } from '@/lib/admin'
 import { VenueCalendar } from '@/components/venues/VenueCalendar'
+import { VenueCalendarSubscribe } from '@/components/venues/VenueCalendarSubscribe'
 import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
 
 interface Props {
@@ -107,7 +108,10 @@ export default async function VenueCalendarPage({ params }: Props) {
         {v.name}
       </Link>
 
-      <h1 className="font-bebas text-3xl text-text-primary mb-6">SAHNE TAKVİMİ</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-bebas text-3xl text-text-primary">SAHNE TAKVİMİ</h1>
+        <VenueCalendarSubscribe venueId={id} venueName={v.name} />
+      </div>
 
       {events.length === 0 && slots.length === 0 && !isOwner ? (
         <div className="card p-8 text-center text-text-muted text-sm">
