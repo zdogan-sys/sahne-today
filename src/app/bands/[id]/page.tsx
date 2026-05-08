@@ -116,7 +116,7 @@ export default async function BandPage({ params }: Props) {
             {(b.genres ?? []).map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            {!isCreator && (
+            {user?.id !== b.creator_id && (
               <FollowButton targetType="band" targetId={b.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
             )}
             {isCreator && (

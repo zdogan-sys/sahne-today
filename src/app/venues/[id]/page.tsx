@@ -152,7 +152,7 @@ export default async function VenuePage({ params }: Props) {
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
                 )}
-                {!isOwner && (
+                {user?.id !== venue.owner_id && (
                   <span className="pointer-events-auto">
                     <FollowButton targetType="venue" targetId={venue.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
                   </span>

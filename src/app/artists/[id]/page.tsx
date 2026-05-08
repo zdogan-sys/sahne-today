@@ -122,7 +122,7 @@ export default async function ArtistPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
-          {!isOwner && (
+          {user?.id !== artist.profile_id && (
             <div className="mt-3">
               <FollowButton targetType="artist" targetId={artist.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
             </div>
