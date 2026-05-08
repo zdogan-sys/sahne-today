@@ -220,7 +220,7 @@ export default async function VenuePage({ params }: Props) {
 
         {venue.genres && venue.genres.length > 0 && (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">MÜZİK TÜRLERİ</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİK TÜRÜ</h2>
             <div className="flex flex-wrap gap-2">
               {venue.genres.map((g) => <GenreChip key={g} genre={g} />)}
             </div>
