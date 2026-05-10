@@ -16,7 +16,6 @@ import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 import { VenueProfileEditor } from '@/components/venues/VenueProfileEditor'
 import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
-import { VenueCalendarSubscribe } from '@/components/venues/VenueCalendarSubscribe'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
 import { ClaimVenueButton } from '@/components/venues/ClaimVenueButton'
@@ -30,12 +29,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('venues').select('name, description, city').eq('id', id).single()
-  const venue = data as { name: string; description: string | null; city: string } | null
+  const { data } = await supabase.from('venues').select('name, description, city, photo_url').eq('id', id).single()
+  const venue = data as any | null
   if (!venue) return { title: 'Mekan Bulunamadı' }
+  const title = `${venue.name} — ${venue.city}`
+  const description = venue.description ?? undefined
+  const image = venue.photo_url ?? 'https://sahne.today/icon-512.png'
   return {
-    title: `${venue.name} — ${venue.city}`,
-    description: venue.description ?? undefined,
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: image }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   }
 }
 
@@ -61,20 +65,36 @@ export default async function VenuePage({ params }: Props) {
     ownerCheck
       ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
       : supabase.from('slots').select('*').eq('venue_id', id).eq('status', 'open').order('day_of_week'),
-    supabase.from('events')
-      .select('id, title, event_date, genre, artists(stage_name)')
-      .eq('venue_id', id)
-      .eq('status', 'confirmed')
-      .gte('event_date', today)
-      .order('event_date', { ascending: true })
-      .limit(30),
-    supabase.from('events')
-      .select('id, title, event_date, genre, artists(stage_name)')
-      .eq('venue_id', id)
-      .eq('status', 'confirmed')
-      .lt('event_date', today)
-      .order('event_date', { ascending: false })
-      .limit(20),
+    ownerCheck
+      ? supabase.from('events')
+          .select('id, title, event_date, start_time, end_time, genre, description, status, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .in('status', ['confirmed', 'offered', 'pending'])
+          .gte('event_date', today)
+          .order('event_date', { ascending: true })
+          .limit(30)
+      : supabase.from('events')
+          .select('id, title, event_date, start_time, end_time, genre, description, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .eq('status', 'confirmed')
+          .gte('event_date', today)
+          .order('event_date', { ascending: true })
+          .limit(30),
+    ownerCheck
+      ? supabase.from('events')
+          .select('id, title, event_date, start_time, end_time, genre, description, status, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .in('status', ['confirmed', 'offered', 'pending'])
+          .lt('event_date', today)
+          .order('event_date', { ascending: false })
+          .limit(20)
+      : supabase.from('events')
+          .select('id, title, event_date, start_time, end_time, genre, description, artists(stage_name), bands(name)')
+          .eq('venue_id', id)
+          .eq('status', 'confirmed')
+          .lt('event_date', today)
+          .order('event_date', { ascending: false })
+          .limit(20),
     user
       ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'venue').eq('target_id', id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -267,9 +287,6 @@ export default async function VenuePage({ params }: Props) {
           <span className="text-text-muted text-xs">→</span>
         </Link>
 
-        {/* Calendar subscription — public, no token needed */}
-        <VenueCalendarSubscribe venueId={venue.id} venueName={venue.name} />
-
         {/* Photo album link */}
         <Link
           href={`/venues/${venue.id}/photos`}
@@ -291,10 +308,16 @@ export default async function VenuePage({ params }: Props) {
           />
         )}
 
-        {(upcomingEvents.length > 0 || pastEvents.length > 0) && (
+        {(upcomingEvents.length > 0 || pastEvents.length > 0 || isOwner) && (
           <div>
             <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİKLER</h2>
-            <VenueEventTabs upcoming={upcomingEvents} past={pastEvents} />
+            <VenueEventTabs
+              upcoming={upcomingEvents}
+              past={pastEvents}
+              isOwner={isOwner}
+              venueId={venue.id}
+              venueCity={venue.city}
+            />
           </div>
         )}
       </div>

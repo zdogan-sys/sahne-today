@@ -29,11 +29,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('bands').select('name, bio, city').eq('id', id).single()
-  if (!data) return { title: 'Grup Bulunamadı' }
+  const { data } = await supabase.from('bands').select('name, bio, city, photo_url').eq('id', id).single()
+  const band = data as any | null
+  if (!band) return { title: 'Grup Bulunamadı' }
+  const title = `${band.name}${band.city ? ` — ${band.city}` : ''}`
+  const description = band.bio ?? undefined
+  const image = band.photo_url ?? 'https://sahne.today/icon-512.png'
   return {
-    title: `${(data as any).name}${(data as any).city ? ` — ${(data as any).city}` : ''}`,
-    description: (data as any).bio ?? undefined,
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: image }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   }
 }
 

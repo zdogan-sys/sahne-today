@@ -143,13 +143,33 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
               const openSlots    = venue.slots?.filter((s: any) => s.status === 'open').length ?? 0
               const pendingSlots = venue.slots?.filter((s: any) => s.status === 'pending').length ?? 0
               const bookedSlots  = venue.slots?.filter((s: any) => s.status === 'booked').length ?? 0
+              const totalSlots   = openSlots + pendingSlots + bookedSlots
+              const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : null
               return (
                 <Link key={venue.id} href={`/venues/${venue.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
-                  <h3 className="font-semibold text-text-primary">{venue.name}</h3>
-                  <div className="flex items-center gap-1 text-text-muted text-xs mt-0.5">
-                    <MapPin size={10} />
-                    {venue.district}, {venue.city}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold text-text-primary">{venue.name}</h3>
+                      <div className="flex items-center gap-1 text-text-muted text-xs mt-0.5">
+                        <MapPin size={10} />
+                        {venue.district}, {venue.city}
+                      </div>
+                    </div>
+                    {occupancyRate !== null && (
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bebas text-2xl text-accent leading-none">%{occupancyRate}</p>
+                        <p className="text-[9px] text-text-muted uppercase tracking-wide">Dolu</p>
+                      </div>
+                    )}
                   </div>
+                  {totalSlots > 0 && (
+                    <div className="mt-3 h-1.5 rounded-full bg-[rgba(228,224,216,0.08)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-accent transition-all"
+                        style={{ width: `${occupancyRate ?? 0}%` }}
+                      />
+                    </div>
+                  )}
                   <div className="flex gap-3 mt-3 flex-wrap">
                     {openSlots > 0 && (
                       <span style={{ backgroundColor: 'rgba(29,158,117,0.15)', color: '#1D9E75', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>

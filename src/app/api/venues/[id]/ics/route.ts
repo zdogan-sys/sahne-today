@@ -42,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       `UID:${ev.id}@sahne.today`,
       `DTSTART:${dtStart}`,
       `DTEND:${dtEnd}`,
-      `SUMMARY:${escapeICS(ev.title)}`,
+      `SUMMARY:${escapeICS(ev.title)} @ ${escapeICS(venue.name)}`,
       `LOCATION:${escapeICS(location)}`,
       desc ? `DESCRIPTION:${escapeICS(desc)}` : '',
       `URL:https://sahne.today/events/${ev.id}`,

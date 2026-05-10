@@ -45,7 +45,7 @@ export function CalendarExport({ eventId, title, eventDate, startTime, endTime, 
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted text-xs font-medium hover:text-text-primary hover:border-[rgba(228,224,216,0.3)] transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors"
       >
         <CalendarPlus size={13} />
         Takvime Ekle

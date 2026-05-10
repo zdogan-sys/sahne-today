@@ -5,13 +5,16 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
-import { MapPin, Clock, Ticket, ArrowLeft, Music2, Users, ShoppingCart, QrCode, BarChart2 } from 'lucide-react'
+import { MapPin, Clock, Ticket, Music2, Users, ShoppingCart, QrCode, BarChart2, ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { BackButton } from '@/components/ui/BackButton'
+import { EventDescription } from '@/components/events/EventDescription'
 import { isAdminUser } from '@/lib/admin'
 import { EventPosterSection, EventPhotosSection } from '@/components/events/EventMediaSection'
 import { EventEditor } from '@/components/events/EventEditor'
 import { CalendarExport } from '@/components/events/CalendarExport'
+import { RSVPButton } from '@/components/events/RSVPButton'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -20,12 +23,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('events').select('title, description').eq('id', id).single()
-  const event = data as { title: string; description: string | null } | null
+  const { data } = await supabase.from('events').select('title, description, poster_url, venues(name, city)').eq('id', id).single()
+  const event = data as any | null
   if (!event) return { title: 'Etkinlik Bulunamadı' }
+  const title = event.title
+  const description = event.description ?? (event.venues ? `${event.venues.name} · ${event.venues.city}` : undefined)
+  const image = event.poster_url ?? 'https://sahne.today/icon-512.png'
   return {
-    title: event.title,
-    description: event.description ?? undefined,
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: image }], type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   }
 }
 
@@ -62,6 +70,16 @@ export default async function EventPage({ params }: Props) {
   const posterUrl: string | null = event.poster_url ?? null
   const photos: string[] = event.photos ?? []
 
+  const [{ count: goingCount }, { count: interestedCount }] = await Promise.all([
+    supabase.from('event_attendance' as any).select('*', { count: 'exact', head: true }).eq('event_id', id).eq('status', 'going'),
+    supabase.from('event_attendance' as any).select('*', { count: 'exact', head: true }).eq('event_id', id).eq('status', 'interested'),
+  ])
+  let userAttendance: 'going' | 'interested' | null = null
+  if (user) {
+    const { data: att } = await supabase.from('event_attendance' as any).select('status').eq('event_id', id).eq('user_id', user.id).single()
+    userAttendance = (att as any)?.status ?? null
+  }
+
   let isParty = isAdminUser(user)
   if (!isParty && user) {
     isParty = venue?.owner_id === user.id || band?.creator_id === user.id || artist?.profile_id === user.id
@@ -72,10 +90,7 @@ export default async function EventPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <Link href="/events" className="flex items-center gap-2 text-text-muted text-sm mb-6 hover:text-text-primary transition-colors">
-        <ArrowLeft size={16} />
-        Etkinlikler
-      </Link>
+      <BackButton fallbackHref="/events" fallbackLabel="Etkinlikler" />
 
       {event.status === 'cancelled' && (
         <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm text-center">
@@ -83,8 +98,20 @@ export default async function EventPage({ params }: Props) {
         </div>
       )}
 
-      {(event.status === 'confirmed' || isParty) && event.status !== 'cancelled' && (
+      {event.status === 'confirmed' && (
         <div className="mb-4">
+          <RSVPButton
+            eventId={id}
+            initialStatus={userAttendance}
+            goingCount={goingCount ?? 0}
+            interestedCount={interestedCount ?? 0}
+            hasUser={!!user}
+          />
+        </div>
+      )}
+
+      {(event.status === 'confirmed' || isParty) && event.status !== 'cancelled' && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
           <CalendarExport
             eventId={id}
             title={event.title}
@@ -94,6 +121,13 @@ export default async function EventPage({ params }: Props) {
             description={event.description ?? null}
             location={venue ? [venue.name, venue.address, venue.district, venue.city].filter(Boolean).join(', ') : event.venue_name ?? null}
           />
+          <Link
+            href={`/events/${id}/poster`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors"
+          >
+            <ImageIcon size={13} />
+            Afiş
+          </Link>
         </div>
       )}
 
@@ -154,7 +188,7 @@ export default async function EventPage({ params }: Props) {
 
             {/* Owner/admin tools */}
             {isParty && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Link
                   href="/scan"
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-accent/30 text-accent text-xs font-semibold hover:bg-accent/10 transition-colors"
@@ -200,12 +234,11 @@ export default async function EventPage({ params }: Props) {
               </div>
             )}
 
-            {event.description && (
-              <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-1">Açıklama</p>
-                <p className="text-text-primary text-sm leading-relaxed">{event.description}</p>
-              </div>
-            )}
+            <EventDescription
+              eventId={id}
+              initialDescription={event.description ?? null}
+              isParty={isParty}
+            />
 
             {/* Artist */}
             {artist ? (

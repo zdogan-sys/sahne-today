@@ -100,3 +100,40 @@ export async function updateArtistProfile(
   revalidatePath(`/artists/${artistId}`)
   return { success: true }
 }
+
+export async function saveArtistAvatar(artistId: string, avatarUrl: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: artist } = await supabaseAdmin
+    .from('artists').select('profile_id').eq('id', artistId).single()
+
+  if (!isAdminUser(user) && artist?.profile_id !== user.id) {
+    return { success: false, error: 'Yetkiniz yok.' }
+  }
+
+  // avatar_url artists tablosunda saklanır — profile_id null olsa bile çalışır
+  const { error } = await supabaseAdmin
+    .from('artists')
+    .update({ avatar_url: avatarUrl } as any)
+    .eq('id', artistId)
+
+  if (error) return { success: false, error: error.message }
+
+  // Claimed artist ise profiles tablosunu da güncelle (senkron kalması için)
+  if (artist?.profile_id) {
+    await supabaseAdmin
+      .from('profiles')
+      .update({ avatar_url: avatarUrl } as any)
+      .eq('id', artist.profile_id)
+  }
+
+  revalidatePath(`/artists/${artistId}`)
+  return { success: true }
+}

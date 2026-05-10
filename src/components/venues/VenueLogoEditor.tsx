@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Props {
@@ -21,20 +21,31 @@ export function VenueLogoEditor({ venueId, initialUrl, name, isOwner }: Props) {
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return
     setUploading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    const form = new FormData()
-    form.append('file', file)
-    form.append('bucket', 'venues')
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      headers: session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {},
-      body: form,
-    })
-    const json = await res.json()
-    if (res.ok && json.url) {
-      setUrl(json.url)
-      await supabase.from('venues').update({ logo_url: json.url } as any).eq('id', venueId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const form = new FormData()
+      form.append('file', file)
+      form.append('bucket', 'venues')
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {},
+        body: form,
+      })
+      const json = await res.json()
+      if (res.ok && json.url) {
+        setUrl(json.url)
+        await supabase.from('venues').update({ logo_url: json.url } as any).eq('id', venueId)
+      }
+    } finally {
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
     }
+  }
+
+  async function handleRemove() {
+    setUploading(true)
+    await supabase.from('venues').update({ logo_url: null } as any).eq('id', venueId)
+    setUrl(null)
     setUploading(false)
   }
 
@@ -61,6 +72,16 @@ export function VenueLogoEditor({ venueId, initialUrl, name, isOwner }: Props) {
           </div>
         )}
       </div>
+
+      {isOwner && url && !uploading && (
+        <button
+          onClick={handleRemove}
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors z-10"
+          title="Logoyu kaldır"
+        >
+          <X size={10} />
+        </button>
+      )}
 
       {isOwner && (
         <input

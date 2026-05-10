@@ -15,6 +15,7 @@ import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
+import { ArtistAvatarEditor } from '@/components/artists/ArtistAvatarEditor'
 import { ClaimProfileButton } from '@/components/artists/ClaimProfileButton'
 import { FollowButton } from '@/components/ui/FollowButton'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
@@ -28,12 +29,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('artists').select('stage_name, bio, city').eq('id', id).single()
-  const artist = data as { stage_name: string; bio: string | null; city: string | null } | null
+  const { data } = await supabase.from('artists').select('stage_name, bio, city, profiles(avatar_url)').eq('id', id).single()
+  const artist = data as any | null
   if (!artist) return { title: 'Sanatçı Bulunamadı' }
+  const title = `${artist.stage_name}${artist.city ? ` — ${artist.city}` : ''}`
+  const description = artist.bio ?? undefined
+  const image = artist.profiles?.avatar_url ?? 'https://sahne.today/icon-512.png'
   return {
-    title: `${artist.stage_name}${artist.city ? ` — ${artist.city}` : ''}`,
-    description: artist.bio ?? undefined,
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: image }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   }
 }
 
@@ -88,6 +94,7 @@ export default async function ArtistPage({ params }: Props) {
   const isFollowing = !!followData
 
   const initials = artist.stage_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+  const avatarUrl = artist.avatar_url ?? profile?.avatar_url ?? null
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -97,17 +104,25 @@ export default async function ArtistPage({ params }: Props) {
       </Link>
 
       <div className="flex items-start gap-5 mb-6">
-        <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden bg-accent/10 flex items-center justify-center text-accent font-bold text-2xl">
-          {profile?.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt={artist.stage_name}
-              width={80}
-              height={80}
-              className="object-cover w-full h-full"
-            />
-          ) : initials}
-        </div>
+        {isOwner ? (
+          <ArtistAvatarEditor
+            artistId={artist.id}
+            avatarUrl={avatarUrl}
+            initials={initials}
+          />
+        ) : (
+          <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden bg-accent/10 flex items-center justify-center text-accent font-bold text-2xl">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={artist.stage_name}
+                width={80}
+                height={80}
+                className="object-cover w-full h-full"
+              />
+            ) : initials}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-bebas text-5xl text-text-primary leading-none">{artist.stage_name}</h1>

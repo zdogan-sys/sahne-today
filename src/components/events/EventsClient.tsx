@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { MapPin, Clock, Filter, Music2, Building2, X } from 'lucide-react'
+import { MapPin, Clock, Filter, Music2, Building2, X, CalendarDays } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { formatTime } from '@/lib/utils'
@@ -46,6 +46,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
   const [entryType, setEntryType] = useState('')
+  const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [filterOpen, setFilterOpen] = useState(false)
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [popupDate, setPopupDate] = useState<Date | null>(null)
@@ -58,11 +59,19 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
     if (genre && e.genre !== genre) return false
     if (city && e.venues?.city !== city) return false
     if (entryType && e.entry_type !== entryType) return false
+    if (dateRange !== 'all') {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const weekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+      const monthStr = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+      if (dateRange === 'today' && e.event_date !== todayStr) return false
+      if (dateRange === 'week' && e.event_date > weekStr) return false
+      if (dateRange === 'month' && e.event_date > monthStr) return false
+    }
     return true
   })
 
   const grouped = groupByDate(filtered)
-  const activeFilters = [genre, city, entryType].filter(Boolean).length
+  const activeFilters = [genre, city, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
 
   const calendarEvents: CalendarEventItem[] = filtered.map(e => ({
     id: e.id,
@@ -147,6 +156,26 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       </aside>
 
       <div className="flex-1">
+        {/* Date range tabs */}
+        <div className="flex gap-1 mb-4 bg-surface rounded-xl p-1 border border-[rgba(228,224,216,0.08)]">
+          {([
+            { value: 'all', label: 'Tümü' },
+            { value: 'today', label: 'Bugün' },
+            { value: 'week', label: 'Bu Hafta' },
+            { value: 'month', label: 'Bu Ay' },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setDateRange(value)}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                dateRange === value ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-text-muted">{filtered.length} etkinlik</span>
@@ -196,8 +225,20 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
         {/* List view */}
         {view === 'list' && (
           Object.keys(grouped).length === 0 ? (
-            <div className="text-center py-16 text-text-muted">
-              <p>Etkinlik bulunamadı.</p>
+            <div className="text-center py-16">
+              <CalendarDays size={40} className="mx-auto mb-3 text-text-muted opacity-20" />
+              <p className="text-text-primary text-sm font-medium mb-1">Etkinlik bulunamadı</p>
+              <p className="text-text-muted text-xs">
+                {activeFilters > 0 ? 'Farklı filtreler deneyin.' : 'Yakında yeni etkinlikler eklenecek.'}
+              </p>
+              {activeFilters > 0 && (
+                <button
+                  onClick={() => { setGenre(''); setCity(''); setEntryType(''); setDateRange('all') }}
+                  className="mt-3 text-accent text-xs hover:underline"
+                >
+                  Filtreleri temizle
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
@@ -242,8 +283,8 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
 }) {
   return (
     <div className="space-y-5">
-      <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
-      <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
+      <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} showAll />
+      <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} showAll />
       <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
       <div>
         <label className="label">Giriş</label>
@@ -267,13 +308,25 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
   )
 }
 
-function FilterGroup({ label, options, value, onChange }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void
+function FilterGroup({ label, options, value, onChange, showAll }: {
+  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean
 }) {
   return (
     <div>
       <label className="label">{label}</label>
       <div className="flex flex-wrap gap-1.5">
+        {showAll && (
+          <button
+            onClick={() => onChange('')}
+            className={`chip border transition-colors ${
+              value === ''
+                ? 'bg-accent/10 text-accent border-accent/30'
+                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+            }`}
+          >
+            Hepsi
+          </button>
+        )}
         {options.map((opt) => (
           <button
             key={opt}

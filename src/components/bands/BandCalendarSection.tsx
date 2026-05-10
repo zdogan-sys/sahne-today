@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { X, MapPin, Trash2, Plus, Check, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, formatDate } from '@/lib/utils'
@@ -47,6 +48,7 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
   const venueInputRef = useRef<HTMLInputElement>(null)
 
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -71,6 +73,10 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
 
   function handleDayClick(date: Date, evs: CalendarEventItem[]) {
     if (!isCreator && evs.length === 0) return
+    if (evs.length === 1 && evs[0].status !== 'offered') {
+      router.push(`/events/${evs[0].id}`)
+      return
+    }
     setSelectedDate(date)
     setDayEvents(evs)
     setShowAddForm(evs.length === 0 && isCreator)

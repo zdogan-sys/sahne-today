@@ -129,8 +129,19 @@ export function EventFeed() {
           ))}
         </div>
       ) : events.length === 0 ? (
-        <div className="text-center py-16 text-text-muted">
-          <p className="text-sm">Bu filtre için etkinlik bulunamadı.</p>
+        <div className="text-center py-12">
+          <div className="text-4xl mb-3 opacity-30">🎵</div>
+          <p className="text-text-primary text-sm font-medium mb-1">
+            {timePeriod === 'Bugün' ? 'Bugün etkinlik yok' : `${timePeriod} için etkinlik bulunamadı`}
+          </p>
+          <p className="text-text-muted text-xs">
+            {activeGenre !== 'Tümü' ? `"${activeGenre}" türünde etkinlik yok.` : 'Farklı bir dönem seçin.'}
+          </p>
+          {activeGenre !== 'Tümü' && (
+            <button onClick={() => setActiveGenre('Tümü')} className="mt-2 text-accent text-xs hover:underline">
+              Tüm türleri göster
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

@@ -156,8 +156,29 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
     rejected: 'Reddedildi',
   }
 
+  const today = new Date().toISOString().split('T')[0]
+  const pastConfirmed = events.filter(e => e.status === 'confirmed' && e.event_date < today).length
+  const upcomingConfirmed = events.filter(e => e.status === 'confirmed' && e.event_date >= today).length
+  const uniqueVenues = new Set(events.map((e: any) => e.venues?.name ?? e.venue_name).filter(Boolean)).size
+
   return (
     <div className="space-y-8">
+      {/* Stats row */}
+      {(pastConfirmed > 0 || upcomingConfirmed > 0) && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Geçmiş Sahne', value: pastConfirmed },
+            { label: 'Yaklaşan', value: upcomingConfirmed },
+            { label: 'Farklı Mekan', value: uniqueVenues },
+          ].map(({ label, value }) => (
+            <div key={label} className="card p-3 text-center">
+              <p className="font-bebas text-3xl text-accent leading-none">{value}</p>
+              <p className="text-text-muted text-[10px] mt-1 uppercase tracking-wide">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Profile summary */}
       <div>
         <div className="flex items-center justify-between mb-4">

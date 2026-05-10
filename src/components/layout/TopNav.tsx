@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 
@@ -105,6 +105,9 @@ export function TopNav() {
               {l.label}
             </Link>
           ))}
+          <Link href="/search" className="text-text-muted hover:text-text-primary transition-colors" aria-label="Ara">
+            <Search size={16} />
+          </Link>
         </nav>
 
         {/* Desktop auth */}
@@ -141,10 +144,15 @@ export function TopNav() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button className="md:hidden p-2 text-text-muted" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menü">
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* Mobile search + hamburger */}
+        <div className="md:hidden flex items-center gap-1">
+          <Link href="/search" className="p-2 text-text-muted hover:text-text-primary" aria-label="Ara">
+            <Search size={18} />
+          </Link>
+          <button className="p-2 text-text-muted" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menü">
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}

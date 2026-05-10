@@ -64,6 +64,7 @@ export interface Artist {
   instruments: string[]
   city: string | null
   bio: string | null
+  avatar_url: string | null
   video_urls: string[]
   technical_rider: string | null
   past_venues: string[]

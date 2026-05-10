@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatTime, cn } from '@/lib/utils'
 
@@ -33,6 +34,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  const router = useRouter()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [internalSelected, setInternalSelected] = useState<Date | null>(null)
@@ -63,6 +65,10 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       onDayClick(date, dayEvents)
     } else {
       if (dayEvents.length === 0) return
+      if (dayEvents.length === 1) {
+        router.push(`/events/${dayEvents[0].id}`)
+        return
+      }
       setInternalSelected(date)
       setInternalDayEvents(dayEvents)
     }
@@ -103,7 +109,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       {/* Grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {cells.map((date, i) => {
-          if (!date) return <div key={`e-${i}`} className="h-12" />
+          if (!date) return <div key={`e-${i}`} className="h-16" />
           const dateStr = toISO(date)
           const dayEvents = byDate.get(dateStr) ?? []
           const hasEvent = dayEvents.length > 0
@@ -119,16 +125,21 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
             ? `${dayEvents.length} etkinlik`
             : null
 
+          const firstEvent = dayEvents[0]
+          const venueLabel = firstEvent?.subtitle ?? null
+
           return (
             <button
               key={dateStr}
               onClick={() => handleDayClick(date)}
               className={cn(
-                'relative h-12 rounded-lg flex flex-col items-center justify-center gap-0.5 px-0.5 text-sm transition-colors',
+                'relative h-16 rounded-lg flex flex-col items-center justify-center gap-0.5 px-0.5 text-sm transition-colors overflow-hidden',
                 isSelected
-                  ? 'bg-success/20 text-white ring-1 ring-success/40'
+                  ? hasPending ? 'bg-yellow-400/30 text-white ring-1 ring-yellow-400/50' : 'bg-success/30 text-white ring-1 ring-success/50'
                   : hasEvent
-                  ? 'text-white hover:bg-success/10 cursor-pointer'
+                  ? hasPending
+                    ? 'bg-yellow-400/15 text-white hover:bg-yellow-400/25 cursor-pointer'
+                    : 'bg-success/20 text-white hover:bg-success/30 cursor-pointer'
                   : interactive
                   ? 'text-white/55 hover:bg-white/5 cursor-pointer'
                   : 'text-white/55 cursor-default',
@@ -139,6 +150,11 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
               {eventLabel && (
                 <span className={cn('text-[8px] leading-tight w-full text-center truncate', labelColor)}>
                   {eventLabel}
+                </span>
+              )}
+              {venueLabel && !isSelected && (
+                <span className="text-[7px] leading-tight w-full text-center truncate text-white/50">
+                  {venueLabel}
                 </span>
               )}
             </button>

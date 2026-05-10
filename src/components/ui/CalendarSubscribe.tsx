@@ -27,7 +27,7 @@ export function CalendarSubscribe({ token, type }: Props) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 text-sm text-text-muted hover:text-text-primary border border-[rgba(228,224,216,0.12)] rounded-lg px-3 py-2 hover:border-accent/30 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors"
       >
         <CalendarPlus size={15} />
         Takvime Abone Ol

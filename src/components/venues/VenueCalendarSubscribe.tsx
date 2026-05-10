@@ -26,13 +26,13 @@ export function VenueCalendarSubscribe({ venueId, venueName }: { venueId: string
         className="card w-full p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <CalendarPlus size={18} className="text-text-muted" />
+          <CalendarPlus size={18} className="text-accent" />
           <div className="text-left">
-            <span className="text-text-primary text-sm font-medium">Etkinlikleri Takvime Ekle</span>
+            <span className="text-accent text-sm font-medium">Etkinlikleri Takvime Ekle</span>
             <p className="text-text-muted text-xs mt-0.5">Google, Apple veya .ics olarak abone ol</p>
           </div>
         </div>
-        <ChevronDown size={14} className={`text-text-muted transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-accent/60 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

@@ -151,6 +151,7 @@ export async function addVenueEvent(payload: {
   artistId: string | null
   bandId: string | null
   artistName: string | null
+  description?: string | null
   ttlHours?: number
 }) {
   const supabaseAuth = await createServerClient()
@@ -177,6 +178,7 @@ export async function addVenueEvent(payload: {
     artist_id: payload.artistId,
     band_id: payload.bandId,
     artist_name: payload.artistName,
+    description: payload.description || null,
     entry_type: 'free',
     status,
     expires_at: expiresAt,
@@ -208,6 +210,43 @@ export async function addVenueEvent(payload: {
   return { success: true, data: data as any }
 }
 
+export async function updateEventDetails(eventId: string, payload: {
+  title: string
+  event_date: string
+  start_time: string
+  end_time: string | null
+  description: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  if (!(await isEventParty(user.id, user.email ?? undefined, eventId))) return { success: false, error: 'Yetkiniz yok.' }
+  const admin = await getAdminClient()
+  const { error } = await admin.from('events').update({
+    title: payload.title,
+    event_date: payload.event_date,
+    start_time: payload.start_time,
+    end_time: payload.end_time,
+    description: payload.description,
+  }).eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function deleteEvent(eventId: string) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+  const admin = await getAdminClient()
+  if (user.email !== ADMIN_EMAIL) {
+    const ok = await isEventParty(user.id, user.email ?? undefined, eventId)
+    if (!ok) return { success: false, error: 'Yetkiniz yok.' }
+  }
+  const { error } = await admin.from('events').delete().eq('id', eventId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function cancelEvent(eventId: string) {
   const supabaseAuth = await createServerClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
@@ -236,6 +275,32 @@ export async function createSlot(venueId: string, data: Record<string, any>) {
   }
 
   const { error } = await admin.from('slots').insert({ ...data, venue_id: venueId, status: 'open' })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function updateSlot(slotId: string, data: {
+  day_of_week?: number
+  start_time?: string
+  end_time?: string
+  recurrence?: string
+  fee_model?: string
+  fee_value?: number | null
+  notes?: string | null
+  event_type?: string | null
+}) {
+  const supabaseAuth = await createServerClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = await getAdminClient()
+  const { data: slot } = await admin.from('slots').select('venue_id').eq('id', slotId).single()
+  if (!slot) return { success: false, error: 'Slot bulunamadı.' }
+
+  const { data: venue } = await admin.from('venues').select('owner_id').eq('id', slot.venue_id).single()
+  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+
+  const { error } = await admin.from('slots').update(data).eq('id', slotId)
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
