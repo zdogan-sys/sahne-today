@@ -29,7 +29,6 @@ export default async function ConversationPage({ params }: Props) {
       isBlocked={result.conversation.is_blocked ?? false}
       blockedReason={result.conversation.blocked_reason ?? null}
       isAdmin={result.isAdmin}
-      isCreator={result.isCreator}
     />
   )
 }
