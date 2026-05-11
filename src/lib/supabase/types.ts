@@ -15,6 +15,8 @@ export interface Profile {
   avatar_url: string | null
   city: string | null
   bio: string | null
+  is_premium: boolean
+  is_founding_member: boolean
   created_at: string
 }
 

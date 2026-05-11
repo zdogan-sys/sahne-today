@@ -6,6 +6,7 @@ import { isAdminUser } from '@/lib/admin'
 import { AdminPanel } from '@/components/admin/AdminPanel'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getListConfigs } from '@/app/actions/site'
+import { adminListConversations } from '@/app/actions/messaging'
 
 async function getAdminData() {
   const admin = createAdminClient(
@@ -14,7 +15,7 @@ async function getAdminData() {
   )
 
   try {
-    const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes, pendingEventsRes] = await Promise.all([
+    const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes, pendingEventsRes, featureFlagsRes] = await Promise.all([
       admin.from('events')
         .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
         .order('event_date', { ascending: false })
@@ -28,7 +29,7 @@ async function getAdminData() {
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('profiles')
-        .select('id, display_name, city, role, created_at')
+        .select('id, display_name, city, role, is_premium, is_founding_member, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('bands')
@@ -39,6 +40,7 @@ async function getAdminData() {
         .select('id, title, event_date, start_time, status, venues(name, city), artists(stage_name), bands(name)')
         .in('status', ['pending', 'offered'])
         .order('event_date', { ascending: true }),
+      admin.from('feature_flags').select('*'),
     ])
 
     return {
@@ -48,9 +50,10 @@ async function getAdminData() {
       members: membersRes.data ?? [],
       bands: bandsRes.data ?? [],
       pendingEvents: pendingEventsRes.data ?? [],
+      featureFlags: featureFlagsRes.data ?? [],
     }
   } catch {
-    return { events: [], artists: [], venues: [], members: [], bands: [], pendingEvents: [] }
+    return { events: [], artists: [], venues: [], members: [], bands: [], pendingEvents: [], featureFlags: [] }
   }
 }
 
@@ -60,7 +63,11 @@ export default async function AdminPage() {
 
   if (error || !isAdminUser(user)) redirect('/')
 
-  const [data, listConfigs] = await Promise.all([getAdminData(), getListConfigs()])
+  const [data, listConfigs, conversations] = await Promise.all([
+    getAdminData(),
+    getListConfigs(),
+    adminListConversations(),
+  ])
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
@@ -68,7 +75,7 @@ export default async function AdminPage() {
         <div className="w-2 h-6 bg-accent rounded-full" />
         <h1 className="font-bebas text-4xl text-text-primary">Admin Paneli</h1>
       </div>
-      <AdminPanel {...data} listConfigs={listConfigs} />
+      <AdminPanel {...data} listConfigs={listConfigs} featureFlags={data.featureFlags} conversations={conversations} />
     </div>
   )
 }

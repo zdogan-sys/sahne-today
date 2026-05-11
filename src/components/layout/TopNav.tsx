@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 
@@ -124,6 +124,9 @@ export function TopNav() {
               </Link>
               <div className="w-px h-4 bg-[rgba(228,224,216,0.1)] mx-1"></div>
               {user.id && <NotificationBell userId={user.id} />}
+              <Link href="/messages" className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.08)] transition-colors" title="Mesajlar">
+                <MessageSquare size={16} />
+              </Link>
               <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
                 <LayoutDashboard size={14} />
                 {displayName}
@@ -180,6 +183,11 @@ export function TopNav() {
                   Mekan Girişi
                 </Link>
                 <div className="my-1 border-t border-[rgba(228,224,216,0.08)]"></div>
+                <Link href="/messages" onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
+                  <MessageSquare size={14} />
+                  Mesajlar
+                </Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-text-primary">
                   <LayoutDashboard size={14} />

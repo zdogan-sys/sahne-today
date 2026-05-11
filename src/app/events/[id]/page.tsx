@@ -15,6 +15,7 @@ import { EventPosterSection, EventPhotosSection } from '@/components/events/Even
 import { EventEditor } from '@/components/events/EventEditor'
 import { CalendarExport } from '@/components/events/CalendarExport'
 import { RSVPButton } from '@/components/events/RSVPButton'
+import { OpenChatButton } from '@/components/messaging/OpenChatButton'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -128,6 +129,7 @@ export default async function EventPage({ params }: Props) {
             <ImageIcon size={13} />
             Afiş
           </Link>
+          <OpenChatButton type="event" contextId={id} />
         </div>
       )}
 

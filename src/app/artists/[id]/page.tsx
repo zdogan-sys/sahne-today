@@ -18,6 +18,7 @@ import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistAvatarEditor } from '@/components/artists/ArtistAvatarEditor'
 import { ClaimProfileButton } from '@/components/artists/ClaimProfileButton'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { FoundingMemberBadge } from '@/components/ui/FoundingMemberBadge'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 type ArtistFull = Artist & { profiles: Profile | null; social_links?: SocialLinksData }
 type EventFull = Event & { venues: Pick<Venue, 'name' | 'city'> | null; bands: { name: string } | null }
@@ -126,6 +127,7 @@ export default async function ArtistPage({ params }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-bebas text-5xl text-text-primary leading-none">{artist.stage_name}</h1>
+            {(profile as any)?.is_founding_member && <FoundingMemberBadge size="md" />}
             {user?.id !== artist.profile_id && (
               <FollowButton targetType="artist" targetId={artist.id} initialFollowing={isFollowing} userId={user?.id ?? null} />
             )}

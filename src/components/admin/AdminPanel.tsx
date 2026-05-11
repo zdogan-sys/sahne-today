@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
-import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus, Check } from 'lucide-react'
+import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus, Check, Lock, Unlock, Star } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -15,6 +15,7 @@ import {
   adminConfirmEvent, adminRejectEvent,
   adminDeleteMember, adminAddPerformer, adminRemovePerformer,
 } from '@/app/actions/admin'
+import { toggleFeatureFlag, toggleUserPremium, toggleFoundingMember, adminBlockConversation, adminUnblockConversation, adminDeleteConversation } from '@/app/actions/messaging'
 import { createSlot } from '@/app/actions/event'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
@@ -31,7 +32,7 @@ import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRE
 import { DAY_NAMES, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists'
+type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pending', label: 'Bekleyenler' },
@@ -41,6 +42,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'venues', label: 'Mekanlar' },
   { key: 'members', label: 'Üyeler' },
   { key: 'lists', label: 'Türler' },
+  { key: 'premium', label: 'Premium' },
+  { key: 'conversations', label: 'Sohbetler' },
 ]
 
 const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
@@ -61,9 +64,11 @@ interface Props {
   members: any[]
   pendingEvents: any[]
   listConfigs: ListConfigs
+  featureFlags: any[]
+  conversations: any[]
 }
 
-export function AdminPanel({ events, artists, venues, bands, members, pendingEvents, listConfigs }: Props) {
+export function AdminPanel({ events, artists, venues, bands, members, pendingEvents, listConfigs, featureFlags, conversations }: Props) {
   const [tab, setTab] = useState<Tab>(pendingEvents.length > 0 ? 'pending' : 'events')
   const router = useRouter()
 
@@ -106,6 +111,8 @@ export function AdminPanel({ events, artists, venues, bands, members, pendingEve
       {tab === 'bands' && <BandsTab bands={bands} onRefresh={refresh} />}
       {tab === 'members' && <MembersTab members={members} onRefresh={refresh} />}
       {tab === 'lists' && <ListsTab configs={listConfigs} />}
+      {tab === 'premium' && <PremiumTab featureFlags={featureFlags} members={members} onRefresh={refresh} />}
+      {tab === 'conversations' && <ConversationsTab conversations={conversations} onRefresh={refresh} />}
     </div>
   )
 }
@@ -1246,6 +1253,279 @@ function ListEditor({
       {input.trim() && items.includes(input.trim()) && (
         <p className="text-xs text-text-muted mt-1">Bu değer zaten listede mevcut.</p>
       )}
+    </div>
+  )
+}
+
+// ─── PREMIUM TAB ──────────────────────────────────────────────────────────────
+
+function PremiumTab({ featureFlags, members, onRefresh }: { featureFlags: any[]; members: any[]; onRefresh: () => void }) {
+  const [acting, setActing] = useState<string | null>(null)
+  const [flags, setFlags] = useState<any[]>(featureFlags)
+  const [localMembers, setLocalMembers] = useState<any[]>(members)
+
+  async function handleToggleFlag(key: string, current: boolean) {
+    setActing(key)
+    const result = await toggleFeatureFlag(key, !current)
+    if (result.success) {
+      setFlags(prev => prev.map(f => f.key === key ? { ...f, enabled: !current } : f))
+    }
+    setActing(null)
+  }
+
+  async function handleTogglePremium(profileId: string, current: boolean) {
+    setActing(profileId + '_premium')
+    await toggleUserPremium(profileId, !current)
+    setLocalMembers(prev => prev.map(m =>
+      m.id === profileId ? { ...m, is_premium: !current } : m
+    ))
+    setActing(null)
+  }
+
+  async function handleToggleFounding(profileId: string, current: boolean) {
+    setActing(profileId + '_founding')
+    await toggleFoundingMember(profileId, !current)
+    setLocalMembers(prev => prev.map(m =>
+      m.id === profileId
+        ? { ...m, is_founding_member: !current, is_premium: !current ? true : m.is_premium }
+        : m
+    ))
+    setActing(null)
+  }
+
+  const FLAG_LABELS: Record<string, string> = {
+    messaging_premium_required: 'Mesajlaşma — sadece premium üyeler',
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Feature flags */}
+      <div>
+        <h3 className="label mb-3">Özellik Bayrakları</h3>
+        <div className="space-y-2">
+          {flags.length === 0 && <p className="text-text-muted text-sm">Bayrak bulunamadı.</p>}
+          {flags.map((flag) => (
+            <div key={flag.key} className="card p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-text-primary text-sm font-medium">{FLAG_LABELS[flag.key] ?? flag.key}</p>
+                {flag.description && <p className="text-text-muted text-xs mt-0.5">{flag.description}</p>}
+              </div>
+              <button
+                onClick={() => handleToggleFlag(flag.key, flag.enabled)}
+                disabled={acting === flag.key}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                  flag.enabled
+                    ? 'bg-accent/15 text-accent border-accent/30 hover:bg-accent/25'
+                    : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary'
+                )}
+              >
+                {flag.enabled ? <Lock size={12} /> : <Unlock size={12} />}
+                {flag.enabled ? 'Aktif' : 'Pasif'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Member premium & founding status */}
+      <div>
+        <h3 className="label mb-1">Üye Durumu</h3>
+        <p className="text-text-muted text-xs mb-3">
+          Kurucu üye rozeti verilince premium otomatik aktif olur.
+        </p>
+        <div className="space-y-1">
+          {localMembers.map((m: any) => (
+            <div key={m.id} className="card p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-text-primary text-sm">{m.display_name}</p>
+                  {m.is_founding_member && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-400 text-[10px] font-semibold">
+                      <Star size={8} className="fill-amber-400" />
+                      Kurucu
+                    </span>
+                  )}
+                  {m.is_premium && !m.is_founding_member && (
+                    <span className="text-[10px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-1.5 py-0.5 rounded-full">
+                      Premium
+                    </span>
+                  )}
+                </div>
+                <p className="text-text-muted text-xs">{m.role} · {m.city ?? '—'}</p>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Founding member toggle */}
+                <button
+                  onClick={() => handleToggleFounding(m.id, m.is_founding_member ?? false)}
+                  disabled={acting === m.id + '_founding'}
+                  title={m.is_founding_member ? 'Kurucu üyeliği kaldır' : 'Kurucu üye yap'}
+                  className={cn(
+                    'flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors',
+                    m.is_founding_member
+                      ? 'bg-amber-400/15 text-amber-400 border-amber-400/30 hover:bg-amber-400/25'
+                      : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)] hover:border-amber-400/30 hover:text-amber-400'
+                  )}
+                >
+                  <Star size={10} className={m.is_founding_member ? 'fill-amber-400' : ''} />
+                  Kurucu
+                </button>
+
+                {/* Premium-only toggle */}
+                <button
+                  onClick={() => handleTogglePremium(m.id, m.is_premium ?? false)}
+                  disabled={acting === m.id + '_premium' || m.is_founding_member}
+                  title={m.is_founding_member ? 'Kurucu üyeler zaten premium' : (m.is_premium ? 'Premiumu kaldır' : 'Premium yap')}
+                  className={cn(
+                    'flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors',
+                    m.is_premium
+                      ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20 hover:bg-yellow-400/20'
+                      : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary',
+                    m.is_founding_member && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {m.is_premium ? '★' : '○'} Premium
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── CONVERSATIONS TAB ────────────────────────────────────────────────────────
+
+function ConversationsTab({ conversations, onRefresh }: { conversations: any[]; onRefresh: () => void }) {
+  const [acting, setActing] = useState<string | null>(null)
+  const [blockReason, setBlockReason] = useState<Record<string, string>>({})
+  const [localConvs, setLocalConvs] = useState<any[]>(conversations)
+
+  async function handleBlock(id: string) {
+    const reason = blockReason[id] ?? ''
+    setActing(id)
+    const result = await adminBlockConversation(id, reason)
+    if (result.success) {
+      setLocalConvs(prev => prev.map(c =>
+        c.id === id ? { ...c, is_blocked: true, blocked_reason: reason || 'Yönetici kararıyla kilitlendi.' } : c
+      ))
+      setBlockReason(prev => ({ ...prev, [id]: '' }))
+    }
+    setActing(null)
+  }
+
+  async function handleUnblock(id: string) {
+    setActing(id)
+    const result = await adminUnblockConversation(id)
+    if (result.success) {
+      setLocalConvs(prev => prev.map(c =>
+        c.id === id ? { ...c, is_blocked: false, blocked_reason: null } : c
+      ))
+    }
+    setActing(null)
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`"${name}" sohbetini ve tüm mesajlarını silmek istediğinizden emin misiniz?`)) return
+    setActing(id)
+    const result = await adminDeleteConversation(id)
+    if (result.success) {
+      setLocalConvs(prev => prev.filter(c => c.id !== id))
+    }
+    setActing(null)
+  }
+
+  const TYPE_LABEL: Record<string, string> = { band: 'Grup', event: 'Etkinlik' }
+
+  return (
+    <div className="space-y-2">
+      {localConvs.length === 0 && (
+        <p className="text-text-muted text-sm text-center py-8">Henüz sohbet yok.</p>
+      )}
+      {localConvs.map((conv) => (
+        <div key={conv.id} className={cn('card p-4 space-y-3', conv.is_blocked && 'border-red-500/20 bg-red-500/5')}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded border border-[rgba(228,224,216,0.12)]">
+                  {TYPE_LABEL[conv.type] ?? conv.type}
+                </span>
+                <p className="text-text-primary text-sm font-medium truncate">{conv.contextName}</p>
+                {conv.is_blocked && (
+                  <span className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-full font-semibold">
+                    Kilitli
+                  </span>
+                )}
+              </div>
+              <p className="text-text-muted text-xs mt-0.5">
+                {conv.msgCount} mesaj · Son: {new Date(conv.last_message_at).toLocaleDateString('tr-TR')}
+              </p>
+              {conv.is_blocked && conv.blocked_reason && (
+                <p className="text-red-400/80 text-xs mt-1 italic">"{conv.blocked_reason}"</p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Katıl */}
+              <a
+                href={`/messages/${conv.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-text-primary hover:border-accent/30 transition-colors"
+              >
+                <ExternalLink size={10} />
+                Katıl
+              </a>
+
+              {/* Blokla / Aç */}
+              {conv.is_blocked ? (
+                <button
+                  onClick={() => handleUnblock(conv.id)}
+                  disabled={acting === conv.id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-green-500/30 text-green-400 bg-green-500/10 hover:bg-green-500/20 transition-colors"
+                >
+                  <Unlock size={10} />
+                  Kilidi Aç
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleBlock(conv.id)}
+                  disabled={acting === conv.id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-orange-500/30 text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
+                >
+                  <Lock size={10} />
+                  Kilitle
+                </button>
+              )}
+
+              {/* Sil */}
+              <button
+                onClick={() => handleDelete(conv.id, conv.contextName)}
+                disabled={acting === conv.id}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              >
+                <Trash2 size={10} />
+                Sil
+              </button>
+            </div>
+          </div>
+
+          {/* Kilitleme neden kutusu */}
+          {!conv.is_blocked && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={blockReason[conv.id] ?? ''}
+                onChange={e => setBlockReason(prev => ({ ...prev, [conv.id]: e.target.value }))}
+                placeholder="Kilitleme nedeni (isteğe bağlı)"
+                className="flex-1 bg-surface border border-[rgba(228,224,216,0.1)] rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/30"
+              />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

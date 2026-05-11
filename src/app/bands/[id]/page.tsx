@@ -19,6 +19,7 @@ import { BandCalendarSubscribe } from '@/components/bands/BandCalendarSubscribe'
 import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 import { FollowButton } from '@/components/ui/FollowButton'
+import { OpenChatButton } from '@/components/messaging/OpenChatButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,6 +71,9 @@ export default async function BandPage({ params }: Props) {
   const isArtist = !!artistRes.data
   const currentArtistId = artistRes.data?.id
   const isFollowing = !!(followData as any)?.data?.id
+  const isAcceptedMember = currentArtistId
+    ? (b.band_members ?? []).some((m: any) => m.artists?.id === currentArtistId && m.status === 'accepted')
+    : false
 
   const eventsDb = isCreator ? createAdminClient() : supabase
   const statusFilter = isCreator ? ['confirmed', 'offered', 'pending'] : ['confirmed']
@@ -127,6 +131,9 @@ export default async function BandPage({ params }: Props) {
             {(b.genres ?? []).map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {(isCreator || isAcceptedMember) && (
+              <OpenChatButton type="band" contextId={b.id} />
+            )}
             {isCreator && (
               <BandProfileEditor
                 bandId={b.id}

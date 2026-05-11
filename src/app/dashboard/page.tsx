@@ -7,6 +7,7 @@ import { VenueDashboard } from '@/components/dashboard/VenueDashboard'
 import { ArtistDashboard } from '@/components/dashboard/ArtistDashboard'
 import { AudienceDashboard } from '@/components/dashboard/AudienceDashboard'
 import { UserProfileEditor } from '@/components/dashboard/UserProfileEditor'
+import { FoundingMemberBadge } from '@/components/ui/FoundingMemberBadge'
 import type { Profile } from '@/lib/supabase/types'
 
 export const metadata: Metadata = {
@@ -47,7 +48,10 @@ export default async function DashboardPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-bebas text-4xl text-text-primary">HOŞ GELDİN, {profile.display_name.toUpperCase()}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-bebas text-4xl text-text-primary">HOŞ GELDİN, {profile.display_name.toUpperCase()}</h1>
+            {profile.is_founding_member && <FoundingMemberBadge size="md" />}
+          </div>
           <p className="text-text-muted text-sm">
             Tüm etkinlikleriniz ve profilleriniz burada.
           </p>
