@@ -6,7 +6,7 @@ import { Send, ArrowLeft, ShieldAlert, Lock, Unlock, Trash2 } from 'lucide-react
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { sendMessage, markConversationRead, adminBlockConversation, adminUnblockConversation, adminDeleteConversation } from '@/app/actions/messaging'
+import { sendMessage, markConversationRead, adminBlockConversation, adminUnblockConversation, adminDeleteConversation, deleteMyConversation } from '@/app/actions/messaging'
 
 interface Message {
   id: string
@@ -26,7 +26,7 @@ interface Props {
   isBlocked?: boolean
   blockedReason?: string | null
   isAdmin?: boolean
-  initialBlockedReason?: string | null
+  isCreator?: boolean
 }
 
 export function ChatWindow({
@@ -39,6 +39,7 @@ export function ChatWindow({
   isBlocked = false,
   blockedReason,
   isAdmin = false,
+  isCreator = false,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [draft, setDraft] = useState('')
@@ -146,6 +147,20 @@ export function ChatWindow({
               Profil →
             </Link>
           </div>
+          {isCreator && !isAdmin && (
+            <button
+              onClick={async () => {
+                if (!confirm(`"${contextName}" sohbetini ve tüm mesaj geçmişini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) return
+                setAdminActing(true)
+                await deleteMyConversation(conversationId)
+                router.push('/messages')
+              }}
+              disabled={adminActing}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors disabled:opacity-40 flex-shrink-0"
+            >
+              <Trash2 size={11} /> Sohbeti Sil
+            </button>
+          )}
           {isAdmin && (
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {blocked ? (

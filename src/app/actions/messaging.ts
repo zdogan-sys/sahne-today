@@ -376,10 +376,12 @@ export async function getMessagesForConversation(conversationId: string) {
   const c = conv as any
   let contextName = ''
   let contextHref = ''
+  let isCreator = false
   if (c.type === 'band') {
-    const { data: b } = await admin.from('bands').select('name').eq('id', c.context_id).single()
+    const { data: b } = await admin.from('bands').select('name, creator_id').eq('id', c.context_id).single()
     contextName = (b as any)?.name ?? 'Grup'
     contextHref = `/bands/${c.context_id}`
+    isCreator = (b as any)?.creator_id === user.id
   } else {
     const { data: e } = await admin.from('events').select('title').eq('id', c.context_id).single()
     contextName = (e as any)?.title ?? 'Etkinlik'
@@ -392,7 +394,28 @@ export async function getMessagesForConversation(conversationId: string) {
     currentUserId: user.id,
     currentUserName,
     isAdmin: userIsAdmin,
+    isCreator,
   }
+}
+
+export async function deleteMyConversation(conversationId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
+
+  const admin = createAdminClient()
+  const { data: conv } = await admin
+    .from('conversations').select('type, context_id').eq('id', conversationId).single()
+  if (!conv) return { success: false, error: 'Sohbet bulunamadı.' }
+
+  if ((conv as any).type !== 'band') return { success: false, error: 'Yalnızca grup kurucuları silebilir.' }
+
+  const { data: band } = await admin
+    .from('bands').select('creator_id').eq('id', (conv as any).context_id).single()
+  if ((band as any)?.creator_id !== user.id) return { success: false, error: 'Yalnızca grup kurucusu bu sohbeti silebilir.' }
+
+  const { error } = await admin.from('conversations').delete().eq('id', conversationId)
+  return { success: !error, error: error?.message }
 }
 
 // ── Admin actions ─────────────────────────────────────────────────────────────
