@@ -154,7 +154,94 @@ export async function sendMessage(conversationId: string, body: string): Promise
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', conversationId)
 
+  // Gönderen adını bul, bildirim gönder (fire-and-forget)
+  const getSenderName = async () => {
+    if (isAdmin) return 'Admin'
+    const { data: p } = await admin.from('profiles').select('display_name').eq('id', user.id).single()
+    return (p as any)?.display_name ?? ''
+  }
+  getSenderName().then(name =>
+    notifyParticipants(admin, conversationId, user.id, name, trimmed).catch(() => {})
+  )
+
   return { success: true, message: inserted as any }
+}
+
+async function notifyParticipants(
+  admin: ReturnType<typeof createAdminClient>,
+  conversationId: string,
+  senderId: string,
+  senderNameOverride: string,
+  messageBody: string,
+) {
+  const { data: conv } = await admin
+    .from('conversations')
+    .select('type, context_id')
+    .eq('id', conversationId)
+    .single()
+  if (!conv) return
+
+  const c = conv as any
+  let contextName = ''
+  let participantIds: string[] = []
+
+  if (c.type === 'band') {
+    const { data: band } = await admin.from('bands').select('name, creator_id').eq('id', c.context_id).single()
+    contextName = (band as any)?.name ?? 'Grup Sohbeti'
+    if ((band as any)?.creator_id) participantIds.push((band as any).creator_id)
+    const { data: mems } = await admin
+      .from('band_members')
+      .select('artists(profile_id)')
+      .eq('band_id', c.context_id)
+      .eq('status', 'accepted')
+    for (const m of mems ?? []) {
+      const pid = (m as any).artists?.profile_id
+      if (pid) participantIds.push(pid)
+    }
+  } else {
+    const { data: ev } = await admin.from('events').select('title, venues(owner_id)').eq('id', c.context_id).single()
+    contextName = (ev as any)?.title ?? 'Etkinlik Sohbeti'
+    const ownerId = (ev as any)?.venues?.owner_id
+    if (ownerId) participantIds.push(ownerId)
+    const { data: perfs } = await admin
+      .from('event_performers')
+      .select('artists(profile_id), band_id')
+      .eq('event_id', c.context_id)
+    for (const p of perfs ?? []) {
+      const pid = (p as any).artists?.profile_id
+      if (pid) participantIds.push(pid)
+      const bandId = (p as any).band_id
+      if (bandId) {
+        const { data: bMems } = await admin
+          .from('band_members')
+          .select('artists(profile_id)')
+          .eq('band_id', bandId)
+          .eq('status', 'accepted')
+        for (const bm of bMems ?? []) {
+          const bpid = (bm as any).artists?.profile_id
+          if (bpid) participantIds.push(bpid)
+        }
+      }
+    }
+  }
+
+  participantIds = Array.from(new Set(participantIds)).filter(id => id !== senderId)
+  if (participantIds.length === 0) return
+
+  const senderName = senderNameOverride
+
+  const preview = messageBody.length > 60 ? messageBody.slice(0, 60) + '…' : messageBody
+  const notifBody = senderName ? `${senderName}: ${preview}` : preview
+
+  await admin.from('notifications').insert(
+    participantIds.map(uid => ({
+      user_id: uid,
+      type: 'new_message',
+      title: `Yeni mesaj — ${contextName}`,
+      body: notifBody,
+      link: `/messages/${conversationId}`,
+    }))
+  )
 }
 
 export async function markConversationRead(conversationId: string) {
