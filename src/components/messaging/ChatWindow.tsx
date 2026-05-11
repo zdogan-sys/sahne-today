@@ -6,7 +6,7 @@ import { Send, ArrowLeft, ShieldAlert, Lock, Unlock, Trash2 } from 'lucide-react
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { sendMessage, markConversationRead, adminBlockConversation, adminUnblockConversation, adminDeleteConversation, deleteMyConversation } from '@/app/actions/messaging'
+import { sendMessage, markConversationRead, adminBlockConversation, adminUnblockConversation, adminDeleteConversation, hideMyConversation } from '@/app/actions/messaging'
 
 interface Message {
   id: string
@@ -150,9 +150,9 @@ export function ChatWindow({
           {isCreator && !isAdmin && (
             <button
               onClick={async () => {
-                if (!confirm(`"${contextName}" sohbetini ve tüm mesaj geçmişini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) return
+                if (!confirm(`"${contextName}" sohbetini listenden kaldırmak istediğinizden emin misiniz?`)) return
                 setAdminActing(true)
-                await deleteMyConversation(conversationId)
+                await hideMyConversation(conversationId)
                 router.push('/messages')
               }}
               disabled={adminActing}

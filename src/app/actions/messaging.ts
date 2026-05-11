@@ -289,14 +289,18 @@ export async function getConversations() {
   }
   eventIds = Array.from(new Set(eventIds))
 
+  // Kullanıcının gizlediği sohbet ID'leri
+  const { data: hiddenRows } = await supabase.from('conversation_hides').select('conversation_id')
+  const hiddenIds = new Set((hiddenRows ?? []).map((r: any) => r.conversation_id))
+
   const allConvs: any[] = []
   if (bandIds.length > 0) {
     const { data } = await admin.from('conversations').select('*').eq('type', 'band').in('context_id', bandIds)
-    allConvs.push(...(data ?? []))
+    allConvs.push(...(data ?? []).filter((c: any) => !hiddenIds.has(c.id)))
   }
   if (eventIds.length > 0) {
     const { data } = await admin.from('conversations').select('*').eq('type', 'event').in('context_id', eventIds)
-    allConvs.push(...(data ?? []))
+    allConvs.push(...(data ?? []).filter((c: any) => !hiddenIds.has(c.id)))
   }
 
   allConvs.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
@@ -398,7 +402,7 @@ export async function getMessagesForConversation(conversationId: string) {
   }
 }
 
-export async function deleteMyConversation(conversationId: string): Promise<{ success: boolean; error?: string }> {
+export async function hideMyConversation(conversationId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
@@ -408,13 +412,16 @@ export async function deleteMyConversation(conversationId: string): Promise<{ su
     .from('conversations').select('type, context_id').eq('id', conversationId).single()
   if (!conv) return { success: false, error: 'Sohbet bulunamadı.' }
 
-  if ((conv as any).type !== 'band') return { success: false, error: 'Yalnızca grup kurucuları silebilir.' }
+  if ((conv as any).type !== 'band') return { success: false, error: 'Yalnızca grup sohbetleri gizlenebilir.' }
 
   const { data: band } = await admin
     .from('bands').select('creator_id').eq('id', (conv as any).context_id).single()
-  if ((band as any)?.creator_id !== user.id) return { success: false, error: 'Yalnızca grup kurucusu bu sohbeti silebilir.' }
+  if ((band as any)?.creator_id !== user.id) return { success: false, error: 'Yalnızca grup kurucusu bu sohbeti gizleyebilir.' }
 
-  const { error } = await admin.from('conversations').delete().eq('id', conversationId)
+  const { error } = await supabase.from('conversation_hides').upsert(
+    { conversation_id: conversationId, profile_id: user.id },
+    { onConflict: 'conversation_id,profile_id' }
+  )
   return { success: !error, error: error?.message }
 }
 
