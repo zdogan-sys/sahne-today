@@ -255,9 +255,8 @@ def build_pdf1(path):
     y = sp(y, 3)
     y = draw_bullet(c, y, 'Profil sayfanızda "Avatar Düzenle" seçeneğine tıklayın.')
     y = draw_bullet(c, y, 'JPG veya PNG fotoğraf yükleyin; otomatik kırpılır ve güncellenir.')
-    y = sp(y)
 
-    y = draw_tip(c, y, 'Profilinizi eksiksiz doldurmak, mekanlar ve gruplar tarafından keşfedilme şansınızı artırır. Türler ve enstrümanlar mutlaka seçilmeli.')
+    y = draw_tip(c, y, 'Eksiksiz profil keşfedilme şansınızı artırır. Tür ve enstrüman seçiminizi yapın.')
     y = sp(y)
 
     y = check_page(c, y, ACC, pc)
@@ -550,7 +549,7 @@ def build_pdf2(path):
     y = draw_bullet(c, y, '"İptal Et" ile etkinliği iptal edebilirsiniz; sanatçılara bildirim gider.')
     y = sp(y)
 
-    y = draw_tip(c, y, 'Etkinlik oluşturduktan sonra etkinlik sayfasındaki linki sosyal medyada paylaşabilirsiniz. Takipçileriniz otomatik bildirim alır.')
+    y = draw_tip(c, y, 'Etkinlik linkini sosyal medyada paylaşabilirsiniz; takipçileriniz otomatik bildirim alır.')
     y = sp(y)
 
     y = check_page(c, y, ACC, pc)
