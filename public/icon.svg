@@ -25,13 +25,13 @@
   <rect x="324" y="158" width="10" height="10" fill="#00ffe0"/>
 
   <!-- Ana metin -->
-  <text x="256" y="290"
+  <text x="256" y="283"
     font-family="Arial Black, Arial, sans-serif"
     font-weight="900"
-    font-size="108"
+    font-size="65"
     fill="#ffffff"
     text-anchor="middle"
-    letter-spacing="2">S</text>
+    letter-spacing="3">SAHNE</text>
 
   <!-- Nokta -->
   <circle cx="222" cy="318" r="5" fill="#00ffe0"/>

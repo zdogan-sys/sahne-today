@@ -105,7 +105,7 @@ export function AdminPanel({ events, artists, venues, bands, members, pendingEve
       </div>
 
       {tab === 'pending' && <PendingTab pendingEvents={pendingEvents} onRefresh={refresh} />}
-      {tab === 'events' && <EventsTab events={events} venues={venues} artists={artists} onRefresh={refresh} />}
+      {tab === 'events' && <EventsTab events={events} venues={venues} artists={artists} bands={bands} onRefresh={refresh} />}
       {tab === 'artists' && <ArtistsTab artists={artists} onRefresh={refresh} />}
       {tab === 'venues' && <VenuesTab venues={venues} onRefresh={refresh} />}
       {tab === 'bands' && <BandsTab bands={bands} onRefresh={refresh} />}
@@ -198,7 +198,7 @@ function PendingTab({ pendingEvents, onRefresh }: { pendingEvents: any[]; onRefr
 
 // ─── EVENTS TAB ────────────────────────────────────────────────────────────
 
-function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venues: any[]; artists: any[]; onRefresh: () => void }) {
+function EventsTab({ events, venues, artists, bands, onRefresh }: { events: any[]; venues: any[]; artists: any[]; bands: any[]; onRefresh: () => void }) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [newKey, setNewKey] = useState(0)
@@ -258,17 +258,19 @@ function EventsTab({ events, venues, artists, onRefresh }: { events: any[]; venu
         initial={editing}
         venues={venues}
         artists={artists}
+        bands={bands}
         onSaved={() => { setFormOpen(false); onRefresh() }}
       />
     </div>
   )
 }
 
-function EventForm({ open, onClose, initial, venues: initialVenues, artists: initialArtists, onSaved }: any) {
+function EventForm({ open, onClose, initial, venues: initialVenues, artists: initialArtists, bands: initialBands, onSaved }: any) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [venueId, setVenueId] = useState(initial?.venue_id ?? '')
   const [venueName, setVenueName] = useState(initial?.venue_name ?? '')
   const [artistId, setArtistId] = useState(initial?.artist_id ?? '')
+  const [bandId, setBandId] = useState(initial?.band_id ?? '')
   const [eventDate, setEventDate] = useState(initial?.event_date ?? '')
   const [startTime, setStartTime] = useState(initial?.start_time?.substring(0, 5) ?? '')
   const [genre, setGenre] = useState(initial?.genre ?? '')
@@ -286,7 +288,7 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
   const [perfBandId, setPerfBandId] = useState('')
   const [perfRole, setPerfRole] = useState('')
   const [perfSaving, setPerfSaving] = useState(false)
-  const [bands, setBands] = useState<any[]>([])
+  const [bands, setBands] = useState<any[]>(initialBands ?? [])
 
   const supabase = createClient()
 
@@ -333,11 +335,14 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
   // Inline quick-add state
   const [showVenueAdd, setShowVenueAdd] = useState(false)
   const [showArtistAdd, setShowArtistAdd] = useState(false)
+  const [showBandAdd, setShowBandAdd] = useState(false)
   const [newVenueName, setNewVenueName] = useState('')
   const [newVenueCity, setNewVenueCity] = useState('')
   const [newVenueType, setNewVenueType] = useState('pub')
   const [newArtistName, setNewArtistName] = useState('')
   const [newArtistCity, setNewArtistCity] = useState('')
+  const [newBandName, setNewBandName] = useState('')
+  const [newBandCity, setNewBandCity] = useState('')
   const [quickLoading, setQuickLoading] = useState(false)
   const [quickError, setQuickError] = useState('')
 
@@ -367,6 +372,19 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
     setNewArtistName(''); setNewArtistCity('')
   }
 
+  async function quickAddBand() {
+    if (!newBandName) { setQuickError('Grup adı zorunludur.'); return }
+    setQuickLoading(true); setQuickError('')
+    const res = await adminCreateBand({ name: newBandName, city: newBandCity || null, genres: [] })
+    setQuickLoading(false)
+    if (!res.success) { setQuickError(res.error ?? 'Hata'); return }
+    const item = (res as any).item
+    setBands([...bands, item])
+    setBandId(item.id)
+    setShowBandAdd(false)
+    setNewBandName(''); setNewBandCity('')
+  }
+
   async function handleSave() {
     if (!title || !eventDate) { setError('Başlık ve tarih zorunludur.'); return }
     setLoading(true); setError('')
@@ -375,6 +393,7 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
       venue_id: venueId || null,
       venue_name: venueName || null,
       artist_id: artistId || null,
+      band_id: bandId || null,
       event_date: eventDate,
       start_time: startTime || null,
       genre: genre || null,
@@ -470,6 +489,35 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
               </select>
               {quickError && <p className="text-red-400 text-xs">{quickError}</p>}
               <button onClick={quickAddArtist} disabled={quickLoading} className="btn-accent w-full py-2 text-xs disabled:opacity-50">
+                {quickLoading ? 'Ekleniyor...' : 'Ekle ve Seç'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Band select + quick add */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label">Grup</label>
+            <button type="button" onClick={() => { setShowBandAdd(!showBandAdd); setQuickError('') }}
+              className="text-xs text-accent hover:underline flex items-center gap-1">
+              <Plus size={12} /> {showBandAdd ? 'İptal' : 'Yeni Grup Ekle'}
+            </button>
+          </div>
+          <select value={bandId} onChange={(e) => setBandId(e.target.value)} className="input-field text-sm">
+            <option value="">Seç (opsiyonel)</option>
+            {bands.map((b: any) => <option key={b.id} value={b.id}>{b.name}{b.city ? ` — ${b.city}` : ''}</option>)}
+          </select>
+          {showBandAdd && (
+            <div className="mt-2 p-3 rounded-lg border border-accent/20 bg-accent/5 space-y-2">
+              <p className="text-xs text-accent font-medium">Hızlı Grup Ekle</p>
+              <input value={newBandName} onChange={(e) => setNewBandName(e.target.value)} placeholder="Grup adı *" className="input-field text-sm" />
+              <select value={newBandCity} onChange={(e) => setNewBandCity(e.target.value)} className="input-field text-sm">
+                <option value="">Şehir (opsiyonel)</option>
+                {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {quickError && <p className="text-red-400 text-xs">{quickError}</p>}
+              <button onClick={quickAddBand} disabled={quickLoading} className="btn-accent w-full py-2 text-xs disabled:opacity-50">
                 {quickLoading ? 'Ekleniyor...' : 'Ekle ve Seç'}
               </button>
             </div>
