@@ -24,11 +24,22 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('events').select('title, description, poster_url, venues(name, city)').eq('id', id).single()
+  const { data } = await supabase
+    .from('events')
+    .select('title, description, poster_url, event_date, entry_type, entry_fee, venues(name, city)')
+    .eq('id', id)
+    .single()
   const event = data as any | null
   if (!event) return { title: 'Etkinlik Bulunamadı' }
   const title = event.title
-  const description = event.description ?? (event.venues ? `${event.venues.name} · ${event.venues.city}` : undefined)
+  const venue = event.venues
+  const dateStr = event.event_date
+    ? new Date(event.event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+  const locationStr = venue ? `${venue.name}, ${venue.city}` : null
+  const description = event.description
+    ?? [dateStr, locationStr].filter(Boolean).join(' · ')
+    ?? undefined
   const image = event.poster_url ?? 'https://sahne.today/icon-512.png'
   return {
     title,
@@ -89,8 +100,69 @@ export default async function EventPage({ params }: Props) {
   const acceptedMembers = band ? (band.band_members ?? []).filter((m: any) => m.status === 'accepted') : []
   const performers: any[] = performersData ?? []
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    startDate: event.event_date && event.start_time
+      ? `${event.event_date}T${event.start_time}`
+      : event.event_date,
+    endDate: event.event_date && event.end_time
+      ? `${event.event_date}T${event.end_time}`
+      : undefined,
+    eventStatus: event.status === 'cancelled'
+      ? 'https://schema.org/EventCancelled'
+      : 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    description: event.description ?? undefined,
+    image: event.poster_url ?? 'https://sahne.today/icon-512.png',
+    url: `https://sahne.today/events/${id}`,
+    location: venue ? {
+      '@type': 'Place',
+      name: venue.name,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: [venue.address, venue.district].filter(Boolean).join(', ') || undefined,
+        addressLocality: venue.city,
+        addressCountry: 'TR',
+      },
+    } : undefined,
+    organizer: {
+      '@type': 'Organization',
+      name: 'Sahne.Today',
+      url: 'https://sahne.today',
+    },
+    offers: event.ticketing_enabled ? {
+      '@type': 'Offer',
+      price: event.ticket_price ?? 0,
+      priceCurrency: 'TRY',
+      availability: (event.ticket_count ?? 0) - (event.tickets_sold ?? 0) > 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/SoldOut',
+      url: `https://sahne.today/events/${id}/tickets`,
+    } : event.entry_type === 'free' ? {
+      '@type': 'Offer',
+      price: 0,
+      priceCurrency: 'TRY',
+      availability: 'https://schema.org/InStock',
+    } : undefined,
+    performer: artist ? {
+      '@type': 'MusicGroup',
+      name: artist.stage_name,
+      url: `https://sahne.today/artists/${artist.id}`,
+    } : band ? {
+      '@type': 'MusicGroup',
+      name: band.name,
+      url: `https://sahne.today/bands/${band.id}`,
+    } : undefined,
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <BackButton fallbackHref="/events" fallbackLabel="Etkinlikler" />
 
       {event.status === 'cancelled' && (
