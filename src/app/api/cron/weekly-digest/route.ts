@@ -33,14 +33,34 @@ export async function GET(req: Request) {
     return NextResponse.json({ sent: 0, reason: 'no events this week' })
   }
 
-  // Tüm kullanıcılar (e-postası olanlar)
-  const { data: profiles } = await admin
+  // Auth kullanıcılarını al (email burada)
+  const { data: authData } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const authUsers = authData?.users ?? []
+
+  if (authUsers.length === 0) {
+    return NextResponse.json({ sent: 0, reason: 'no users' })
+  }
+
+  // Profil tercihlerini al (şehir, preferred_genres)
+  const { data: profilesData } = await admin
     .from('profiles')
-    .select('id, email, display_name, city, preferred_genres')
-    .not('email', 'is', null)
+    .select('id, display_name, city, preferred_genres')
     .limit(2000)
 
-  if (!profiles || profiles.length === 0) {
+  const profileMap = new Map((profilesData ?? []).map((p: any) => [p.id, p]))
+
+  // Auth + profil birleştir
+  const profiles = authUsers
+    .filter(u => !!u.email)
+    .map(u => ({
+      id: u.id,
+      email: u.email!,
+      display_name: profileMap.get(u.id)?.display_name ?? u.email!.split('@')[0],
+      city: profileMap.get(u.id)?.city ?? null,
+      preferred_genres: profileMap.get(u.id)?.preferred_genres ?? null,
+    }))
+
+  if (profiles.length === 0) {
     return NextResponse.json({ sent: 0, reason: 'no users' })
   }
 
