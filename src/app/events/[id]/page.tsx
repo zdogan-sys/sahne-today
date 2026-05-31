@@ -189,7 +189,7 @@ export default async function EventPage({ params }: Props) {
             </div>
 
             {/* Owner/admin tools */}
-            {isParty && (
+            {isParty && event.ticketing_enabled && (
               <div className="flex gap-2 flex-wrap">
                 <Link
                   href="/scan"
