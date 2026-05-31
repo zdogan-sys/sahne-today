@@ -917,6 +917,8 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
 }
 
 function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; venueName: string; onClose: () => void }) {
+  const locale = useLocale()
+  const dayNames = getDayNames(locale)
   const [slot, setSlot] = useState({
     day_of_week: 5,
     start_time: '21:00',

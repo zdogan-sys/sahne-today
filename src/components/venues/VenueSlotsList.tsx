@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { Trash2, Plus, Pencil } from 'lucide-react'
-import { DAY_NAMES, FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
+import { getDayNames, FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
 import { closeSlot, createSlot, updateSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
@@ -46,6 +47,8 @@ interface Props {
 }
 
 export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser }: Props) {
+  const locale = useLocale()
+  const dayNames = getDayNames(locale)
   const [slots, setSlots] = useState(initialSlots)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -180,7 +183,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-text-primary text-sm">{DAY_NAMES[slot.day_of_week]}</span>
+                    <span className="font-medium text-text-primary text-sm">{dayNames[slot.day_of_week]}</span>
                     <span className="text-text-muted text-sm">{formatTime(slot.start_time)} – {formatTime(slot.end_time)}</span>
                     <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
                       {slot.recurrence === 'weekly' ? 'Haftalık' : slot.recurrence === 'biweekly' ? '2 Haftada Bir' : 'Tek Sefer'}
