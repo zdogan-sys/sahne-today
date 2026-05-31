@@ -100,17 +100,11 @@ export function LandingFeatures() {
             {/* CTA */}
             <Link
               href={type.cta.href}
-              className="w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              className="w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors hover:opacity-80"
               style={{
                 background: `${type.color}18`,
                 color: type.color,
                 border: `1px solid ${type.color}40`,
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.background = `${type.color}30`
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.background = `${type.color}18`
               }}
             >
               {type.cta.label}
