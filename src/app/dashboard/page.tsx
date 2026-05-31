@@ -62,7 +62,8 @@ export default async function DashboardPage() {
               email: user.email,
               city: (profile as any).city ?? null,
               bio: (profile as any).bio ?? null,
-              avatar_url: profile.avatar_url ?? null
+              avatar_url: profile.avatar_url ?? null,
+              preferred_genres: (profile as any).preferred_genres ?? null,
             }}
           />
         </div>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Edit2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { CITY_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS, ALL_GENRES, getGenreColor } from '@/lib/constants'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
     city: string | null
     bio: string | null
     avatar_url: string | null
+    preferred_genres: string[] | null
   }
 }
 
@@ -28,6 +29,13 @@ export function UserProfileEditor({ userId, initialData }: Props) {
   const [email, setEmail] = useState(initialData.email || '')
   const [city, setCity] = useState(initialData.city || '')
   const [bio, setBio] = useState(initialData.bio || '')
+  const [preferredGenres, setPreferredGenres] = useState<string[]>(initialData.preferred_genres ?? [])
+
+  function toggleGenre(genre: string) {
+    setPreferredGenres(prev =>
+      prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
+    )
+  }
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url || '')
 
   const [password, setPassword] = useState('')
@@ -66,7 +74,8 @@ export function UserProfileEditor({ userId, initialData }: Props) {
         display_name: displayName.trim(),
         city: city || null,
         bio: bio || null,
-        avatar_url: avatarUrl || null
+        avatar_url: avatarUrl || null,
+        preferred_genres: preferredGenres.length > 0 ? preferredGenres : null,
       } as any)
       .eq('id', userId)
 
@@ -160,6 +169,36 @@ export function UserProfileEditor({ userId, initialData }: Props) {
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="label">İlgilendiğiniz Etkinlik Türleri</label>
+            <p className="text-[10px] text-text-muted mb-2">Haftalık etkinlik özetinizi bu tercihlere göre kişiselleştiririz.</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_GENRES.map((genre) => {
+                const selected = preferredGenres.includes(genre)
+                const color = getGenreColor(genre)
+                return (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => toggleGenre(genre)}
+                    className="px-3 py-1 rounded-full text-xs font-medium transition-all border"
+                    style={selected ? {
+                      background: `${color}22`,
+                      color,
+                      borderColor: `${color}66`,
+                    } : {
+                      background: 'transparent',
+                      color: 'rgba(228,224,216,0.4)',
+                      borderColor: 'rgba(228,224,216,0.12)',
+                    }}
+                  >
+                    {genre}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div>

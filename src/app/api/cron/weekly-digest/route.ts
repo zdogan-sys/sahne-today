@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   // Tüm kullanıcılar (e-postası olanlar)
   const { data: profiles } = await admin
     .from('profiles')
-    .select('id, email, display_name, city')
+    .select('id, email, display_name, city, preferred_genres')
     .not('email', 'is', null)
     .limit(2000)
 
@@ -44,13 +44,46 @@ export async function GET(req: Request) {
     return NextResponse.json({ sent: 0, reason: 'no users' })
   }
 
+  // Kullanıcının takip ettiği sanatçı/grup/mekan ID'leri
+  const { data: allFollows } = await admin
+    .from('follows')
+    .select('user_id, target_type, target_id')
+
   const emailsSent: Promise<any>[] = []
 
   for (const profile of profiles) {
     const userCity = (profile as any).city as string | null
-    const userEvents = userCity
-      ? events.filter((e: any) => e.venues?.city?.toLowerCase() === userCity.toLowerCase())
-      : events
+    const preferredGenres = (profile as any).preferred_genres as string[] | null
+    const userFollows = (allFollows ?? []).filter((f: any) => f.user_id === profile.id)
+
+    const followedArtistIds = userFollows.filter((f: any) => f.target_type === 'artist').map((f: any) => f.target_id)
+    const followedBandIds = userFollows.filter((f: any) => f.target_type === 'band').map((f: any) => f.target_id)
+    const followedVenueIds = userFollows.filter((f: any) => f.target_type === 'venue').map((f: any) => f.target_id)
+
+    let userEvents = events.filter((e: any) => {
+      // Takip edilen sanatçı/grup/mekan etkinlikleri
+      const isFollowed =
+        (e.artists?.id && followedArtistIds.includes(e.artists.id)) ||
+        (e.bands?.id && followedBandIds.includes(e.bands.id)) ||
+        (e.venues?.id && followedVenueIds.includes(e.venues?.id))
+
+      // Tercih edilen türler
+      const matchesGenre = preferredGenres && preferredGenres.length > 0
+        ? preferredGenres.includes(e.genre)
+        : false
+
+      // Şehir filtresi
+      const matchesCity = userCity
+        ? e.venues?.city?.toLowerCase() === userCity.toLowerCase()
+        : false
+
+      return isFollowed || matchesGenre || matchesCity
+    })
+
+    // Hiçbir filtre eşleşmediyse tüm etkinlikleri göster (şehirsiz kullanıcılar için)
+    if (userEvents.length === 0 && !userCity && followedArtistIds.length === 0) {
+      userEvents = events
+    }
 
     if (userEvents.length === 0) continue
 
