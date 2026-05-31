@@ -67,7 +67,8 @@
     "openSlots": "Open slots",
     "activeArtists": "Active artists",
     "everyoneHasPlace": "A place for everyone",
-    "platform": "Platform"
+    "platform": "Platform",
+    "venues": "Active Venues"
   },
   "events": {
     "title": "Events",
@@ -155,6 +156,30 @@
     "title": "Crew",
     "lookingForBand": "Looking for a Band",
     "myNote": "My Note"
+  },
+  "landing": {
+    "artistHeadline": "Build your profile.\nGet on stage.\nGet discovered.",
+    "artistDesc": "Manage venue offers from your dashboard, fill your calendar, and let your followers know about every new show automatically.",
+    "artistF1": "Receive stage offers from venues, accept or decline",
+    "artistF2": "Form a band, find musicians, perform together",
+    "artistF3": "Sell tickets and earn from your performances",
+    "artistF4": "Stand out with a technical rider and past venue list",
+    "venueHeadline": "Fill your\nstage.\nManage your\nevents.",
+    "venueDesc": "Receive artist applications for open slots or send direct offers. Calendar, ticketing, and QR entry — all in one place.",
+    "venueF1": "Open slots and evaluate artist applications",
+    "venueF2": "Send direct offers to any artist",
+    "venueF3": "Sell tickets and scan QR codes at the door",
+    "venueF4": "Share your venue calendar via ICS with artists",
+    "audienceTag": "Audience",
+    "audienceHeadline": "Discover live\nmusic in\nyour city.",
+    "audienceDesc": "Follow your favorite artists and venues. Be the first to know when a new show is announced.",
+    "audienceF1": "Filter and discover events by city and genre",
+    "audienceF2": "Follow artists and venues, get notifications",
+    "audienceF3": "RSVP or buy tickets securely",
+    "audienceF4": "Subscribe to event calendars via ICS",
+    "audienceCta": "Sign Up for Free",
+    "free": "Free. Sign up and start using it right away.",
+    "browseFirst": "Browse events first →"
   },
   "footer": {
     "allRightsReserved": "All rights reserved."

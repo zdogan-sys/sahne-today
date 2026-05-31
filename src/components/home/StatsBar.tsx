@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server'
+
 interface StatsBarProps {
   weekEvents: number
   activeVenues: number
@@ -5,12 +7,14 @@ interface StatsBarProps {
   openSlots: number
 }
 
-export function StatsBar({ weekEvents, activeVenues, artists, openSlots }: StatsBarProps) {
+export async function StatsBar({ weekEvents, activeVenues, artists, openSlots }: StatsBarProps) {
+  const t = await getTranslations('home')
+
   const stats = [
-    { value: weekEvents, label: 'Bu Hafta Etkinlik' },
-    { value: activeVenues, label: 'Aktif Mekan' },
-    { value: artists, label: 'Kayıtlı Sanatçı' },
-    { value: openSlots, label: 'Açık Slot' },
+    { value: weekEvents, label: t('thisWeekEvents') },
+    { value: activeVenues, label: t('venues') },
+    { value: artists, label: t('activeArtists') },
+    { value: openSlots, label: t('openSlots') },
   ]
 
   return (

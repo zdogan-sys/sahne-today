@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
 import { HeroPosterImage } from './HeroPosterImage'
 
 interface Props {
@@ -7,7 +8,9 @@ interface Props {
   posterUrl: string | null
 }
 
-export function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
+export async function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
+  const t = await getTranslations()
+
   return (
     <section className="relative overflow-hidden px-4 pt-12 pb-10 md:pt-20 md:pb-16">
       {/* Gradient orb */}
@@ -22,32 +25,32 @@ export function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
       <div className="relative max-w-7xl mx-auto flex items-start">
         <div className="max-w-2xl">
           <p className="text-accent text-sm font-medium uppercase tracking-widest mb-3">
-            Türkiye'nin Performans Ekosistemi
+            {t('home.tagline')}
           </p>
           <h1 className="font-bebas text-7xl md:text-9xl text-text-primary leading-none mb-4">
-            BUGÜN<br />SAHNE VAR.
+            {t('home.headline')}
           </h1>
           <p className="text-text-muted text-base md:text-lg max-w-md mb-8">
-            Bağımsız müzisyenler, stand-up komedyenleri ve butik mekanlar için açık sahne bul, başvur, performans gerçekleştir.
+            {t('home.description')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
             {isLoggedIn ? (
               <>
                 <Link href="/events" className="btn-accent text-center py-3 px-6 text-base font-semibold">
-                  Etkinlikleri Keşfet
+                  {t('home.exploreEvents')}
                 </Link>
                 <Link href="/dashboard" className="btn-outline text-center py-3 px-6 text-base font-semibold">
-                  Panelim
+                  {t('home.myDashboard')}
                 </Link>
               </>
             ) : (
               <>
                 <Link href="/auth?tab=signup" className="btn-accent text-center py-3 px-6 text-base font-semibold">
-                  Hemen Kayıt Ol
+                  {t('home.register')}
                 </Link>
                 <Link href="/auth" className="btn-outline text-center py-3 px-6 text-base font-semibold">
-                  Giriş Yap
+                  {t('auth.signin')}
                 </Link>
               </>
             )}

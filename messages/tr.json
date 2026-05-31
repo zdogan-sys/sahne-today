@@ -66,7 +66,8 @@
     "openSlots": "Açık slot",
     "activeArtists": "Aktif sanatçı",
     "everyoneHasPlace": "Herkes için bir yer var",
-    "platform": "Platform"
+    "platform": "Platform",
+    "venues": "Aktif Mekan"
   },
   "events": {
     "title": "Etkinlikler",
@@ -154,6 +155,30 @@
     "title": "Ekip",
     "lookingForBand": "Grup Arıyorum",
     "myNote": "Notum"
+  },
+  "landing": {
+    "artistHeadline": "Profilini oluştur.\nSahneye çık.\nKeşfedil.",
+    "artistDesc": "Mekanlardan gelen teklifleri dashboard'ından yönet, takvini doldur, takipçilerin etkinliklerinden haberdar olsun.",
+    "artistF1": "Mekanlardan sahne teklifi al, kabul et veya reddet",
+    "artistF2": "Grup kur, müzisyen bul, birlikte sahne çık",
+    "artistF3": "Bilet sat, performansından gelir elde et",
+    "artistF4": "Teknik rider ve geçmiş mekan listesi ile öne çık",
+    "venueHeadline": "Sahnenizi\ndoldurun.\nEtkinliğinizi\nyönetin.",
+    "venueDesc": "Açık slotlarınıza sanatçı başvurusu alın ya da doğrudan teklif gönderin. Takvim, bilet ve QR giriş tek ekranda.",
+    "venueF1": "Slot aç, sanatçı başvurularını değerlendir",
+    "venueF2": "İstediğin sanatçıya doğrudan teklif gönder",
+    "venueF3": "Bilet sat, etkinlik günü QR ile giriş kontrol et",
+    "venueF4": "Mekan takvimini ICS ile sanatçılarla paylaş",
+    "audienceTag": "İzleyici",
+    "audienceHeadline": "Şehrindeki\ncanlı müziği\nkeşfet.",
+    "audienceDesc": "Sevdiğin sanatçıları ve mekanları takip et. Yeni etkinlik açıldığında ilk sen haber ol.",
+    "audienceF1": "Şehrine göre etkinlikleri filtrele ve keşfet",
+    "audienceF2": "Sanatçı ve mekan takip et, bildirim al",
+    "audienceF3": "RSVP yap veya güvenli ödemeyle bilet satın al",
+    "audienceF4": "Takvim aboneliğiyle etkinlikleri kendi takvimine ekle",
+    "audienceCta": "Ücretsiz Kayıt Ol",
+    "free": "Ücretsiz. Kayıt ol, hemen kullan.",
+    "browseFirst": "Önce etkinliklere göz at →"
   },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
