@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ADMIN_EMAIL } from '@/lib/admin'
+import { notifyFollowers } from '@/app/actions/follow'
 
 async function getAdminClient() {
   return createClient(
@@ -139,6 +140,7 @@ export async function addArtistEvent(payload: {
   }).select('id, event_date, title, start_time, end_time').single()
 
   if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+  if (status === 'confirmed') notifyFollowers((data as any).id).catch(() => {})
   return { success: true, data: { ...(data as any), status } }
 }
 
@@ -185,6 +187,7 @@ export async function addVenueEvent(payload: {
   } as any).select('id, event_date, title, start_time, end_time, artist_id, band_id').single()
 
   if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+  if (status === 'confirmed') notifyFollowers((data as any).id).catch(() => {})
 
   // Notify performer
   if (hasLinkedPerformer) {
@@ -387,6 +390,7 @@ export async function addBandEvent(payload: {
     .single()
 
   if (error || !data) return { success: false, error: error?.message ?? 'Eklenemedi.' }
+  if (status === 'confirmed') notifyFollowers((data as any).id).catch(() => {})
   return { success: true, data: { ...(data as any), status } }
 }
 
