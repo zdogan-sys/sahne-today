@@ -32,7 +32,7 @@ import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRE
 import { DAY_NAMES, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations'
+type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pending', label: 'Bekleyenler' },
@@ -44,6 +44,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'lists', label: 'Türler' },
   { key: 'premium', label: 'Premium' },
   { key: 'conversations', label: 'Sohbetler' },
+  { key: 'permissions', label: 'Yetkiler' },
 ]
 
 const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
@@ -113,6 +114,7 @@ export function AdminPanel({ events, artists, venues, bands, members, pendingEve
       {tab === 'lists' && <ListsTab configs={listConfigs} />}
       {tab === 'premium' && <PremiumTab featureFlags={featureFlags} members={members} onRefresh={refresh} />}
       {tab === 'conversations' && <ConversationsTab conversations={conversations} onRefresh={refresh} />}
+      {tab === 'permissions' && <PermissionsTab members={members} onRefresh={refresh} />}
     </div>
   )
 }
@@ -1119,8 +1121,6 @@ function BandForm({ open, onClose, initial, onSaved }: any) {
 
 function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => void }) {
   const [deleting, setDeleting] = useState<string | null>(null)
-  const [toggling, setToggling] = useState<string | null>(null)
-  const [localMembers, setLocalMembers] = useState<any[]>(members)
 
   async function handleDelete(id: string) {
     if (!confirm('Bu üyeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return
@@ -1130,18 +1130,11 @@ function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => v
     setDeleting(null)
   }
 
-  async function handleToggleModerator(id: string, current: boolean) {
-    setToggling(id)
-    await adminToggleModerator(id, !current)
-    setLocalMembers(prev => prev.map(m => m.id === id ? { ...m, is_moderator: !current } : m))
-    setToggling(null)
-  }
-
   return (
     <div>
-      <p className="text-text-muted text-sm mb-4">{localMembers.length} üye</p>
+      <p className="text-text-muted text-sm mb-4">{members.length} üye</p>
       <div className="space-y-2">
-        {localMembers.map((m) => (
+        {members.map((m) => (
           <div key={m.id} className="card p-3 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -1154,23 +1147,100 @@ function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => v
                 {m.role} · {m.city ?? '—'} · {new Date(m.created_at).toLocaleDateString('tr-TR')}
               </p>
             </div>
-            <button
-              onClick={() => handleToggleModerator(m.id, !!m.is_moderator)}
-              disabled={toggling === m.id}
-              className={`text-xs px-2 py-1 rounded font-medium transition-colors flex-shrink-0 ${
-                m.is_moderator
-                  ? 'bg-accent/20 text-accent hover:bg-red-500/20 hover:text-red-400'
-                  : 'bg-[rgba(228,224,216,0.06)] text-text-muted hover:bg-accent/20 hover:text-accent'
-              } disabled:opacity-40`}
-            >
-              {toggling === m.id ? '...' : m.is_moderator ? 'Moderatörü Kaldır' : 'Moderatör Yap'}
-            </button>
             <button onClick={() => handleDelete(m.id)} disabled={deleting === m.id}
               className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40 flex-shrink-0">
               <Trash2 size={13} />
             </button>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function PermissionsTab({ members, onRefresh }: { members: any[]; onRefresh: () => void }) {
+  const [search, setSearch] = useState('')
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [localMembers, setLocalMembers] = useState<any[]>(members)
+
+  const moderators = localMembers.filter(m => m.is_moderator)
+  const filtered = search.trim().length > 1
+    ? localMembers.filter(m =>
+        !m.is_moderator &&
+        (m.display_name?.toLowerCase().includes(search.toLowerCase()) ||
+         m.city?.toLowerCase().includes(search.toLowerCase()))
+      )
+    : []
+
+  async function handleToggle(id: string, current: boolean) {
+    setToggling(id)
+    await adminToggleModerator(id, !current)
+    setLocalMembers(prev => prev.map(m => m.id === id ? { ...m, is_moderator: !current } : m))
+    setToggling(null)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Mevcut moderatörler */}
+      <div>
+        <h3 className="text-sm font-semibold text-text-primary mb-3">
+          Moderatörler ({moderators.length})
+        </h3>
+        {moderators.length === 0 ? (
+          <p className="text-text-muted text-sm">Henüz moderatör yok.</p>
+        ) : (
+          <div className="space-y-2">
+            {moderators.map(m => (
+              <div key={m.id} className="card p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-text-primary text-sm font-medium">{m.display_name || '—'}</p>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent/20 text-accent">MOD</span>
+                  </div>
+                  <p className="text-text-muted text-xs">{m.city ?? '—'}</p>
+                </div>
+                <button
+                  onClick={() => handleToggle(m.id, true)}
+                  disabled={toggling === m.id}
+                  className="text-xs px-3 py-1.5 rounded font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-40"
+                >
+                  {toggling === m.id ? '...' : 'Yetkiyi Kaldır'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Kullanıcı ara & moderatör yap */}
+      <div>
+        <h3 className="text-sm font-semibold text-text-primary mb-3">Moderatör Ekle</h3>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="İsim veya şehir ile ara..."
+          className="input-field text-sm mb-3"
+        />
+        {search.trim().length > 1 && filtered.length === 0 && (
+          <p className="text-text-muted text-sm">Sonuç bulunamadı.</p>
+        )}
+        <div className="space-y-2">
+          {filtered.map(m => (
+            <div key={m.id} className="card p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-text-primary text-sm font-medium">{m.display_name || '—'}</p>
+                <p className="text-text-muted text-xs">{m.city ?? '—'} · {new Date(m.created_at).toLocaleDateString('tr-TR')}</p>
+              </div>
+              <button
+                onClick={() => handleToggle(m.id, false)}
+                disabled={toggling === m.id}
+                className="text-xs px-3 py-1.5 rounded font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors disabled:opacity-40"
+              >
+                {toggling === m.id ? '...' : 'Moderatör Yap'}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
