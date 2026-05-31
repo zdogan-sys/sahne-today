@@ -4,11 +4,13 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { X, Clock, MapPin, Ticket, Music2, ArrowUpRight, ShoppingCart } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
 
 export function EventModal({ event }: { event: any }) {
+  const locale = useLocale()
   const router = useRouter()
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function EventModal({ event }: { event: any }) {
             <div className="flex items-center gap-2 text-sm text-text-muted">
               <Clock size={13} />
               <span>
-                {formatDate(event.event_date)} · {formatTime(event.start_time)}
+                {formatDate(event.event_date, locale)} · {formatTime(event.start_time)}
                 {event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
               </span>
             </div>

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
-import { DAY_NAMES, formatTime, formatDate, VENUE_TYPE_LABELS } from '@/lib/utils'
+import { getDayNames, formatTime, formatDate, VENUE_TYPE_LABELS } from '@/lib/utils'
 import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,8 @@ import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSectio
 import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
 export function ArtistDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
+  const locale = useLocale()
+  const dayNames = getDayNames(locale)
   const [artist, setArtist] = useState<any>(null)
   const [venue, setVenue] = useState<any>(null)
   const [applications, setApplications] = useState<any[]>([])
@@ -271,7 +274,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                       {ev.venues?.name} · {ev.venues?.district ? `${ev.venues.district}, ` : ''}{ev.venues?.city}
                     </p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {formatDate(ev.event_date)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
+                      {formatDate(ev.event_date, locale)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
                     </p>
                     {ev.expires_at && <div className="mt-1.5"><OfferCountdown expiresAt={ev.expires_at} /></div>}
                   </div>
@@ -316,7 +319,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                     </p>
                     <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
                       <Clock size={10} />
-                      {formatDate(invite.invited_at)}
+                      {formatDate(invite.invited_at, locale)}
                     </p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
@@ -354,7 +357,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-text-primary text-sm truncate">{ev.title}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {ev.venues?.name ?? ev.venue_name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                      {ev.venues?.name ?? ev.venue_name} · {formatDate(ev.event_date, locale)} {formatTime(ev.start_time)}
                     </p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
@@ -429,7 +432,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                     </p>
                     <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
                       <Clock size={10} />
-                      {formatDate(app.created_at)}
+                      {formatDate(app.created_at, locale)}
                     </p>
                   </div>
                   <span className={`chip ${statusColors[app.status] ?? ''} flex-shrink-0`}>

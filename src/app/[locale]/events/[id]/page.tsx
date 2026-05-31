@@ -24,6 +24,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
+  const locale = await getLocale()
   const supabase = await createClient()
   const { data } = await supabase
     .from('events')
@@ -34,9 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!event) return { title: 'Etkinlik Bulunamadı' }
   const title = event.title
   const venue = event.venues
-  const dateStr = event.event_date
-    ? new Date(event.event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
-    : null
+  const dateStr = event.event_date ? formatDate(event.event_date, locale) : null
   const locationStr = venue ? `${venue.name}, ${venue.city}` : null
   const description = event.description
     ?? [dateStr, locationStr].filter(Boolean).join(' · ')

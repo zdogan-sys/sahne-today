@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       html: ticketEmailHtml({
         buyerName: ticket.buyer_name,
         eventTitle: event?.title ?? '',
-        eventDate: event?.event_date ? formatDate(event.event_date) : '',
+        eventDate: event?.event_date ? formatDate(event.event_date, 'tr') : '',
         eventTime: event?.start_time ? formatTime(event.start_time) : '',
         venueName: venue?.name ?? '',
         venueAddress: venue?.address ?? '',

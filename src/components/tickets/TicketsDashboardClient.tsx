@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useLocale } from 'next-intl'
 import { Ticket, TrendingUp, Users } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { TicketTableClient } from './TicketTableClient'
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
+  const locale = useLocale()
   const [selectedEventId, setSelectedEventId] = useState<string>('all')
 
   const filteredEvents = useMemo(
@@ -84,7 +86,7 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
             <option value="all">Tüm Etkinlikler</option>
             {events.map(event => (
               <option key={event.id} value={event.id}>
-                {event.title} — {formatDate(event.event_date)}
+                {event.title} — {formatDate(event.event_date, locale)}
               </option>
             ))}
           </select>
@@ -130,7 +132,7 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-text-primary">{event.title}</h3>
-                  <p className="text-text-muted text-sm">{formatDate(event.event_date)}</p>
+                  <p className="text-text-muted text-sm">{formatDate(event.event_date, locale)}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-text-primary">{revenue.toFixed(0)}₺</p>

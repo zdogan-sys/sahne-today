@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useLocale } from 'next-intl'
 import { Bell, X } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +19,7 @@ interface Notification {
 }
 
 export function NotificationBell({ userId }: { userId: string }) {
+  const locale = useLocale()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const ref = useRef<HTMLDivElement>(null)
@@ -109,7 +111,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                   <>
                     <p className="text-text-primary text-sm font-medium leading-snug">{n.title}</p>
                     {n.body && <p className="text-text-muted text-xs mt-0.5 leading-relaxed">{n.body}</p>}
-                    <p className="text-text-muted text-[10px] mt-1">{formatDate(n.created_at)}</p>
+                    <p className="text-text-muted text-[10px] mt-1">{formatDate(n.created_at, locale)}</p>
                   </>
                 )
                 return n.link ? (

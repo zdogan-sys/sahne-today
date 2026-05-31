@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -91,7 +92,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
         <Link href={`/events/${event.id}`} className="flex-1 min-w-0 group">
           <p className="text-text-primary text-sm font-medium group-hover:text-accent transition-colors truncate">{event.title}</p>
           <p className="text-text-muted text-xs mt-0.5">
-            {formatDate(event.event_date)}
+            {formatDate(event.event_date, locale)}
             {event.artists?.stage_name ? ` · ${event.artists.stage_name}` : ''}
             {event.bands?.name ? ` · ${event.bands.name}` : ''}
           </p>
@@ -213,6 +214,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
 }
 
 export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, isOwner, venueId, venueCity }: Props) {
+  const locale = useLocale()
   const today = new Date().toISOString().split('T')[0]
   const [tab, setTab] = useState<Tab>('upcoming')
   const [upcomingList, setUpcomingList] = useState<EventItem[]>(initialUpcoming)

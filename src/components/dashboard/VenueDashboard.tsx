@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
-import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
+import { getDayNames, formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Check, X, Clock, CalendarX, SendHorizonal } from 'lucide-react'
 import { withdrawVenueOffer } from '@/app/actions/offer'
 import { respondToSlotApplication } from '@/app/actions/venue'
@@ -11,6 +12,8 @@ import { OfferCountdown } from '@/components/ui/OfferCountdown'
 import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
 export function VenueDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
+  const locale = useLocale()
+  const dayNames = getDayNames(locale)
   const [venues, setVenues] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [eventRequests, setEventRequests] = useState<any[]>([])
@@ -208,7 +211,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-text-primary text-sm">{ev.title}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date, locale)} {formatTime(ev.start_time)}
                     </p>
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20 flex items-center gap-1">
@@ -256,7 +259,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     </p>
                     <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
                       <Clock size={10} />
-                      {formatDate(ev.created_at)}
+                      {formatDate(ev.created_at, locale)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -292,7 +295,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-text-primary text-sm truncate">{ev.title}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date)} {formatTime(ev.start_time)}
+                      {ev.artists?.stage_name ?? ev.bands?.name} · {formatDate(ev.event_date, locale)} {formatTime(ev.start_time)}
                     </p>
                     {ev.cancel_requested && (
                       <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
@@ -336,7 +339,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     <p className="text-text-muted text-xs mt-0.5">
                       {app.slots?.venues?.name} — {
                         (app as any).event_date
-                          ? formatDate((app as any).event_date)
+                          ? formatDate((app as any).event_date, locale)
                           : DAY_NAMES[app.slots?.day_of_week]
                       } {formatTime(app.slots?.start_time)}
                     </p>
@@ -348,7 +351,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     )}
                     <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
                       <Clock size={10} />
-                      {formatDate(app.created_at)}
+                      {formatDate(app.created_at, locale)}
                     </p>
                   </div>
                   <div className="flex gap-2">
