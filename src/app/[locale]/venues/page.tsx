@@ -6,13 +6,15 @@ import { createClient } from '@/lib/supabase/server'
 import { VenuesClient } from '@/components/venues/VenuesClient'
 import { VenueCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Mekanlar',
-  description: 'Türkiye\'deki canlı performans mekanlarını keşfet.',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('venues')
+  return { title: t('title') }
 }
 
 export default async function VenuesPage() {
+  const t = await getTranslations('venues')
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -36,7 +38,7 @@ export default async function VenuesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="font-bebas text-5xl md:text-6xl text-text-primary mb-6">MEKANLAR</h1>
+      <h1 className="font-bebas text-5xl md:text-6xl text-text-primary mb-6">{t('title').toUpperCase()}</h1>
       <ErrorBoundary>
         <Suspense fallback={
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

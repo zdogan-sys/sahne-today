@@ -6,13 +6,15 @@ import { createClient } from '@/lib/supabase/server'
 import { EventsClient } from '@/components/events/EventsClient'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Etkinlikler',
-  description: 'Türkiye\'deki canlı müzik, stand-up ve performans etkinliklerini keşfet.',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('events')
+  return { title: t('title') }
 }
 
 export default async function EventsPage() {
+  const t = await getTranslations('events')
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
@@ -27,7 +29,7 @@ export default async function EventsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="font-bebas text-5xl md:text-6xl text-text-primary mb-6">ETKİNLİKLER</h1>
+      <h1 className="font-bebas text-5xl md:text-6xl text-text-primary mb-6">{t('title').toUpperCase()}</h1>
       <ErrorBoundary>
         <Suspense fallback={
           <div className="space-y-3">
