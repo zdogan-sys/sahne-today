@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { HeroSection } from '@/components/home/HeroSection'
+import { LandingFeatures } from '@/components/home/LandingFeatures'
 import { StatsBar } from '@/components/home/StatsBar'
 import { EventFeed } from '@/components/home/EventFeed'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
@@ -26,6 +27,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
       <HeroSection isLoggedIn={!!user} isAdmin={isAdmin} posterUrl={posterUrl} />
+      {!user && <LandingFeatures />}
       <Suspense fallback={<StatsSkeleton />}>
         <StatsBarServer />
       </Suspense>
