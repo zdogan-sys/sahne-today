@@ -196,3 +196,12 @@ export async function adminDeleteMember(id: string) {
   revalidatePath('/admin')
   return { success: true }
 }
+
+export async function adminToggleModerator(id: string, value: boolean) {
+  await assertAdmin()
+  const admin = await getAdmin()
+  const { error } = await admin.from('profiles').update({ is_moderator: value } as any).eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin')
+  return { success: true }
+}

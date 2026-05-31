@@ -13,7 +13,7 @@ import {
   adminCreateVenue, adminUpdateVenue, adminDeleteVenue,
   adminCreateBand, adminUpdateBand, adminDeleteBand,
   adminConfirmEvent, adminRejectEvent,
-  adminDeleteMember, adminAddPerformer, adminRemovePerformer,
+  adminDeleteMember, adminAddPerformer, adminRemovePerformer, adminToggleModerator,
 } from '@/app/actions/admin'
 import { toggleFeatureFlag, toggleUserPremium, toggleFoundingMember, adminBlockConversation, adminUnblockConversation, adminDeleteConversation } from '@/app/actions/messaging'
 import { createSlot } from '@/app/actions/event'
@@ -1119,6 +1119,8 @@ function BandForm({ open, onClose, initial, onSaved }: any) {
 
 function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => void }) {
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [localMembers, setLocalMembers] = useState<any[]>(members)
 
   async function handleDelete(id: string) {
     if (!confirm('Bu üyeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return
@@ -1128,18 +1130,41 @@ function MembersTab({ members, onRefresh }: { members: any[]; onRefresh: () => v
     setDeleting(null)
   }
 
+  async function handleToggleModerator(id: string, current: boolean) {
+    setToggling(id)
+    await adminToggleModerator(id, !current)
+    setLocalMembers(prev => prev.map(m => m.id === id ? { ...m, is_moderator: !current } : m))
+    setToggling(null)
+  }
+
   return (
     <div>
-      <p className="text-text-muted text-sm mb-4">{members.length} üye</p>
+      <p className="text-text-muted text-sm mb-4">{localMembers.length} üye</p>
       <div className="space-y-2">
-        {members.map((m) => (
+        {localMembers.map((m) => (
           <div key={m.id} className="card p-3 flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-medium truncate">{m.display_name || '—'}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-text-primary text-sm font-medium truncate">{m.display_name || '—'}</p>
+                {m.is_moderator && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">MOD</span>
+                )}
+              </div>
               <p className="text-text-muted text-xs truncate">
                 {m.role} · {m.city ?? '—'} · {new Date(m.created_at).toLocaleDateString('tr-TR')}
               </p>
             </div>
+            <button
+              onClick={() => handleToggleModerator(m.id, !!m.is_moderator)}
+              disabled={toggling === m.id}
+              className={`text-xs px-2 py-1 rounded font-medium transition-colors flex-shrink-0 ${
+                m.is_moderator
+                  ? 'bg-accent/20 text-accent hover:bg-red-500/20 hover:text-red-400'
+                  : 'bg-[rgba(228,224,216,0.06)] text-text-muted hover:bg-accent/20 hover:text-accent'
+              } disabled:opacity-40`}
+            >
+              {toggling === m.id ? '...' : m.is_moderator ? 'Moderatörü Kaldır' : 'Moderatör Yap'}
+            </button>
             <button onClick={() => handleDelete(m.id)} disabled={deleting === m.id}
               className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40 flex-shrink-0">
               <Trash2 size={13} />

@@ -29,7 +29,7 @@ async function getAdminData() {
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('profiles')
-        .select('id, display_name, city, role, is_premium, is_founding_member, created_at')
+        .select('id, display_name, city, role, is_premium, is_founding_member, is_moderator, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('bands')
