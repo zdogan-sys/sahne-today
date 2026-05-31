@@ -154,6 +154,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
             genre={genre} setGenre={setGenre}
             city={city} setCity={setCity}
             entryType={entryType} setEntryType={setEntryType}
+            t={t} locale={locale}
           />
         </div>
       </aside>
@@ -268,6 +269,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
           genre={genre} setGenre={setGenre}
           city={city} setCity={setCity}
           entryType={entryType} setEntryType={setEntryType}
+          t={t} locale={locale}
         />
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           {t('title')} ({filtered.length})
@@ -279,10 +281,11 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   )
 }
 
-function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType }: {
+function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType, t, locale }: {
   genre: string; setGenre: (v: string) => void
   city: string; setCity: (v: string) => void
   entryType: string; setEntryType: (v: string) => void
+  t: any; locale: string
 }) {
   return (
     <div className="space-y-5">
