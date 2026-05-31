@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import { Search, X, Calendar, MapPin, Music2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -10,6 +11,7 @@ import { GenreChip } from '@/components/ui/GenreChip'
 type Tab = 'events' | 'artists' | 'venues'
 
 export default function SearchPage() {
+  const t = useTranslations('search')
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('events')
   const [results, setResults] = useState<any[]>([])
@@ -56,9 +58,9 @@ export default function SearchPage() {
   }, [query, tab, runSearch])
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: 'events', label: 'Etkinlikler', icon: Calendar },
-    { key: 'artists', label: 'Sanatçılar', icon: Music2 },
-    { key: 'venues', label: 'Mekanlar', icon: MapPin },
+    { key: 'events', label: t('events'), icon: Calendar },
+    { key: 'artists', label: t('artists'), icon: Music2 },
+    { key: 'venues', label: t('venues'), icon: MapPin },
   ]
 
   return (
@@ -69,7 +71,7 @@ export default function SearchPage() {
           autoFocus
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Etkinlik, sanatçı veya mekan ara..."
+          placeholder={t('placeholder')}
           className="input-field pl-10 pr-9 text-base"
         />
         {query && (
@@ -96,7 +98,7 @@ export default function SearchPage() {
 
       {!query.trim() ? (
         <div className="text-center py-16 text-text-muted text-sm">
-          Aramak istediğiniz şeyi yazın
+          {t('emptyState')}
         </div>
       ) : loading ? (
         <div className="space-y-2">
@@ -106,7 +108,7 @@ export default function SearchPage() {
         </div>
       ) : results.length === 0 ? (
         <div className="text-center py-16 text-text-muted text-sm">
-          &ldquo;{query}&rdquo; için sonuç bulunamadı
+          {t('noResults', { query })}
         </div>
       ) : (
         <div className="space-y-2">

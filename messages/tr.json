@@ -152,9 +152,23 @@
     "groupChat": "Grup Sohbeti"
   },
   "crew": {
-    "title": "Ekip",
-    "lookingForBand": "Grup Arıyorum",
+    "title": "Ekip Bul",
+    "lookingForBand": "Grup arayan müzisyenleri keşfet veya sen de ilan ver.",
     "myNote": "Notum"
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "noNotifications": "Henüz bildirim yok.",
+    "desc": "Yeni teklifler ve güncellemeler burada görünecek."
+  },
+  "search": {
+    "title": "Ara",
+    "events": "Etkinlikler",
+    "artists": "Sanatçılar",
+    "venues": "Mekanlar",
+    "placeholder": "Etkinlik, sanatçı veya mekan ara...",
+    "emptyState": "Aramak istediğiniz şeyi yazın",
+    "noResults": "\"{query}\" için sonuç bulunamadı"
   },
   "landing": {
     "artistHeadline": "Profilini oluştur.\nSahneye çık.\nKeşfedil.",

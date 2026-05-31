@@ -153,9 +153,23 @@
     "groupChat": "Group Chat"
   },
   "crew": {
-    "title": "Crew",
-    "lookingForBand": "Looking for a Band",
+    "title": "Find Crew",
+    "lookingForBand": "Discover musicians looking for a band or post your own listing.",
     "myNote": "My Note"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications yet.",
+    "desc": "New offers and updates will appear here."
+  },
+  "search": {
+    "title": "Search",
+    "events": "Events",
+    "artists": "Artists",
+    "venues": "Venues",
+    "placeholder": "Search for an event, artist, or venue...",
+    "emptyState": "Type what you want to search for",
+    "noResults": "No results found for \"{query}\""
   },
   "landing": {
     "artistHeadline": "Build your profile.\nGet on stage.\nGet discovered.",

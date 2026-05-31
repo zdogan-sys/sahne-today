@@ -3,8 +3,9 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Bell, ArrowLeft, Check } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { markNotificationsRead } from '@/app/actions/offer'
 import { formatDate } from '@/lib/utils'
@@ -20,6 +21,8 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('notifications')
+  const tNav = useTranslations('nav')
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -58,7 +61,7 @@ export default function NotificationsPage() {
         <Link href="/dashboard" className="text-text-muted hover:text-text-primary transition-colors">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="font-bebas text-3xl text-text-primary tracking-wide">BİLDİRİMLER</h1>
+        <h1 className="font-bebas text-3xl text-text-primary tracking-wide">{tNav('notifications').toUpperCase()}</h1>
       </div>
 
       {loading ? (
@@ -74,8 +77,8 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
         <div className="text-center py-20">
           <Bell size={40} className="mx-auto mb-4 text-text-muted opacity-20" />
-          <p className="text-text-primary text-sm font-medium mb-1">Henüz bildirim yok</p>
-          <p className="text-text-muted text-xs">Yeni teklifler ve güncellemeler burada görünecek.</p>
+          <p className="text-text-primary text-sm font-medium mb-1">{t('noNotifications')}</p>
+          <p className="text-text-muted text-xs">{t('desc')}</p>
         </div>
       ) : (
         <div className="space-y-1.5">

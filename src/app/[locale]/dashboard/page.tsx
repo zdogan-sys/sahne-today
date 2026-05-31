@@ -9,12 +9,15 @@ import { AudienceDashboard } from '@/components/dashboard/AudienceDashboard'
 import { UserProfileEditor } from '@/components/dashboard/UserProfileEditor'
 import { FoundingMemberBadge } from '@/components/ui/FoundingMemberBadge'
 import type { Profile } from '@/lib/supabase/types'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Kontrol Paneli',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('dashboard')
+  return { title: t('title') }
 }
 
 export default async function DashboardPage() {
+  const t = await getTranslations('dashboard')
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -49,11 +52,11 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-bebas text-4xl text-text-primary">HOŞ GELDİN, {profile.display_name.toUpperCase()}</h1>
+            <h1 className="font-bebas text-4xl text-text-primary">{t('welcome')}, {profile.display_name.toUpperCase()}</h1>
             {profile.is_founding_member && <FoundingMemberBadge size="md" />}
           </div>
           <p className="text-text-muted text-sm">
-            Tüm etkinlikleriniz ve profilleriniz burada.
+            {t('title')}
           </p>
           <UserProfileEditor
             userId={user.id}
