@@ -97,8 +97,29 @@ export default async function ArtistPage({ params }: Props) {
   const initials = artist.stage_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const avatarUrl = artist.avatar_url ?? profile?.avatar_url ?? null
 
+  const socialLinks = (artist as any).social_links ?? {}
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicGroup',
+    name: artist.stage_name,
+    description: (artist as any).bio ?? undefined,
+    url: `https://sahne.today/artists/${id}`,
+    image: avatarUrl ?? 'https://sahne.today/icon-512.png',
+    genre: (artist as any).genres ?? undefined,
+    foundingLocation: artist.city ? { '@type': 'Place', name: artist.city } : undefined,
+    sameAs: [
+      socialLinks.instagram ? `https://instagram.com/${socialLinks.instagram.replace('@', '')}` : null,
+      socialLinks.spotify ?? null,
+      socialLinks.youtube ?? null,
+    ].filter(Boolean),
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link href="/artists" className="flex items-center gap-2 text-text-muted text-sm mb-6 hover:text-text-primary w-fit">
         <ArrowLeft size={16} />
         Sanatçılar

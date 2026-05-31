@@ -112,8 +112,35 @@ export default async function VenuePage({ params }: Props) {
   const videoUrls: string[] = (venue as any).video_urls ?? []
   const socialLinks = ((venue as any).social_links ?? {}) as SocialLinksData
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicVenue',
+    name: venue.name,
+    description: (venue as any).description ?? undefined,
+    url: `https://sahne.today/venues/${id}`,
+    image: (venue as any).photo_url ?? 'https://sahne.today/icon-512.png',
+    telephone: (venue as any).phone ?? undefined,
+    email: (venue as any).email ?? undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: (venue as any).address ?? undefined,
+      addressLocality: (venue as any).city,
+      addressRegion: (venue as any).district ?? undefined,
+      addressCountry: 'TR',
+    },
+    maximumAttendeeCapacity: (venue as any).capacity_standing ?? (venue as any).capacity_seated ?? undefined,
+    sameAs: [
+      socialLinks.instagram ? `https://instagram.com/${socialLinks.instagram.replace('@', '')}` : null,
+      socialLinks.facebook ?? null,
+    ].filter(Boolean),
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero / cover */}
       <div className="relative h-64 md:h-96 bg-surface">
         {isOwner && (
