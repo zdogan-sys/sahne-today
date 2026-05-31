@@ -44,6 +44,7 @@ function groupByDate(events: EventFull[]) {
 
 export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) {
   const t = useTranslations('filters')
+  const locale = useLocale()
   const router = useRouter()
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
@@ -103,7 +104,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       <div className="relative w-full max-w-md bg-surface-alt border border-[rgba(228,224,216,0.1)] rounded-2xl overflow-hidden z-10">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)]">
           <p className="font-bebas text-xl text-text-primary tracking-wide">
-            {popupDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+            {popupDate.toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
           </p>
           <button onClick={() => setPopupDate(null)} className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary transition-colors">
             <X size={16} />
@@ -247,11 +248,11 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
               {Object.entries(grouped).map(([date, evts]) => (
                 <div key={date}>
                   <h2 className="font-bebas text-2xl text-text-primary mb-3">
-                    {new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+                    {new Date(date).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
                   </h2>
                   <div className="space-y-2">
                     {evts.map((event) => (
-                      <EventListCard key={event.id} event={event} />
+                      <EventListCard key={event.id} event={event} locale={locale} />
                     ))}
                   </div>
                 </div>
@@ -354,10 +355,11 @@ function Avatar({ src, fallback, size = 8 }: { src?: string | null; fallback: Re
     : <div className={cls}>{fallback}</div>
 }
 
-function EventListCard({ event }: { event: EventFull }) {
+function EventListCard({ event, locale }: { event: EventFull; locale: string }) {
   const date = new Date(event.event_date)
   const dayNum = date.getDate()
-  const month = date.toLocaleDateString('tr-TR', { month: 'short' })
+  const localeStr = locale === 'tr' ? 'tr-TR' : 'en-US'
+  const month = date.toLocaleDateString(localeStr, { month: 'short' })
 
   const performerName = event.artists?.stage_name ?? event.bands?.name ?? event.artist_name ?? null
   const performerAvatar = event.artists?.profiles?.avatar_url ?? event.bands?.photo_url ?? null
