@@ -1,13 +1,15 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Home, Calendar, MapPin, Bell, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 export function MobileNav() {
+  const t = useTranslations()
   const pathname = usePathname()
   const [unread, setUnread] = useState(0)
   const channelRef = useRef<any>(null)
@@ -51,11 +53,11 @@ export function MobileNav() {
   }, [pathname])
 
   const items = [
-    { href: '/', label: 'Ana Sayfa', icon: Home },
-    { href: '/events', label: 'Etkinlikler', icon: Calendar },
-    { href: '/venues', label: 'Sahne Bul', icon: MapPin },
-    { href: '/notifications', label: 'Bildirimler', icon: Bell, badge: unread },
-    { href: '/dashboard', label: 'Profil', icon: User },
+    { href: '/' as const, label: t('nav.home'), icon: Home },
+    { href: '/events' as const, label: t('nav.events'), icon: Calendar },
+    { href: '/venues' as const, label: t('nav.venues'), icon: MapPin },
+    { href: '/notifications' as const, label: t('nav.notifications'), icon: Bell, badge: unread },
+    { href: '/dashboard' as const, label: t('nav.dashboard'), icon: User },
   ]
 
   return (

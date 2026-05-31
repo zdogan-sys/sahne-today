@@ -1,28 +1,32 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
-
-const navLinks = [
-  { href: '/events', label: 'Etkinlikler' },
-  { href: '/venues', label: 'Mekanlar' },
-  { href: '/artists', label: 'Sanatçılar' },
-  { href: '/bands', label: 'Gruplar' },
-]
+import { useTranslations, useLocale } from 'next-intl'
+import { Link, useRouter } from '@/i18n/navigation'
 
 const cities = ['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Bursa', 'Eskişehir']
 
 export function TopNav() {
+  const t = useTranslations()
+  const locale = useLocale()
   const [menuOpen, setMenuOpen] = useState(false)
   const [cityOpen, setCityOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string>('Tümü')
   const [user, setUser] = useState<{ id?: string; email?: string; display_name?: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  const navLinks = [
+    { href: '/events' as const, label: t('nav.events') },
+    { href: '/venues' as const, label: t('nav.venues') },
+    { href: '/artists' as const, label: t('nav.artists') },
+    { href: '/bands' as const, label: t('nav.bands') },
+  ]
+
+  const logoText = locale === 'tr' ? 'SAHNE.TODAY' : 'THE STAGE'
 
   useEffect(() => {
     const savedCity = localStorage.getItem('sahne_city')
@@ -66,7 +70,7 @@ export function TopNav() {
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="font-bebas text-2xl text-text-primary tracking-wider">
-            SAHNE.TODAY
+            {logoText}
           </Link>
 
           {/* Desktop City Selector */}
@@ -76,7 +80,7 @@ export function TopNav() {
               className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors bg-[rgba(228,224,216,0.05)] px-3 py-1.5 rounded-full"
             >
               <MapPin size={14} />
-              {selectedCity === 'Tümü' ? 'Şehir Seç' : selectedCity}
+              {selectedCity === 'Tümü' ? t('common.city') : selectedCity}
               <ChevronDown size={14} />
             </button>
             {cityOpen && (
@@ -116,11 +120,11 @@ export function TopNav() {
             <>
               <Link href="/artists/portal" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.1)] px-3 py-1.5 rounded-full hover:border-accent/40">
                 <Mic2 size={14} />
-                Sanatçı Girişi
+                {t('artists.portal')}
               </Link>
               <Link href="/venues/portal" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.1)] px-3 py-1.5 rounded-full hover:border-accent/40">
                 <Store size={14} />
-                Mekan Girişi
+                {t('venues.portal')}
               </Link>
               <div className="w-px h-4 bg-[rgba(228,224,216,0.1)] mx-1"></div>
               {user.id && <NotificationBell userId={user.id} />}
@@ -138,10 +142,10 @@ export function TopNav() {
           ) : (
             <>
               <Link href="/auth" className="text-sm text-text-muted hover:text-text-primary transition-colors">
-                Giriş
+                {t('auth.signin')}
               </Link>
               <Link href="/auth?tab=signup" className="btn-accent text-sm py-1.5">
-                Kayıt Ol
+                {t('auth.signup')}
               </Link>
             </>
           )}
@@ -175,37 +179,37 @@ export function TopNav() {
                 <Link href="/artists/portal" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
                   <Mic2 size={14} />
-                  Sanatçı Girişi
+                  {t('artists.portal')}
                 </Link>
                 <Link href="/venues/portal" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
                   <Store size={14} />
-                  Mekan Girişi
+                  {t('venues.portal')}
                 </Link>
                 <div className="my-1 border-t border-[rgba(228,224,216,0.08)]"></div>
                 <Link href="/messages" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
                   <MessageSquare size={14} />
-                  Mesajlar
+                  {t('messages.title')}
                 </Link>
                 <Link href="/dashboard" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-text-primary">
                   <LayoutDashboard size={14} />
-                  Panelim ({displayName})
+                  {t('nav.dashboard')} ({displayName})
                 </Link>
                 <button onClick={handleLogout}
                   className="flex items-center gap-2 py-2.5 text-sm text-red-400 hover:text-red-300 w-full">
                   <LogOut size={14} />
-                  Çıkış Yap
+                  {t('nav.logout')}
                 </button>
               </div>
             ) : (
               <div className="flex gap-3">
                 <Link href="/auth" className="flex-1 text-center btn-outline text-sm py-2" onClick={() => setMenuOpen(false)}>
-                  Giriş
+                  {t('auth.signin')}
                 </Link>
                 <Link href="/auth?tab=signup" className="flex-1 text-center btn-accent text-sm py-2" onClick={() => setMenuOpen(false)}>
-                  Kayıt Ol
+                  {t('auth.signup')}
                 </Link>
               </div>
             )}

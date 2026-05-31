@@ -1,5 +1,6 @@
 {
   "nav": {
+    "home": "Ana Sayfa",
     "events": "Etkinlikler",
     "artists": "Sanatçılar",
     "venues": "Mekanlar",
@@ -7,6 +8,7 @@
     "crew": "Ekip",
     "search": "Ara",
     "dashboard": "Panelim",
+    "notifications": "Bildirimler",
     "login": "Giriş Yap",
     "logout": "Çıkış Yap",
     "admin": "Admin"

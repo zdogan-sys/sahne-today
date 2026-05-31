@@ -1,5 +1,6 @@
 {
   "nav": {
+    "home": "Home",
     "events": "Events",
     "artists": "Artists",
     "venues": "Venues",
@@ -7,6 +8,7 @@
     "crew": "Crew",
     "search": "Search",
     "dashboard": "My Panel",
+    "notifications": "Notifications",
     "login": "Sign In",
     "logout": "Sign Out",
     "admin": "Admin"
