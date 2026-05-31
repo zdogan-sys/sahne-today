@@ -340,7 +340,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                       {app.slots?.venues?.name} — {
                         (app as any).event_date
                           ? formatDate((app as any).event_date, locale)
-                          : DAY_NAMES[app.slots?.day_of_week]
+                          : dayNames[app.slots?.day_of_week]
                       } {formatTime(app.slots?.start_time)}
                     </p>
                     {(app as any).bands?.name && (

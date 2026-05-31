@@ -261,7 +261,7 @@ function SlotForm({ form, setForm, error }: {
         <div>
           <label className="label">Gün</label>
           <select value={form.day_of_week} onChange={e => setForm({ ...form, day_of_week: parseInt(e.target.value) })} className="input-field text-sm">
-            {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
+            {dayNames.map((d, i) => <option key={i} value={i}>{d}</option>)}
           </select>
         </div>
         <div>

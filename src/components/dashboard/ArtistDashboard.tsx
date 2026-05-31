@@ -428,7 +428,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                   <div>
                     <p className="font-medium text-text-primary text-sm">{venue?.name}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {venue?.district}, {venue?.city} — {DAY_NAMES[slot?.day_of_week]} {formatTime(slot?.start_time)}
+                      {venue?.district}, {venue?.city} — {dayNames[slot?.day_of_week]} {formatTime(slot?.start_time)}
                     </p>
                     <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
                       <Clock size={10} />
