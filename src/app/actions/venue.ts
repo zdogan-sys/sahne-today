@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend'
-import { ADMIN_EMAIL } from '@/lib/admin'
+import { ADMIN_EMAIL, isPrivilegedUser } from '@/lib/admin'
 import { notifyFollowers } from '@/app/actions/follow'
 
 async function getAdminClient() {
@@ -49,7 +49,7 @@ export async function respondToSlotApplication(appId: string, status: 'accepted'
 
   if (!app) return { success: false, error: 'Başvuru bulunamadı.' }
   const venue = (app as any).slots?.venues
-  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) {
+  if (!venue || (venue.owner_id !== user.id && !await isPrivilegedUser(user))) {
     return { success: false, error: 'Yetkiniz yok.' }
   }
 

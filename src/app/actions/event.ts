@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { ADMIN_EMAIL } from '@/lib/admin'
+import { ADMIN_EMAIL, isPrivilegedUser } from '@/lib/admin'
 import { notifyFollowers } from '@/app/actions/follow'
 
 async function getAdminClient() {
@@ -13,7 +13,7 @@ async function getAdminClient() {
 }
 
 async function isEventParty(userId: string, userEmail: string | undefined, eventId: string): Promise<boolean> {
-  if (userEmail === ADMIN_EMAIL) return true
+  if (await isPrivilegedUser({ id: userId, email: userEmail })) return true
   const admin = await getAdminClient()
   const { data: ev } = await admin
     .from('events')
@@ -120,7 +120,7 @@ export async function addArtistEvent(payload: {
   if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
 
   const admin = await getAdminClient()
-  if (user.email !== ADMIN_EMAIL) {
+  if (!await isPrivilegedUser(user)) {
     const { data: artist } = await admin.from('artists').select('profile_id').eq('id', payload.artistId).single()
     if (!artist || artist.profile_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
   }
@@ -163,7 +163,7 @@ export async function addVenueEvent(payload: {
   const admin = await getAdminClient()
   const { data: venue } = await admin.from('venues').select('owner_id, name').eq('id', payload.venueId).single()
   if (!venue) return { success: false, error: 'Mekan bulunamadı.' }
-  if (user.email !== ADMIN_EMAIL && venue.owner_id !== user.id) return { success: false, error: 'Yetkiniz yok.' }
+  if (venue.owner_id !== user.id && !await isPrivilegedUser(user)) return { success: false, error: 'Yetkiniz yok.' }
 
   const hasLinkedPerformer = !!payload.artistId || !!payload.bandId
   const status = hasLinkedPerformer ? 'offered' : 'confirmed'
@@ -241,7 +241,7 @@ export async function deleteEvent(eventId: string) {
   const { data: { user } } = await supabaseAuth.auth.getUser()
   if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
   const admin = await getAdminClient()
-  if (user.email !== ADMIN_EMAIL) {
+  if (!await isPrivilegedUser(user)) {
     const ok = await isEventParty(user.id, user.email ?? undefined, eventId)
     if (!ok) return { success: false, error: 'Yetkiniz yok.' }
   }
@@ -256,7 +256,7 @@ export async function cancelEvent(eventId: string) {
   if (!user) return { success: false, error: 'Oturum açmanız gerekiyor.' }
 
   const admin = await getAdminClient()
-  if (user.email !== ADMIN_EMAIL) {
+  if (!await isPrivilegedUser(user)) {
     const ok = await isEventParty(user.id, user.email ?? undefined, eventId)
     if (!ok) return { success: false, error: 'Yetkiniz yok.' }
   }
@@ -273,7 +273,7 @@ export async function createSlot(venueId: string, data: Record<string, any>) {
 
   const admin = await getAdminClient()
   const { data: venue } = await admin.from('venues').select('owner_id').eq('id', venueId).single()
-  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) {
+  if (!venue || (venue.owner_id !== user.id && !await isPrivilegedUser(user))) {
     return { success: false, error: 'Yetkiniz yok.' }
   }
 
@@ -301,7 +301,7 @@ export async function updateSlot(slotId: string, data: {
   if (!slot) return { success: false, error: 'Slot bulunamadı.' }
 
   const { data: venue } = await admin.from('venues').select('owner_id').eq('id', slot.venue_id).single()
-  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+  if (!venue || (venue.owner_id !== user.id && !await isPrivilegedUser(user))) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await admin.from('slots').update(data).eq('id', slotId)
   if (error) return { success: false, error: error.message }
@@ -332,7 +332,7 @@ export async function closeSlot(slotId: string) {
     .eq('id', slot.venue_id)
     .single()
 
-  if (!venue || (venue.owner_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+  if (!venue || (venue.owner_id !== user.id && !await isPrivilegedUser(user))) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await supabaseAdmin
     .from('slots')
@@ -368,7 +368,7 @@ export async function addBandEvent(payload: {
     .eq('id', payload.bandId)
     .single()
 
-  if (!band || (band.creator_id !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+  if (!band || (band.creator_id !== user.id && !await isPrivilegedUser(user))) return { success: false, error: 'Yetkiniz yok.' }
 
   const status = payload.venueId ? 'pending' : 'confirmed'
 
@@ -411,7 +411,7 @@ export async function cancelBandEvent(eventId: string) {
     .single()
 
   const creatorId = (event as any)?.bands?.creator_id
-  if (!creatorId || (creatorId !== user.id && user.email !== ADMIN_EMAIL)) return { success: false, error: 'Yetkiniz yok.' }
+  if (!creatorId || (creatorId !== user.id && !await isPrivilegedUser(user))) return { success: false, error: 'Yetkiniz yok.' }
 
   const { error } = await supabaseAdmin
     .from('events')
