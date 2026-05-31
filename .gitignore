@@ -40,6 +40,13 @@ next-env.d.ts
 
 # python
 __pycache__/
+*.py
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.zip
+*.stl
 
 # claude code
 .claude
