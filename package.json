@@ -17,6 +17,7 @@
     "@hookform/resolvers": "^3.9.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
+    "@swc/helpers": "^0.5.23",
     "@types/qrcode": "^1.5.6",
     "@zxing/browser": "^0.2.0",
     "@zxing/library": "^0.22.0",
