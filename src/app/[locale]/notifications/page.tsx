@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { Bell, ArrowLeft, Check } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { markNotificationsRead } from '@/app/actions/offer'
@@ -23,6 +23,7 @@ interface Notification {
 export default function NotificationsPage() {
   const t = useTranslations('notifications')
   const tNav = useTranslations('nav')
+  const locale = useLocale()
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -90,7 +91,7 @@ export default function NotificationsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-text-primary text-sm font-medium leading-snug">{n.title}</p>
                     {n.body && <p className="text-text-muted text-xs mt-1 leading-relaxed">{n.body}</p>}
-                    <p className="text-text-muted text-[10px] mt-1.5">{formatDate(n.created_at)}</p>
+                    <p className="text-text-muted text-[10px] mt-1.5">{formatDate(n.created_at, locale)}</p>
                   </div>
                   {n.link && <span className="text-accent text-xs flex-shrink-0 mt-0.5">→</span>}
                 </div>

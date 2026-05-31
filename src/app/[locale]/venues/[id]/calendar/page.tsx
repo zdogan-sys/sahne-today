@@ -5,10 +5,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getLocale } from 'next-intl/server'
 import { isAdminUser } from '@/lib/admin'
 import { VenueCalendar } from '@/components/venues/VenueCalendar'
 import { VenueCalendarSubscribe } from '@/components/venues/VenueCalendarSubscribe'
-import { DAY_NAMES, formatTime, formatDate } from '@/lib/utils'
+import { getDayNames, formatTime, formatDate } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -23,6 +24,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function VenueCalendarPage({ params }: Props) {
   const { id } = await params
+  const locale = await getLocale()
+  const dayNames = getDayNames(locale)
   const supabase = await createClient()
 
   const { data: venue } = await supabase
@@ -128,7 +131,7 @@ export default async function VenueCalendarPage({ params }: Props) {
                   {sortedSlots.map((slot: any) => (
                     <div key={slot.id} className="card p-3">
                       <p className="text-text-primary text-sm font-medium">
-                        {DAY_NAMES[slot.day_of_week]}
+                        {dayNames[slot.day_of_week]}
                       </p>
                       <p className="text-text-muted text-xs mt-0.5">
                         {formatTime(slot.start_time)}–{formatTime(slot.end_time)}
@@ -155,7 +158,7 @@ export default async function VenueCalendarPage({ params }: Props) {
                     <div key={ev.id} className="card p-3">
                       <p className="text-text-primary text-sm font-medium">{ev.title}</p>
                       <p className="text-text-muted text-xs mt-0.5">
-                        {formatDate(ev.event_date)} · {formatTime(ev.start_time)}
+                        {formatDate(ev.event_date, locale)} · {formatTime(ev.start_time)}
                       </p>
                       {(ev.artists?.stage_name || ev.bands?.name) && (
                         <p className="text-text-muted text-xs mt-0.5">

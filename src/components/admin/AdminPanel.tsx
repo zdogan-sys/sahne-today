@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
 import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus, Check, Lock, Unlock, Star } from 'lucide-react'
@@ -29,7 +30,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
-import { DAY_NAMES, FEE_MODEL_LABELS } from '@/lib/utils'
+import { getDayNames, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions'
@@ -72,6 +73,8 @@ interface Props {
 export function AdminPanel({ events, artists, venues, bands, members, pendingEvents, listConfigs, featureFlags, conversations }: Props) {
   const [tab, setTab] = useState<Tab>(pendingEvents.length > 0 ? 'pending' : 'events')
   const router = useRouter()
+  const locale = useLocale()
+  const dayNames = getDayNames(locale)
 
   function refresh() { router.refresh() }
 
@@ -958,7 +961,7 @@ function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; ven
           <div>
             <label className="label">Gün</label>
             <select value={slot.day_of_week} onChange={(e) => setSlot({ ...slot, day_of_week: parseInt(e.target.value) })} className="input-field text-sm">
-              {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
+              {dayNames.map((d, i) => <option key={i} value={i}>{d}</option>)}
             </select>
           </div>
           <div>

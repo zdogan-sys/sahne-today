@@ -17,7 +17,12 @@ export const VENUE_TYPE_LABELS: Record<string, string> = {
   other: 'Diğer',
 }
 
-export const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+export const DAY_NAMES_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+export const DAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export function getDayNames(locale: string): string[] {
+  return locale === 'tr' ? DAY_NAMES_TR : DAY_NAMES_EN
+}
 
 export const FEE_MODEL_LABELS: Record<string, string> = {
   free: 'Ücretsiz',
@@ -30,9 +35,10 @@ export function formatTime(time: string): string {
   return time.substring(0, 5)
 }
 
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string, locale: string = 'en'): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  const localeStr = locale === 'tr' ? 'tr-TR' : 'en-US'
+  return date.toLocaleDateString(localeStr, { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export function getYouTubeThumbnail(url: string): string | null {

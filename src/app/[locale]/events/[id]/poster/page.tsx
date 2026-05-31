@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getLocale } from 'next-intl/server'
 import { formatTime, formatDate } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventPosterPage({ params }: Props) {
   const { id } = await params
+  const locale = await getLocale()
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -168,7 +170,7 @@ export default async function EventPosterPage({ params }: Props) {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-white/90">
                         <Clock size={13} className="text-accent flex-shrink-0" />
-                        <span className="font-semibold text-sm">{formatDate(event.event_date)}</span>
+                        <span className="font-semibold text-sm">{formatDate(event.event_date, locale)}</span>
                         <span className="text-white/40">·</span>
                         <span className="text-sm">{formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}</span>
                       </div>
@@ -246,7 +248,7 @@ export default async function EventPosterPage({ params }: Props) {
                     {/* Bottom */}
                     <div>
                       <div className="mb-4 text-center">
-                        <p className="font-bebas text-6xl text-white leading-none">{formatDate(event.event_date)}</p>
+                        <p className="font-bebas text-6xl text-white leading-none">{formatDate(event.event_date, locale)}</p>
                         <p className="text-accent text-xl font-bebas tracking-widest mt-1">
                           {formatTime(event.start_time)}{event.end_time ? ` — ${formatTime(event.end_time)}` : ''}
                         </p>

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getLocale } from 'next-intl/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Clock, Ticket, Music2, Users, ShoppingCart, QrCode, BarChart2, ImageIcon } from 'lucide-react'
@@ -51,6 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventPage({ params }: Props) {
   const { id } = await params
+  const locale = await getLocale()
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -245,7 +247,7 @@ export default async function EventPage({ params }: Props) {
               <div className="flex flex-wrap gap-3 text-sm text-text-muted">
                 <span className="flex items-center gap-1.5">
                   <Clock size={13} />
-                  {formatDate(event.event_date)} · {formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
+                  {formatDate(event.event_date, locale)} · {formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Ticket size={13} />

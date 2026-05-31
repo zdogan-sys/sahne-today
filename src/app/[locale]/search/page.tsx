@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Search, X, Calendar, MapPin, Music2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils'
@@ -12,6 +12,7 @@ type Tab = 'events' | 'artists' | 'venues'
 
 export default function SearchPage() {
   const t = useTranslations('search')
+  const locale = useLocale()
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('events')
   const [results, setResults] = useState<any[]>([])
@@ -119,7 +120,7 @@ export default function SearchPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-text-primary text-sm truncate">{e.title}</p>
-                <p className="text-text-muted text-xs">{formatDate(e.event_date)}{e.venues?.name ? ` · ${e.venues.name}` : ''}</p>
+                <p className="text-text-muted text-xs">{formatDate(e.event_date, locale)}{e.venues?.name ? ` · ${e.venues.name}` : ''}</p>
               </div>
               {e.genre && <GenreChip genre={e.genre} />}
             </Link>

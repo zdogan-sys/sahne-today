@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { X, MapPin, Trash2, Plus, Check, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, formatDate } from '@/lib/utils'
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props) {
+  const locale = useLocale()
   const [events, setEvents] = useState<CalendarEventItem[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dayEvents, setDayEvents] = useState<CalendarEventItem[]>([])
@@ -404,7 +406,7 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
                       <p className="text-text-muted text-xs mt-0.5">{ev.subtitle}</p>
                     )}
                     <p className="text-text-muted text-xs mt-0.5">
-                      {formatDate(ev.event_date)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
+                      {formatDate(ev.event_date, locale)} · {formatTime(ev.start_time)}{ev.end_time ? ` – ${formatTime(ev.end_time)}` : ''}
                     </p>
                     {(ev as any).expires_at && (
                       <div className="mt-1.5"><OfferCountdown expiresAt={(ev as any).expires_at} /></div>
