@@ -194,6 +194,49 @@
     "free": "Ücretsiz. Kayıt ol, hemen kullan.",
     "browseFirst": "Önce etkinliklere göz at →"
   },
+  "filters": {
+    "title": "Filtrele",
+    "clearFilters": "Filtreleri temizle",
+    "musicGenre": "Müzik Türü",
+    "stageType": "Sahne Türü",
+    "city": "Şehir",
+    "entry": "Giriş",
+    "all": "Hepsi",
+    "free": "Ücretsiz",
+    "paid": "Ücretli",
+    "atDoor": "Kapıda",
+    "genres": {
+      "acoustic": "Akustik",
+      "metal": "Metal",
+      "rock": "Rock",
+      "blues": "Blues",
+      "jazz": "Caz",
+      "pop": "Pop",
+      "electronic": "Elektronik",
+      "rnb": "R&B",
+      "rap": "Rap",
+      "classical": "Klasik",
+      "ethnic": "Etnik",
+      "fasil": "Fasıl",
+      "folk": "Türkü",
+      "arabesk": "Arabesk"
+    },
+    "stageTypes": {
+      "standup": "Stand-Up",
+      "improvisation": "Doğaçlama",
+      "alternativeStage": "Alternatif Sahne"
+    },
+    "cities": {
+      "istanbul": "İstanbul",
+      "ankara": "Ankara",
+      "izmir": "İzmir",
+      "bursa": "Bursa",
+      "antalya": "Antalya",
+      "eskisehir": "Eskişehir",
+      "adana": "Adana",
+      "kayseri": "Kayseri"
+    }
+  },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
   }

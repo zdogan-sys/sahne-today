@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { MapPin, Clock, Filter, Music2, Building2, X, CalendarDays } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
@@ -42,6 +43,7 @@ function groupByDate(events: EventFull[]) {
 }
 
 export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) {
+  const t = useTranslations('filters')
   const router = useRouter()
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
@@ -146,7 +148,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       {/* Desktop filter sidebar */}
       <aside className="hidden md:block w-56 flex-shrink-0">
         <div className="card p-4 sticky top-20">
-          <h3 className="text-sm font-semibold text-text-primary mb-4">Filtrele</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-4">{t('title')}</h3>
           <FilterContent
             genre={genre} setGenre={setGenre}
             city={city} setCity={setCity}
@@ -236,7 +238,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
                   onClick={() => { setGenre(''); setCity(''); setEntryType(''); setDateRange('all') }}
                   className="mt-3 text-accent text-xs hover:underline"
                 >
-                  Filtreleri temizle
+                  {t('clearFilters')}
                 </button>
               )}
             </div>
@@ -260,14 +262,14 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       </div>
 
       {/* Mobile filter bottom sheet */}
-      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Etkinlikleri Filtrele">
+      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={`${t('title')} Etkinlikler`}>
         <FilterContent
           genre={genre} setGenre={setGenre}
           city={city} setCity={setCity}
           entryType={entryType} setEntryType={setEntryType}
         />
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
-          Filtrele ({filtered.length})
+          {t('title')} ({filtered.length})
         </button>
       </BottomSheet>
 
@@ -283,23 +285,23 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
 }) {
   return (
     <div className="space-y-5">
-      <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} showAll />
-      <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} showAll />
-      <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
+      <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} showAll />
+      <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} showAll />
+      <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
       <div>
-        <label className="label">Giriş</label>
+        <label className="label">{t('entry')}</label>
         <div className="space-y-1">
-          {ENTRY_TYPES.map((t) => (
+          {ENTRY_TYPES.map((entry) => (
             <button
-              key={t.value}
-              onClick={() => setEntryType(entryType === t.value ? '' : t.value)}
+              key={entry.value}
+              onClick={() => setEntryType(entryType === entry.value ? '' : entry.value)}
               className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
-                entryType === t.value
+                entryType === entry.value
                   ? 'bg-accent/10 text-accent'
                   : 'text-text-muted hover:text-text-primary'
               }`}
             >
-              {t.label}
+              {entry.value === 'free' ? t('free') : entry.value === 'paid' ? t('paid') : t('atDoor')}
             </button>
           ))}
         </div>
@@ -324,7 +326,7 @@ function FilterGroup({ label, options, value, onChange, showAll }: {
                 : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
             }`}
           >
-            Hepsi
+            Hepsi {/* TODO: translate "All" */}
           </button>
         )}
         {options.map((opt) => (

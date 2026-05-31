@@ -195,6 +195,49 @@
     "free": "Free. Sign up and start using it right away.",
     "browseFirst": "Browse events first →"
   },
+  "filters": {
+    "title": "Filter",
+    "clearFilters": "Clear filters",
+    "musicGenre": "Music Genre",
+    "stageType": "Stage Type",
+    "city": "City",
+    "entry": "Entry",
+    "all": "All",
+    "free": "Free",
+    "paid": "Paid",
+    "atDoor": "At the Door",
+    "genres": {
+      "acoustic": "Acoustic",
+      "metal": "Metal",
+      "rock": "Rock",
+      "blues": "Blues",
+      "jazz": "Jazz",
+      "pop": "Pop",
+      "electronic": "Electronic",
+      "rnb": "R&B",
+      "rap": "Rap",
+      "classical": "Classical",
+      "ethnic": "Ethnic",
+      "fasil": "Fasıl",
+      "folk": "Folk",
+      "arabesk": "Arabesk"
+    },
+    "stageTypes": {
+      "standup": "Stand-Up",
+      "improvisation": "Improvisation",
+      "alternativeStage": "Alternative Stage"
+    },
+    "cities": {
+      "istanbul": "Istanbul",
+      "ankara": "Ankara",
+      "izmir": "Izmir",
+      "bursa": "Bursa",
+      "antalya": "Antalya",
+      "eskisehir": "Eskişehir",
+      "adana": "Adana",
+      "kayseri": "Kayseri"
+    }
+  },
   "footer": {
     "allRightsReserved": "All rights reserved."
   }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { MapPin } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { cn } from '@/lib/utils'
@@ -17,6 +18,7 @@ const CITIES = CITY_OPTIONS
 const INSTRUMENTS = INSTRUMENT_OPTIONS
 
 export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[] }) {
+  const t = useTranslations('filters')
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
   const [instrument, setInstrument] = useState('')
@@ -35,7 +37,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
     <div className="md:flex md:gap-6">
       <aside className="hidden md:block w-56 flex-shrink-0">
         <div className="card p-4 sticky top-20 space-y-5">
-          <h3 className="text-sm font-semibold text-text-primary">Filtrele</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t('title')}</h3>
           <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
@@ -64,7 +66,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
         )}
       </div>
 
-      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Sanatçıları Filtrele">
+      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={`${t('title')} Sanatçıları`}>
         <div className="space-y-5">
           <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
@@ -72,7 +74,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
           <FilterGroup label="Enstrüman" options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
         </div>
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
-          Filtrele ({filtered.length})
+          {t('title')} ({filtered.length})
         </button>
       </BottomSheet>
     </div>
