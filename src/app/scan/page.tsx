@@ -13,9 +13,16 @@ export default function ScanPage() {
   const [result, setResult] = useState<ScanResult>(null)
   const [scanning, setScanning] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isEn, setIsEn] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
   const lastScanned = useRef('')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsEn(window.location.hostname.includes('thestage.today'))
+    }
+  }, [])
 
   useEffect(() => {
     if (!scanning) {
@@ -59,12 +66,12 @@ export default function ScanPage() {
       if (res.ok && data.success) {
         setResult({ type: 'success', name: data.name })
       } else if (res.status === 409) {
-        setResult({ type: 'used', message: 'Bu bilet daha önce kullanıldı' })
+        setResult({ type: 'used', message: isEn ? 'This ticket has already been used' : 'Bu bilet daha önce kullanıldı' })
       } else {
-        setResult({ type: 'invalid', message: data.error ?? 'Geçersiz bilet' })
+        setResult({ type: 'invalid', message: data.error ?? (isEn ? 'Invalid ticket' : 'Geçersiz bilet') })
       }
     } catch {
-      setResult({ type: 'invalid', message: 'Bağlantı hatası' })
+      setResult({ type: 'invalid', message: isEn ? 'Connection error' : 'Bağlantı hatası' })
     } finally {
       setLoading(false)
     }
@@ -80,7 +87,7 @@ export default function ScanPage() {
     <div className="max-w-md mx-auto px-4 py-6 min-h-screen">
       <div className="flex items-center gap-2 mb-6">
         <QrCode size={20} className="text-accent" />
-        <h1 className="font-bebas text-2xl text-text-primary tracking-wide">BİLET TARA</h1>
+        <h1 className="font-bebas text-2xl text-text-primary tracking-wide">{isEn ? 'SCAN TICKET' : 'BİLET TARA'}</h1>
       </div>
 
       {!scanning && !result && (
@@ -89,13 +96,13 @@ export default function ScanPage() {
             <Camera size={32} className="text-accent" />
           </div>
           <p className="text-text-muted text-sm mb-6">
-            Ziyaretçinin bilet QR kodunu kameranıza göstermesini isteyin.
+            {isEn ? 'Ask the visitor to show their ticket QR code to your camera.' : 'Ziyaretçinin bilet QR kodunu kameranıza göstermesini isteyin.'}
           </p>
           <button
             onClick={() => setScanning(true)}
             className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold"
           >
-            Kamerayı Aç
+            {isEn ? 'Open Camera' : 'Kamerayı Aç'}
           </button>
         </div>
       )}
@@ -109,13 +116,13 @@ export default function ScanPage() {
             </div>
             {loading && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <div className="text-white text-sm font-medium">Kontrol ediliyor...</div>
+                <div className="text-white text-sm font-medium">{isEn ? 'Checking...' : 'Kontrol ediliyor...'}</div>
               </div>
             )}
           </div>
           <div className="p-4 text-center">
             <button onClick={() => setScanning(false)} className="text-text-muted text-sm">
-              İptal
+              {isEn ? 'Cancel' : 'İptal'}
             </button>
           </div>
         </div>
@@ -128,16 +135,16 @@ export default function ScanPage() {
               <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={48} className="text-success" />
               </div>
-              <p className="text-success font-bold text-xl mb-1">GEÇERLİ BİLET</p>
+              <p className="text-success font-bold text-xl mb-1">{isEn ? 'VALID TICKET' : 'GEÇERLİ BİLET'}</p>
               <p className="text-text-primary text-lg font-semibold mb-1">{result.name}</p>
-              <p className="text-text-muted text-sm mb-6">Giriş onaylandı</p>
+              <p className="text-text-muted text-sm mb-6">{isEn ? 'Entry confirmed' : 'Giriş onaylandı'}</p>
             </>
           ) : result.type === 'used' ? (
             <>
               <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
                 <AlertCircle size={48} className="text-red-400" />
               </div>
-              <p className="text-red-400 font-bold text-xl mb-2">KULLANILMIŞ BİLET</p>
+              <p className="text-red-400 font-bold text-xl mb-2">{isEn ? 'USED TICKET' : 'KULLANILMIŞ BİLET'}</p>
               <p className="text-text-muted text-sm mb-6">{result.message}</p>
             </>
           ) : (
@@ -145,7 +152,7 @@ export default function ScanPage() {
               <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
                 <XCircle size={48} className="text-red-400" />
               </div>
-              <p className="text-red-400 font-bold text-xl mb-2">GEÇERSİZ BİLET</p>
+              <p className="text-red-400 font-bold text-xl mb-2">{isEn ? 'INVALID TICKET' : 'GEÇERSİZ BİLET'}</p>
               <p className="text-text-muted text-sm mb-6">{result.message}</p>
             </>
           )}
@@ -153,7 +160,7 @@ export default function ScanPage() {
             onClick={reset}
             className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold"
           >
-            Sonraki Bilet
+            {isEn ? 'Next Ticket' : 'Sonraki Bilet'}
           </button>
         </div>
       )}
