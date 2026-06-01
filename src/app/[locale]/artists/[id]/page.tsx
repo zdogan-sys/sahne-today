@@ -9,12 +9,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VideoEmbed } from '@/components/artists/VideoEmbed'
 import { formatDate } from '@/lib/utils'
-import { MapPin, ArrowLeft, ChevronDown, Mail, Building2 } from 'lucide-react'
+import { MapPin, ArrowLeft, ChevronDown, Mail, Building2, GraduationCap } from 'lucide-react'
 import type { Artist, Profile, Event, Venue } from '@/lib/supabase/types'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VENUE_TYPE_LABELS, translateInstrument } from '@/lib/utils'
 import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
+import { TeachingToggle } from '@/components/artists/TeachingToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistAvatarEditor } from '@/components/artists/ArtistAvatarEditor'
@@ -171,14 +172,37 @@ export default async function ArtistPage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {artist.genres?.map((g: string) => <GenreChip key={g} genre={g} />)}
           </div>
+          {(artist as any).is_teaching && (artist as any).teaching_instruments?.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 font-semibold uppercase tracking-wide">
+                <GraduationCap size={9} />
+                {isEn ? 'Teaches' : 'Ders Veriyor'}
+              </span>
+              {(artist as any).teaching_instruments.map((inst: string) => (
+                <span key={inst} className="text-[10px] px-2 py-0.5 rounded border text-[#d4a820]/80 border-[#d4a820]/20">
+                  {inst}
+                </span>
+              ))}
+            </div>
+          )}
+
           {!artist.profile_id && user && !isOwner && (
             <div className="mt-1">
               <ClaimProfileButton artistId={artist.id} />
             </div>
           )}
           {isOwner && (
-            <div className="mt-3 flex items-center gap-3">
-              <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
+                <TeachingToggle
+                  artistId={artist.id}
+                  initialIsTeaching={(artist as any).is_teaching ?? false}
+                  initialTeachingInstruments={(artist as any).teaching_instruments ?? []}
+                  instruments={artist.instruments ?? []}
+                  isProIndividual={!!(profile as any)?.is_pro_individual}
+                />
+              </div>
               <ArtistProfileEditor
                 artistId={artist.id}
                 initialData={{
