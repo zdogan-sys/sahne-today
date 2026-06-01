@@ -403,19 +403,16 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
         </div>
       )}
 
-      {/* Kurslar bölümü */}
+      {/* Özel Dersler */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bebas text-2xl text-text-primary flex items-center gap-2">
-            {isEn ? 'COURSES' : 'KURSLAR'}
-            {isProIndividual && <ProBadge />}
-          </h2>
-        </div>
+        <h2 className="font-bebas text-2xl text-text-primary mb-3 flex items-center gap-2">
+          {isEn ? 'PRIVATE LESSONS' : 'ÖZEL DERSLER'}
+          {isProIndividual && <ProBadge />}
+        </h2>
         {isProIndividual ? (
           <div className="space-y-3">
-            {/* Kurs Veriyorum toggle */}
             <div className="card p-4">
-              <p className="text-text-muted text-xs mb-2 uppercase tracking-wide">{isEn ? 'Teaching Status' : 'Ders Durumu'}</p>
+              <p className="text-text-muted text-xs mb-2 uppercase tracking-wide">{isEn ? 'Lesson Status' : 'Ders Durumu'}</p>
               <TeachingToggle
                 artistId={artist.id}
                 initialIsTeaching={artist.is_teaching ?? false}
@@ -428,9 +425,9 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
               <div>
                 <p className="text-text-primary text-sm font-medium flex items-center gap-1.5">
                   <GraduationCap size={13} className="text-[#d4a820]" />
-                  {isEn ? 'Lesson Schedule' : 'Ders Saatlerim'}
+                  {isEn ? 'Available Times' : 'Ders Saatlerim'}
                 </p>
-                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Set your available teaching times' : 'Müsait saatlerini belirle, öğrenciler rezervasyon yapsın'}</p>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Set times, students book directly' : 'Müsait saatlerini belirle, öğrenciler rezervasyon yapsın'}</p>
               </div>
               <Link href={`/dashboard/teaching-slots?artist=${artist.id}`} className="btn-accent py-1.5 px-3 text-xs">
                 {isEn ? 'Manage →' : 'Yönet →'}
@@ -440,14 +437,37 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
         ) : (
           <div className="card p-4 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-text-primary text-sm font-medium">{isEn ? 'Give Lessons' : 'Ders Ver'}</p>
-              <p className="text-text-muted text-xs mt-0.5">
-                {isEn ? 'Pro membership required for this feature' : 'Bu özellik için Pro üyelik gereklidir'}
-              </p>
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Give Private Lessons' : 'Özel Ders Ver'}</p>
+              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Pro membership required' : 'Pro üyelik gereklidir'}</p>
             </div>
-            <span className="text-[10px] text-[#d4a820] bg-[rgba(212,168,32,0.12)] border border-[rgba(212,168,32,0.3)] rounded px-2 py-1 font-bold uppercase tracking-wider flex-shrink-0">
-              PRO
-            </span>
+            <span className="text-[10px] text-[#d4a820] bg-[rgba(212,168,32,0.12)] border border-[rgba(212,168,32,0.3)] rounded px-2 py-1 font-bold uppercase tracking-wider flex-shrink-0">PRO</span>
+          </div>
+        )}
+      </div>
+
+      {/* Kurslar */}
+      <div>
+        <h2 className="font-bebas text-2xl text-text-primary mb-3 flex items-center gap-2">
+          {isEn ? 'GROUP COURSES' : 'KURSLAR'}
+          {isProIndividual && <ProBadge />}
+        </h2>
+        {isProIndividual ? (
+          <div className="card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Course Management' : 'Kurs Yönetimi'}</p>
+              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Group courses with fixed program & schedule' : 'Haftalık programa sahip grup dersleri'}</p>
+            </div>
+            <Link href="/dashboard/courses" className="btn-accent py-1.5 px-3 text-xs">
+              {isEn ? 'Manage →' : 'Yönet →'}
+            </Link>
+          </div>
+        ) : (
+          <div className="card p-4 flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Group Courses' : 'Grup Kursu Oluştur'}</p>
+              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Pro membership required' : 'Pro üyelik gereklidir'}</p>
+            </div>
+            <span className="text-[10px] text-[#d4a820] bg-[rgba(212,168,32,0.12)] border border-[rgba(212,168,32,0.3)] rounded px-2 py-1 font-bold uppercase tracking-wider flex-shrink-0">PRO</span>
           </div>
         )}
       </div>

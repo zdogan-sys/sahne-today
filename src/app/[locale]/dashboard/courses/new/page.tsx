@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, X } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -13,11 +13,23 @@ const SUBCATEGORIES: Record<string, string[]> = {
   theater: ['Temel Oyunculuk', 'İmprovizasyon', 'Senaryo Yazarlığı', 'Sahne Performansı', 'Ses Eğitimi'],
   other: [],
 }
+const DAY_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+const DURATIONS = [2, 4, 6, 8, 10, 12]
 
-interface Session {
-  session_date: string
-  start_time: string
-  end_time: string
+function generateSessions(startDate: string, days: number[], weeks: number, startTime: string, endTime: string): string[] {
+  if (!startDate || days.length === 0 || weeks === 0) return []
+  const dates: string[] = []
+  const start = new Date(startDate + 'T00:00:00')
+  const end = new Date(start)
+  end.setDate(end.getDate() + weeks * 7)
+  const cur = new Date(start)
+  while (cur < end) {
+    if (days.includes(cur.getDay())) {
+      dates.push(cur.toISOString().split('T')[0])
+    }
+    cur.setDate(cur.getDate() + 1)
+  }
+  return dates
 }
 
 export default function NewCoursePage() {
@@ -27,40 +39,52 @@ export default function NewCoursePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Temel bilgiler
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('music')
   const [subcategory, setSubcategory] = useState('')
-  const [courseType, setCourseType] = useState('individual')
-  const [level, setLevel] = useState('all')
+  const [level, setLevel] = useState('beginner')
   const [durationMinutes, setDurationMinutes] = useState(60)
-  const [pricePerSession, setPricePerSession] = useState('')
-  const [maxParticipants, setMaxParticipants] = useState(1)
-  const [minFemale, setMinFemale] = useState(0)
-  const [minMale, setMinMale] = useState(0)
+  const [description, setDescription] = useState('')
   const [isOnline, setIsOnline] = useState(false)
   const [location, setLocation] = useState('')
-  const [description, setDescription] = useState('')
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [newSession, setNewSession] = useState<Session>({ session_date: '', start_time: '10:00', end_time: '11:00' })
 
-  function addSession() {
-    if (!newSession.session_date || !newSession.start_time || !newSession.end_time) return
-    setSessions([...sessions, { ...newSession }])
-    setNewSession({ session_date: '', start_time: '10:00', end_time: '11:00' })
+  // Program (takvim)
+  const [weeks, setWeeks] = useState(4)
+  const [startDate, setStartDate] = useState('')
+  const [selectedDays, setSelectedDays] = useState<number[]>([])
+  const [startTime, setStartTime] = useState('19:00')
+  const [endTime, setEndTime] = useState('20:00')
+
+  // Grup ayarları
+  const [maxParticipants, setMaxParticipants] = useState(8)
+  const [minFemale, setMinFemale] = useState(0)
+  const [minMale, setMinMale] = useState(0)
+
+  // Fiyat
+  const [pricePerSession, setPricePerSession] = useState('')
+
+  function toggleDay(d: number) {
+    setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
   }
 
-  function removeSession(i: number) {
-    setSessions(sessions.filter((_, idx) => idx !== i))
-  }
+  const generatedSessions = useMemo(
+    () => generateSessions(startDate, selectedDays, weeks, startTime, endTime),
+    [startDate, selectedDays, weeks, startTime, endTime]
+  )
+
+  const totalPrice = pricePerSession && generatedSessions.length
+    ? (parseFloat(pricePerSession) * generatedSessions.length).toFixed(0)
+    : null
 
   async function handleSave() {
-    if (!title || !pricePerSession) {
-      setError('Kurs adı ve seans ücreti zorunludur.')
-      return
-    }
+    if (!title) { setError('Kurs adı zorunludur.'); return }
+    if (!pricePerSession) { setError('Seans ücreti zorunludur.'); return }
+    if (!startDate) { setError('Başlangıç tarihi seçin.'); return }
+    if (selectedDays.length === 0) { setError('En az bir gün seçin.'); return }
+    if (generatedSessions.length === 0) { setError('Geçerli seans bulunamadı.'); return }
 
-    setSaving(true)
-    setError('')
+    setSaving(true); setError('')
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setError('Giriş yapmalısınız.'); setSaving(false); return }
@@ -72,13 +96,13 @@ export default function NewCoursePage() {
         title,
         category,
         subcategory: subcategory || null,
-        course_type: courseType,
+        course_type: 'group',
         level,
         duration_minutes: durationMinutes,
         price_per_session: Number(pricePerSession),
-        max_participants: courseType === 'group' ? maxParticipants : 1,
-        min_female: courseType === 'group' ? minFemale : 0,
-        min_male: courseType === 'group' ? minMale : 0,
+        max_participants: maxParticipants,
+        min_female: minFemale,
+        min_male: minMale,
         is_online: isOnline,
         location: !isOnline ? location || null : null,
         description: description || null,
@@ -89,26 +113,24 @@ export default function NewCoursePage() {
 
     if (courseError || !course) {
       setError(courseError?.message ?? 'Kurs oluşturulamadı.')
-      setSaving(false)
-      return
+      setSaving(false); return
     }
 
-    if (sessions.length > 0) {
-      await supabase.from('course_sessions').insert(
-        sessions.map((s) => ({
-          course_id: course.id,
-          session_date: s.session_date,
-          start_time: s.start_time + ':00',
-          end_time: s.end_time + ':00',
-          status: 'available',
-        })) as any
-      )
-    }
+    await supabase.from('course_sessions').insert(
+      generatedSessions.map(date => ({
+        course_id: course.id,
+        session_date: date,
+        start_time: startTime + ':00',
+        end_time: endTime + ':00',
+        status: 'available',
+      })) as any
+    )
 
     router.push('/dashboard/courses')
   }
 
   const subcats = SUBCATEGORIES[category] ?? []
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -116,157 +138,186 @@ export default function NewCoursePage() {
         <ArrowLeft size={16} /> Kurslarım
       </Link>
 
-      <h1 className="font-bebas text-4xl text-text-primary mb-6">YENİ KURS OLUŞTUR</h1>
+      <h1 className="font-bebas text-4xl text-text-primary mb-1">YENİ KURS OLUŞTUR</h1>
+      <p className="text-text-muted text-sm mb-6">Grup dersleri ve paket programlar için</p>
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Temel bilgiler */}
-        <div>
-          <label className="label">Kurs Adı *</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-field text-sm" placeholder="Örn: Başlangıç Gitar Dersi" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+        <div className="card p-4 space-y-4">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Kurs Bilgileri</p>
           <div>
-            <label className="label">Kategori</label>
-            <select value={category} onChange={(e) => { setCategory(e.target.value); setSubcategory('') }} className="input-field text-sm">
-              <option value="music">Müzik</option>
-              <option value="dance">Dans</option>
-              <option value="theater">Tiyatro</option>
-              <option value="other">Diğer</option>
-            </select>
+            <label className="label">Kurs Adı *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} className="input-field text-sm"
+              placeholder="Örn: 4 Haftalık Başlangıç Tango Kursu" />
           </div>
-          <div>
-            <label className="label">Alt Kategori</label>
-            {subcats.length > 0 ? (
-              <select value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="input-field text-sm">
-                <option value="">Seçin</option>
-                {subcats.map((s) => <option key={s} value={s}>{s}</option>)}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Kategori</label>
+              <select value={category} onChange={e => { setCategory(e.target.value); setSubcategory('') }} className="input-field text-sm">
+                <option value="music">Müzik</option>
+                <option value="dance">Dans</option>
+                <option value="theater">Tiyatro</option>
+                <option value="other">Diğer</option>
               </select>
-            ) : (
-              <input value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="input-field text-sm" placeholder="Opsiyonel" />
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Ders Türü</label>
-            <select value={courseType} onChange={(e) => setCourseType(e.target.value)} className="input-field text-sm">
-              <option value="individual">Bireysel</option>
-              <option value="group">Grup</option>
-              <option value="package">Paket</option>
-            </select>
-          </div>
-          <div>
-            <label className="label">Seviye</label>
-            <select value={level} onChange={(e) => setLevel(e.target.value)} className="input-field text-sm">
-              <option value="all">Hepsi</option>
-              <option value="beginner">Başlangıç</option>
-              <option value="intermediate">Orta</option>
-              <option value="advanced">İleri</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Ders Süresi (dk)</label>
-            <select value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="input-field text-sm">
-              {[30, 45, 60, 90, 120].map((d) => <option key={d} value={d}>{d} dk</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Seans Ücreti (₺) *</label>
-            <input type="number" value={pricePerSession} onChange={(e) => setPricePerSession(e.target.value)} className="input-field text-sm" placeholder="0" min="0" />
-          </div>
-        </div>
-
-        {/* Grup dersi ayarları */}
-        {courseType === 'group' && (
-          <div className="card p-4 space-y-3">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Grup Ayarları</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="label">Maks. Katılımcı</label>
-                <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(Number(e.target.value))} className="input-field text-sm" min="2" />
-              </div>
-              <div>
-                <label className="label">Min. Kadın</label>
-                <input type="number" value={minFemale} onChange={(e) => setMinFemale(Number(e.target.value))} className="input-field text-sm" min="0" />
-              </div>
-              <div>
-                <label className="label">Min. Erkek</label>
-                <input type="number" value={minMale} onChange={(e) => setMinMale(Number(e.target.value))} className="input-field text-sm" min="0" />
-              </div>
+            </div>
+            <div>
+              <label className="label">Alt Kategori</label>
+              {subcats.length > 0 ? (
+                <select value={subcategory} onChange={e => setSubcategory(e.target.value)} className="input-field text-sm">
+                  <option value="">Seçin</option>
+                  {subcats.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              ) : (
+                <input value={subcategory} onChange={e => setSubcategory(e.target.value)} className="input-field text-sm" placeholder="Opsiyonel" />
+              )}
             </div>
           </div>
-        )}
-
-        {/* Online / Yüz yüze */}
-        <div className="flex items-center justify-between py-3 border-t border-b border-[rgba(228,224,216,0.1)]">
-          <div>
-            <p className="text-sm text-text-primary">Online Ders</p>
-            <p className="text-text-muted text-xs">Video konferans ile verilir</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Seviye</label>
+              <select value={level} onChange={e => setLevel(e.target.value)} className="input-field text-sm">
+                <option value="beginner">Başlangıç</option>
+                <option value="intermediate">Orta</option>
+                <option value="advanced">İleri</option>
+                <option value="all">Hepsi</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Seans Süresi</label>
+              <select value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} className="input-field text-sm">
+                {[30, 45, 60, 90, 120].map(d => <option key={d} value={d}>{d} dk</option>)}
+              </select>
+            </div>
           </div>
-          <button type="button" onClick={() => setIsOnline(!isOnline)}
-            className={cn('relative w-11 h-6 rounded-full transition-colors', isOnline ? 'bg-accent' : 'bg-[rgba(228,224,216,0.15)]')}>
-            <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', isOnline ? 'translate-x-5' : 'translate-x-0')} />
-          </button>
+          <div>
+            <label className="label">Açıklama</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+              className="input-field text-sm resize-none"
+              placeholder="Kursun içeriği, hedef kitle, neler öğrenileceği..." />
+          </div>
         </div>
 
-        {!isOnline && (
+        {/* Kurs Programı */}
+        <div className="card p-4 space-y-4">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Kurs Programı</p>
+
           <div>
-            <label className="label">Konum</label>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} className="input-field text-sm" placeholder="Adres veya mekan adı" />
-          </div>
-        )}
-
-        <div>
-          <label className="label">Açıklama</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="input-field text-sm resize-none" placeholder="Kurs hakkında kısa bilgi..." />
-        </div>
-
-        {/* Seans ekleme */}
-        <div>
-          <p className="label mb-3">Ders Saatleri</p>
-          {sessions.length > 0 && (
-            <div className="space-y-2 mb-3">
-              {sessions.map((s, i) => (
-                <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)]">
-                  <span className="flex-1 text-text-primary text-sm">
-                    {new Date(s.session_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} — {s.start_time}–{s.end_time}
-                  </span>
-                  <button onClick={() => removeSession(i)} className="text-text-muted hover:text-red-400 transition-colors">
-                    <X size={14} />
-                  </button>
-                </div>
+            <label className="label">Kurs Süresi</label>
+            <div className="flex gap-1.5 mt-1 flex-wrap">
+              {DURATIONS.map(w => (
+                <button key={w} onClick={() => setWeeks(w)}
+                  className={cn('px-3 py-1.5 text-xs rounded border transition-colors',
+                    weeks === w ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                  )}>
+                  {w} Hafta
+                </button>
               ))}
             </div>
-          )}
-          <div className="card p-3 space-y-2">
-            <div className="grid grid-cols-3 gap-2">
-              <input type="date" value={newSession.session_date}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={(e) => setNewSession({ ...newSession, session_date: e.target.value })}
-                className="input-field text-xs col-span-1" />
-              <input type="time" value={newSession.start_time}
-                onChange={(e) => setNewSession({ ...newSession, start_time: e.target.value })}
-                className="input-field text-xs" />
-              <input type="time" value={newSession.end_time}
-                onChange={(e) => setNewSession({ ...newSession, end_time: e.target.value })}
-                className="input-field text-xs" />
+          </div>
+
+          <div>
+            <label className="label">Başlangıç Tarihi</label>
+            <input type="date" min={today} value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field text-sm" />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="label">Ders Günleri</label>
+              <div className="flex gap-1.5">
+                <button onClick={() => setSelectedDays([1, 2, 3, 4, 5])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftaiçi</button>
+                <button onClick={() => setSelectedDays([0, 6])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftasonu</button>
+              </div>
             </div>
-            <button onClick={addSession} disabled={!newSession.session_date}
-              className="btn-accent w-full py-2 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40">
-              <Plus size={12} /> Seans Ekle
+            <div className="flex gap-1.5">
+              {DAY_SHORT.map((d, i) => (
+                <button key={i} onClick={() => toggleDay(i)}
+                  className={cn('flex-1 py-2 text-xs rounded border transition-colors',
+                    selectedDays.includes(i) ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                  )}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Başlangıç Saati</label>
+              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm" />
+            </div>
+            <div>
+              <label className="label">Bitiş Saati</label>
+              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm" />
+            </div>
+          </div>
+
+          {/* Seans önizlemesi */}
+          {generatedSessions.length > 0 && (
+            <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">
+              <p className="text-accent text-sm font-medium">{generatedSessions.length} seans oluşturulacak</p>
+              <p className="text-text-muted text-xs mt-0.5">
+                {new Date(generatedSessions[0] + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                {' → '}
+                {new Date(generatedSessions[generatedSessions.length - 1] + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Grup Ayarları */}
+        <div className="card p-4 space-y-3">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Grup Ayarları</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="label">Maks. Kişi</label>
+              <input type="number" min={2} max={50} value={maxParticipants} onChange={e => setMaxParticipants(Number(e.target.value))} className="input-field text-sm" />
+            </div>
+            <div>
+              <label className="label">Min. Kadın</label>
+              <input type="number" min={0} value={minFemale} onChange={e => setMinFemale(Number(e.target.value))} className="input-field text-sm" />
+            </div>
+            <div>
+              <label className="label">Min. Erkek</label>
+              <input type="number" min={0} value={minMale} onChange={e => setMinMale(Number(e.target.value))} className="input-field text-sm" />
+            </div>
+          </div>
+        </div>
+
+        {/* Yer & Fiyat */}
+        <div className="card p-4 space-y-4">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Yer & Fiyat</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-text-primary">Online</p>
+              <p className="text-text-muted text-xs">Video konferans ile</p>
+            </div>
+            <button onClick={() => setIsOnline(!isOnline)}
+              className={cn('relative w-11 h-6 rounded-full transition-colors', isOnline ? 'bg-accent' : 'bg-[rgba(228,224,216,0.15)]')}>
+              <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', isOnline ? 'translate-x-5' : 'translate-x-0')} />
             </button>
           </div>
+          {!isOnline && (
+            <div>
+              <label className="label">Konum</label>
+              <input value={location} onChange={e => setLocation(e.target.value)} className="input-field text-sm" placeholder="Adres veya mekan adı" />
+            </div>
+          )}
+          <div>
+            <label className="label">Seans Başı Ücret (₺) *</label>
+            <input type="number" min={0} value={pricePerSession} onChange={e => setPricePerSession(e.target.value)} className="input-field text-sm" placeholder="500" />
+          </div>
+          {totalPrice && (
+            <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
+              <span className="text-text-muted text-sm">{generatedSessions.length} seans × ₺{pricePerSession}</span>
+              <span className="font-bebas text-2xl text-accent">₺{totalPrice}</span>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
 
         <button onClick={handleSave} disabled={saving} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
-          {saving ? 'Kaydediliyor...' : 'Kursu Oluştur'}
+          {saving ? 'Oluşturuluyor...' : `Kursu Oluştur${generatedSessions.length > 0 ? ` (${generatedSessions.length} Seans)` : ''}`}
         </button>
       </div>
     </div>
