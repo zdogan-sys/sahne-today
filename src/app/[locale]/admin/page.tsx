@@ -21,7 +21,7 @@ async function getAdminData() {
         .order('event_date', { ascending: false })
         .limit(50),
       admin.from('artists')
-        .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profile_id, profiles(display_name, avatar_url)')
+        .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profile_id, profiles(display_name, avatar_url, is_pro_individual)')
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('venues')
