@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatTime, cn } from '@/lib/utils'
 
@@ -22,8 +23,10 @@ interface Props {
   selectedDate?: Date | null
 }
 
-const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-const DAY_HEADERS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const MONTH_NAMES_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+const MONTH_NAMES_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const DAY_HEADERS_TR = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const DAY_HEADERS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function jsToGrid(d: number) { return d === 0 ? 6 : d - 1 }
 function toISO(date: Date) {
@@ -31,6 +34,10 @@ function toISO(date: Date) {
 }
 
 export function EventCalendar({ events, onDayClick, selectedDate: externalSelected }: Props) {
+  const locale = useLocale()
+  const MONTH_NAMES = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_TR
+  const DAY_HEADERS = locale === 'en' ? DAY_HEADERS_EN : DAY_HEADERS_TR
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
