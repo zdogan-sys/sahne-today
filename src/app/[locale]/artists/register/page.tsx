@@ -9,10 +9,12 @@ export const metadata: Metadata = {
   description: 'Sanatçı profilinizi oluşturun ve mekan tekliflerini kabul edin.',
 }
 
-export default async function ArtistRegisterPage() {
+export default async function ArtistRegisterPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const isEn = locale === 'en'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     redirect('/auth')
   }
@@ -31,8 +33,8 @@ export default async function ArtistRegisterPage() {
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-lg mx-auto">
-        <h1 className="font-bebas text-5xl text-text-primary mb-2">SANATÇI OL</h1>
-        <p className="text-text-muted text-sm mb-8">Profilini oluştur, mekan tekliflerini kabul et, sahneye çık.</p>
+        <h1 className="font-bebas text-5xl text-text-primary mb-2">{isEn ? 'BECOME AN ARTIST' : 'SANATÇI OL'}</h1>
+        <p className="text-text-muted text-sm mb-8">{isEn ? 'Create your profile, accept venue offers, and get on stage.' : 'Profilini oluştur, mekan tekliflerini kabul et, sahneye çık.'}</p>
         <ArtistRegisterForm />
       </div>
     </div>

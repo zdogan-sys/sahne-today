@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, X, Search } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/ImageUpload'
@@ -12,6 +13,7 @@ import { INSTRUMENT_OPTIONS, CITY_OPTIONS } from '@/lib/constants'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 
 function ProgressBar({ step }: { step: number }) {
+  const isEn = useLocale() === 'en'
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
@@ -30,10 +32,10 @@ function ProgressBar({ step }: { step: number }) {
         ))}
       </div>
       <div className="flex justify-between text-[10px] text-text-muted">
-        <span>Kimlik</span>
-        <span>Deneyim</span>
-        <span>Medya</span>
-        <span>Önizleme</span>
+        <span>{isEn ? 'Identity' : 'Kimlik'}</span>
+        <span>{isEn ? 'Experience' : 'Deneyim'}</span>
+        <span>{isEn ? 'Media' : 'Medya'}</span>
+        <span>{isEn ? 'Preview' : 'Önizleme'}</span>
       </div>
     </div>
   )
@@ -65,6 +67,7 @@ function PastVenuePicker({ selected, onChange }: {
   selected: string[]
   onChange: (venues: string[]) => void
 }) {
+  const isEn = useLocale() === 'en'
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<{ id: string; name: string; district: string; city: string }[]>([])
   const [manualInput, setManualInput] = useState('')
@@ -115,7 +118,7 @@ function PastVenuePicker({ selected, onChange }: {
 
   return (
     <div>
-      <label className="label">Daha Önce Sahne Aldığınız Yerler</label>
+      <label className="label">{isEn ? 'Past Venues' : 'Daha Önce Sahne Aldığınız Yerler'}</label>
 
       {/* Seçilenler */}
       {selected.length > 0 && (
@@ -139,7 +142,7 @@ function PastVenuePicker({ selected, onChange }: {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setShowDropdown(true) }}
             onFocus={() => query.length >= 2 && setShowDropdown(true)}
-            placeholder="Kayıtlı mekanlardan ara..."
+            placeholder={isEn ? 'Search registered venues...' : 'Kayıtlı mekanlardan ara...'}
             className="input-field pl-8"
           />
         </div>
@@ -166,7 +169,7 @@ function PastVenuePicker({ selected, onChange }: {
           value={manualInput}
           onChange={(e) => setManualInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addManual())}
-          placeholder="Listede yoksa manuel yaz (Enter)"
+          placeholder={isEn ? 'Type manually if not listed (Enter)' : 'Listede yoksa manuel yaz (Enter)'}
           className="input-field flex-1"
         />
         <button
@@ -184,6 +187,7 @@ function PastVenuePicker({ selected, onChange }: {
 
 export function ArtistRegisterForm() {
   const router = useRouter()
+  const isEn = useLocale() === 'en'
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -234,7 +238,7 @@ export function ArtistRegisterForm() {
     const artist = artistData as { id: string } | null
 
     if (err || !artist) {
-      setError('Profil oluşturulamadı.')
+      setError(isEn ? 'Could not create profile.' : 'Profil oluşturulamadı.')
       setLoading(false)
       return
     }
@@ -252,54 +256,54 @@ export function ArtistRegisterForm() {
 
       {step === 1 && (
         <div className="card p-6 space-y-5">
-          <h2 className="font-semibold text-text-primary">Sahne Kimliğin</h2>
+          <h2 className="font-semibold text-text-primary">{isEn ? 'Your Stage Identity' : 'Sahne Kimliğin'}</h2>
           <div>
-            <label className="label">Sahne Adı *</label>
+            <label className="label">{isEn ? 'Stage Name *' : 'Sahne Adı *'}</label>
             <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Murat Boz" className="input-field" />
           </div>
-          <TabbedGenreSelector selected={genres} onToggle={(v) => toggleItem(genres, setGenres, v)} label="Performans Türleri *" onTabChange={setActiveTab} />
+          <TabbedGenreSelector selected={genres} onToggle={(v) => toggleItem(genres, setGenres, v)} label={isEn ? 'Performance Types *' : 'Performans Türleri *'} onTabChange={setActiveTab} />
           {activeTab === 'music' && (
-            <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label="Enstrümanlar" />
+            <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label={isEn ? 'Instruments' : 'Enstrümanlar'} />
           )}
           <div>
-            <label className="label">Şehir</label>
+            <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field">
-              <option value="">Seçin</option>
+              <option value="">{isEn ? 'Select' : 'Seçin'}</option>
               {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <button onClick={() => { if (stageName && genres.length) setStep(2) }}
             disabled={!stageName || !genres.length}
             className="btn-accent w-full py-3 disabled:opacity-40">
-            Devam Et →
+            {isEn ? 'Continue →' : 'Devam Et →'}
           </button>
         </div>
       )}
 
       {step === 2 && (
         <div className="card p-6 space-y-5">
-          <h2 className="font-semibold text-text-primary">Deneyim & Rider</h2>
+          <h2 className="font-semibold text-text-primary">{isEn ? 'Experience & Rider' : 'Deneyim & Rider'}</h2>
           <div>
-            <label className="label">Biyografi</label>
-            <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} placeholder="Kendinizi anlatan kısa bir metin..." className="input-field resize-none" />
+            <label className="label">{isEn ? 'Bio' : 'Biyografi'}</label>
+            <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} placeholder={isEn ? 'A short text about yourself...' : 'Kendinizi anlatan kısa bir metin...'} className="input-field resize-none" />
           </div>
           <PastVenuePicker selected={pastVenues} onChange={setPastVenues} />
           <div>
-            <label className="label">Teknik Rider</label>
-            <textarea value={technicalRider} onChange={(e) => setTechnicalRider(e.target.value)} rows={3} placeholder="Ses ekipmanı, sahne düzeni, özel istekler..." className="input-field resize-none" />
+            <label className="label">{isEn ? 'Technical Rider' : 'Teknik Rider'}</label>
+            <textarea value={technicalRider} onChange={(e) => setTechnicalRider(e.target.value)} rows={3} placeholder={isEn ? 'Sound equipment, stage layout, special requests...' : 'Ses ekipmanı, sahne düzeni, özel istekler...'} className="input-field resize-none" />
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="btn-outline flex-1 py-3">← Geri</button>
-            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">Devam Et →</button>
+            <button onClick={() => setStep(1)} className="btn-outline flex-1 py-3">{isEn ? '← Back' : '← Geri'}</button>
+            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">{isEn ? 'Continue →' : 'Devam Et →'}</button>
           </div>
         </div>
       )}
 
       {step === 3 && (
         <div className="card p-6 space-y-5">
-          <h2 className="font-semibold text-text-primary">Medya</h2>
+          <h2 className="font-semibold text-text-primary">{isEn ? 'Media' : 'Medya'}</h2>
           <div>
-            <label className="label">Video Linkleri <span className="text-text-muted normal-case">(YouTube / Vimeo)</span></label>
+            <label className="label">{isEn ? 'Video Links' : 'Video Linkleri'} <span className="text-text-muted normal-case">(YouTube / Vimeo)</span></label>
             <div className="space-y-2">
               {videoUrls.map((url, idx) => (
                 <div key={idx} className="flex gap-2">
@@ -318,7 +322,7 @@ export function ArtistRegisterForm() {
               ))}
               <button type="button" onClick={() => setVideoUrls([...videoUrls, ''])} className="flex items-center gap-1 text-accent text-sm hover:text-accent/80">
                 <Plus size={14} />
-                Video Ekle
+                {isEn ? 'Add Video' : 'Video Ekle'}
               </button>
             </div>
           </div>
@@ -326,12 +330,12 @@ export function ArtistRegisterForm() {
             value={avatarUrl}
             onChange={setAvatarUrl}
             bucket="avatars"
-            label="Profil Fotoğrafı"
+            label={isEn ? 'Profile Photo' : 'Profil Fotoğrafı'}
           />
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
           <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">← Geri</button>
-            <button onClick={() => setStep(4)} className="btn-accent flex-1 py-3">Önizleme →</button>
+            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">{isEn ? '← Back' : '← Geri'}</button>
+            <button onClick={() => setStep(4)} className="btn-accent flex-1 py-3">{isEn ? 'Preview →' : 'Önizleme →'}</button>
           </div>
         </div>
       )}
@@ -339,21 +343,21 @@ export function ArtistRegisterForm() {
       {step === 4 && (
         <div className="space-y-4">
           <div className="card p-6">
-            <h2 className="font-semibold text-text-primary mb-4">Profil Önizlemesi</h2>
+            <h2 className="font-semibold text-text-primary mb-4">{isEn ? 'Profile Preview' : 'Profil Önizlemesi'}</h2>
             <div className="space-y-3 text-sm">
-              <div className="flex gap-2"><span className="text-text-muted w-28">Sahne Adı:</span><span className="text-text-primary font-medium">{stageName}</span></div>
-              <div className="flex gap-2"><span className="text-text-muted w-28">Şehir:</span><span className="text-text-primary">{city || '—'}</span></div>
-              <div className="flex gap-2"><span className="text-text-muted w-28">Türler:</span><span className="text-text-primary">{genres.join(', ')}</span></div>
-              {instruments.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">Enstrümanlar:</span><span className="text-text-primary">{instruments.join(', ')}</span></div>}
-              {pastVenues.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">Geçmiş Mekanlar:</span><span className="text-text-primary">{pastVenues.join(', ')}</span></div>}
-              <div className="flex gap-2"><span className="text-text-muted w-28">Video Sayısı:</span><span className="text-text-primary">{videoUrls.filter((u) => u.trim()).length}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Stage Name:' : 'Sahne Adı:'}</span><span className="text-text-primary font-medium">{stageName}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'City:' : 'Şehir:'}</span><span className="text-text-primary">{city || '—'}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Genres:' : 'Türler:'}</span><span className="text-text-primary">{genres.join(', ')}</span></div>
+              {instruments.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Instruments:' : 'Enstrümanlar:'}</span><span className="text-text-primary">{instruments.join(', ')}</span></div>}
+              {pastVenues.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Past Venues:' : 'Geçmiş Mekanlar:'}</span><span className="text-text-primary">{pastVenues.join(', ')}</span></div>}
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Video Count:' : 'Video Sayısı:'}</span><span className="text-text-primary">{videoUrls.filter((u) => u.trim()).length}</span></div>
             </div>
           </div>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <div className="flex gap-3">
-            <button onClick={() => setStep(3)} className="btn-outline flex-1 py-3">← Geri</button>
+            <button onClick={() => setStep(3)} className="btn-outline flex-1 py-3">{isEn ? '← Back' : '← Geri'}</button>
             <button onClick={handleSubmit} disabled={loading} className="btn-accent flex-1 py-3 disabled:opacity-50">
-              {loading ? 'Oluşturuluyor...' : 'Profili Yayınla'}
+              {loading ? (isEn ? 'Creating...' : 'Oluşturuluyor...') : (isEn ? 'Publish Profile' : 'Profili Yayınla')}
             </button>
           </div>
         </div>
