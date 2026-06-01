@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useLocale } from 'next-intl'
 import { CalendarPlus, ChevronDown, Apple, Download } from 'lucide-react'
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export function CalendarExport({ eventId, title, eventDate, startTime, endTime, description, location }: Props) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -48,7 +51,7 @@ export function CalendarExport({ eventId, title, eventDate, startTime, endTime, 
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors"
       >
         <CalendarPlus size={13} />
-        Takvime Ekle
+        {isEn ? 'Add to Calendar' : 'Takvime Ekle'}
         <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -79,7 +82,7 @@ export function CalendarExport({ eventId, title, eventDate, startTime, endTime, 
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.05)] transition-colors"
           >
             <Download size={14} className="flex-shrink-0" />
-            .ics İndir
+            {isEn ? 'Download .ics' : '.ics İndir'}
           </a>
         </div>
       )}

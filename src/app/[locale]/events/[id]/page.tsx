@@ -52,6 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EventPage({ params }: Props) {
   const { id } = await params
   const locale = await getLocale()
+  const isEn = locale === 'en'
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -164,7 +165,7 @@ export default async function EventPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <BackButton fallbackHref="/events" fallbackLabel="Etkinlikler" />
+      <BackButton fallbackHref="/events" fallbackLabel={isEn ? 'Events' : 'Etkinlikler'} />
 
       {event.status === 'cancelled' && (
         <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm text-center">
@@ -200,7 +201,7 @@ export default async function EventPage({ params }: Props) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors"
           >
             <ImageIcon size={13} />
-            Afiş
+            {isEn ? 'Poster' : 'Afiş'}
           </Link>
           <OpenChatButton type="event" contextId={id} />
         </div>
@@ -251,7 +252,7 @@ export default async function EventPage({ params }: Props) {
                 <span className="flex items-center gap-1.5">
                   <Ticket size={13} />
                   {event.entry_type === 'free' ? (
-                    <span className="text-success font-medium">Ücretsiz</span>
+                    <span className="text-success font-medium">{isEn ? 'Free' : 'Ücretsiz'}</span>
                   ) : event.entry_fee ? (
                     <span>{event.entry_fee}₺</span>
                   ) : (
@@ -318,7 +319,7 @@ export default async function EventPage({ params }: Props) {
             {/* Artist */}
             {artist ? (
               <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Sanatçı</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">{isEn ? 'Artist' : 'Sanatçı'}</p>
                 <Link href={`/artists/${artist.id}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors">
                   {artist.profiles?.avatar_url ? (
                     <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative">
@@ -347,7 +348,7 @@ export default async function EventPage({ params }: Props) {
               </div>
             ) : event.artist_name ? (
               <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Sanatçı</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">{isEn ? 'Artist' : 'Sanatçı'}</p>
                 <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)]">
                   <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm flex-shrink-0">
                     {event.artist_name[0]}
@@ -463,7 +464,7 @@ export default async function EventPage({ params }: Props) {
             {/* Venue */}
             {venue ? (
               <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Mekan</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">{isEn ? 'Venue' : 'Mekan'}</p>
                 <Link href={`/venues/${venue.id}`} className="flex items-start gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)] hover:bg-[rgba(228,224,216,0.08)] transition-colors">
                   <MapPin size={15} className="text-accent mt-0.5 flex-shrink-0" />
                   <div>
@@ -475,7 +476,7 @@ export default async function EventPage({ params }: Props) {
               </div>
             ) : event.venue_name ? (
               <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Mekan</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">{isEn ? 'Venue' : 'Mekan'}</p>
                 <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[rgba(228,224,216,0.04)]">
                   <MapPin size={15} className="text-accent flex-shrink-0" />
                   <p className="font-medium text-text-primary text-sm">{event.venue_name}</p>

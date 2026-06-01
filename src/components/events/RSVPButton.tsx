@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Users, Star } from 'lucide-react'
 import { toggleRSVP } from '@/app/actions/rsvp'
 
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export function RSVPButton({ eventId, initialStatus, goingCount, interestedCount, hasUser }: Props) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [status, setStatus] = useState<'going' | 'interested' | null>(initialStatus)
   const [going, setGoing] = useState(goingCount)
   const [interested, setInterested] = useState(interestedCount)
@@ -59,7 +62,7 @@ export function RSVPButton({ eventId, initialStatus, goingCount, interestedCount
         }`}
       >
         <Users size={12} />
-        Gidiyorum{going > 0 ? ` · ${going}` : ''}
+        {isEn ? 'Going' : 'Gidiyorum'}{going > 0 ? ` · ${going}` : ''}
       </button>
       <button
         onClick={() => handle('interested')}
@@ -71,7 +74,7 @@ export function RSVPButton({ eventId, initialStatus, goingCount, interestedCount
         }`}
       >
         <Star size={12} />
-        İlgileniyorum{interested > 0 ? ` · ${interested}` : ''}
+        {isEn ? 'Interested' : 'İlgileniyorum'}{interested > 0 ? ` · ${interested}` : ''}
       </button>
     </div>
   )
