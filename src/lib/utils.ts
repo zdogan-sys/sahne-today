@@ -52,6 +52,21 @@ export const VENUE_TYPE_LABELS: Record<string, string> = {
   other: 'Diğer',
 }
 
+export const VENUE_TYPE_LABELS_EN: Record<string, string> = {
+  pub: 'Pub',
+  turku_bar: 'Turkish Folk Bar',
+  live_music: 'Live Music Venue',
+  bookstore: 'Bookstore',
+  theater: 'Theater',
+  cafe: 'Cafe',
+  other: 'Other',
+}
+
+export function translateVenueType(key: string, locale: string): string {
+  const map = locale === 'en' ? VENUE_TYPE_LABELS_EN : VENUE_TYPE_LABELS
+  return map[key] ?? key
+}
+
 export const DAY_NAMES_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 export const DAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 

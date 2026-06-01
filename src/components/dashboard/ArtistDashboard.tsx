@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
-import { getDayNames, formatTime, formatDate, VENUE_TYPE_LABELS } from '@/lib/utils'
+import { getDayNames, formatTime, formatDate, translateVenueType } from '@/lib/utils'
 import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
 export function ArtistDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const dayNames = getDayNames(locale)
   const [artist, setArtist] = useState<any>(null)
   const [venue, setVenue] = useState<any>(null)
@@ -137,13 +138,13 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
     await load()
   }
 
-  if (loading) return <div className="text-text-muted text-sm">Yükleniyor...</div>
+  if (loading) return <div className="text-text-muted text-sm">{isEn ? 'Loading...' : 'Yükleniyor...'}</div>
 
   if (!artist) {
     return (
       <div className="card p-6 text-center">
-        <p className="text-text-muted text-sm mb-4">Henüz sanatçı profiliniz yok.</p>
-        <Link href="/artists/register" className="btn-accent">Profil Oluştur</Link>
+        <p className="text-text-muted text-sm mb-4">{isEn ? "You don't have an artist profile yet." : 'Henüz sanatçı profiliniz yok.'}</p>
+        <Link href="/artists/register" className="btn-accent">{isEn ? 'Create Profile' : 'Profil Oluştur'}</Link>
       </div>
     )
   }
@@ -153,7 +154,11 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
     accepted: 'text-success bg-success/10',
     rejected: 'text-red-400 bg-red-400/10',
   }
-  const statusLabels: Record<string, string> = {
+  const statusLabels: Record<string, string> = isEn ? {
+    pending: 'Pending',
+    accepted: 'Accepted',
+    rejected: 'Rejected',
+  } : {
     pending: 'Beklemede',
     accepted: 'Kabul Edildi',
     rejected: 'Reddedildi',
@@ -170,9 +175,9 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {(pastConfirmed > 0 || upcomingConfirmed > 0) && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Geçmiş Sahne', value: pastConfirmed },
-            { label: 'Yaklaşan', value: upcomingConfirmed },
-            { label: 'Farklı Mekan', value: uniqueVenues },
+            { label: isEn ? 'Past Shows' : 'Geçmiş Sahne', value: pastConfirmed },
+            { label: isEn ? 'Upcoming' : 'Yaklaşan', value: upcomingConfirmed },
+            { label: isEn ? 'Venues' : 'Farklı Mekan', value: uniqueVenues },
           ].map(({ label, value }) => (
             <div key={label} className="card p-3 text-center">
               <p className="font-bebas text-3xl text-accent leading-none">{value}</p>
@@ -185,7 +190,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {/* Profile summary */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bebas text-2xl text-text-primary">PROFİLİM</h2>
+          <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'MY PROFILE' : 'PROFİLİM'}</h2>
           <ArtistProfileEditor
             artistId={artist.id}
             initialData={{
@@ -212,14 +217,14 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
 
           {artist.bio && (
             <div className="pt-4 border-t border-[rgba(228,224,216,0.1)]">
-              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Hakkında</h4>
+              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">{isEn ? 'About' : 'Hakkında'}</h4>
               <p className="text-sm text-text-primary leading-relaxed">{artist.bio}</p>
             </div>
           )}
 
           {artist.instruments && artist.instruments.length > 0 && (
             <div className="pt-4 border-t border-[rgba(228,224,216,0.1)]">
-              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Enstrümanlar</h4>
+              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">{isEn ? 'Instruments' : 'Enstrümanlar'}</h4>
               <div className="flex flex-wrap gap-1.5">
                 {artist.instruments.map((i: string) => (
                   <span key={i} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{i}</span>
@@ -233,7 +238,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {/* Venue owned by this artist */}
       {venue && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">MEKANIM</h2>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'MY VENUE' : 'MEKANIM'}</h2>
           <Link href={`/venues/${venue.id}`} className="card p-4 flex items-center gap-4 hover:border-accent/30 transition-colors block">
             <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-accent/10 flex items-center justify-center">
               {venue.photo_url ? (
@@ -250,11 +255,11 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
               </div>
               {venue.venue_type && (
                 <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)] mt-1.5 inline-block">
-                  {VENUE_TYPE_LABELS[venue.venue_type] ?? venue.venue_type}
+                  {translateVenueType(venue.venue_type, locale)}
                 </span>
               )}
             </div>
-            <span className="text-accent text-xs flex-shrink-0">Görüntüle →</span>
+            <span className="text-accent text-xs flex-shrink-0">{isEn ? 'View →' : 'Görüntüle →'}</span>
           </Link>
         </div>
       )}
@@ -262,8 +267,8 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {/* Incoming venue offers */}
       {incomingOffers.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-1">GELEN TEKLİFLER</h2>
-          <p className="text-text-muted text-xs mb-3 -mt-2">Mekanlar sizi sahnelerine davet ediyor. Süre dolmadan yanıt verin.</p>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">{isEn ? 'INCOMING OFFERS' : 'GELEN TEKLİFLER'}</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">{isEn ? 'Venues are inviting you to their stages. Respond before the offer expires.' : 'Mekanlar sizi sahnelerine davet ediyor. Süre dolmadan yanıt verin.'}</p>
           <div className="space-y-3">
             {incomingOffers.map((ev: any) => (
               <div key={ev.id} className="card p-4 border-accent/25">
@@ -282,7 +287,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                     <button
                       onClick={() => handleOfferResponse(ev.id, false)}
                       disabled={respondingOffer === ev.id}
-                      title="Reddet"
+                      title={isEn ? 'Reject' : 'Reddet'}
                       className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors disabled:opacity-50"
                     >
                       <X size={14} />
@@ -290,7 +295,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                     <button
                       onClick={() => handleOfferResponse(ev.id, true)}
                       disabled={respondingOffer === ev.id}
-                      title="Kabul Et"
+                      title={isEn ? 'Accept' : 'Kabul Et'}
                       className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors disabled:opacity-50"
                     >
                       <Check size={14} />
@@ -306,7 +311,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {/* Pending band invitations */}
       {pendingInvites.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">GRUP DAVETLERİ</h2>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'BAND INVITATIONS' : 'GRUP DAVETLERİ'}</h2>
           <div className="space-y-2">
             {pendingInvites.map((invite: any) => {
               const band = invite.bands
@@ -325,14 +330,14 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                   <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => respondInvite(invite.id, false)}
-                      title="Reddet"
+                      title={isEn ? 'Reject' : 'Reddet'}
                       className="w-8 h-8 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center hover:bg-red-400/20 transition-colors"
                     >
                       <X size={14} />
                     </button>
                     <button
                       onClick={() => respondInvite(invite.id, true)}
-                      title="Kabul Et"
+                      title={isEn ? 'Accept' : 'Kabul Et'}
                       className="w-8 h-8 rounded-md bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"
                     >
                       <Check size={14} />
@@ -348,8 +353,8 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       {/* Cancel requests from venues */}
       {events.filter((e: any) => e.cancel_requested).length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-1">İPTAL TALEPLERİ</h2>
-          <p className="text-text-muted text-xs mb-3">Mekan sahibi aşağıdaki etkinlikleri iptal etmek istiyor.</p>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">{isEn ? 'CANCELLATION REQUESTS' : 'İPTAL TALEPLERİ'}</h2>
+          <p className="text-text-muted text-xs mb-3">{isEn ? 'The venue owner wants to cancel the events below.' : 'Mekan sahibi aşağıdaki etkinlikleri iptal etmek istiyor.'}</p>
           <div className="space-y-3">
             {events.filter((e: any) => e.cancel_requested).map((ev: any) => (
               <div key={ev.id} className="card p-4 border-yellow-400/30">
@@ -365,13 +370,13 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
                       onClick={() => handleCancelRequest(ev.id, false)}
                       className="px-3 py-1.5 rounded-md bg-success/10 text-success text-xs font-medium hover:bg-success/20 transition-colors"
                     >
-                      İptal Etme
+                      {isEn ? "Don't Cancel" : 'İptal Etme'}
                     </button>
                     <button
                       onClick={() => handleCancelRequest(ev.id, true)}
                       className="px-3 py-1.5 rounded-md bg-red-400/10 text-red-400 text-xs font-medium hover:bg-red-400/20 transition-colors"
                     >
-                      İptal Et
+                      {isEn ? 'Cancel' : 'İptal Et'}
                     </button>
                   </div>
                 </div>
@@ -412,10 +417,10 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
 
       {/* Slot applications */}
       <div>
-        <h2 className="font-bebas text-2xl text-text-primary mb-4">SAHNE TALEPLERİM</h2>
+        <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'MY STAGE REQUESTS' : 'SAHNE TALEPLERİM'}</h2>
         {applications.length === 0 ? (
           <div className="card p-6 text-center text-text-muted text-sm">
-            <p>Henüz sahne talebiniz yok.</p>
+            <p>{isEn ? 'You have no stage requests yet.' : 'Henüz sahne talebiniz yok.'}</p>
             <Link href="/venues" className="text-accent mt-2 block hover:underline">Mekan ara →</Link>
           </div>
         ) : (
