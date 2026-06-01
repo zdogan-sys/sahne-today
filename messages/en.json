@@ -239,6 +239,11 @@
       "eskisehir": "Eskişehir",
       "adana": "Adana",
       "kayseri": "Kayseri"
+    },
+    "entryTypes": {
+      "free": "Free",
+      "paid": "Paid",
+      "door": "At the Door"
     }
   },
   "footer": {

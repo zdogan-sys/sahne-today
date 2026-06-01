@@ -23,11 +23,6 @@ type EventFull = Event & {
 }
 
 const CITIES = CITY_OPTIONS
-const ENTRY_TYPES = [
-  { value: 'free', label: 'Ücretsiz' },
-  { value: 'paid', label: 'Ücretli' },
-  { value: 'door', label: 'Kapıda' },
-]
 
 function toISO(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -285,6 +280,11 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
   entryType: string; setEntryType: (v: string) => void
 }) {
   const t = useTranslations('filters')
+  const ENTRY_TYPES = [
+    { value: 'free', label: t('entryTypes.free') },
+    { value: 'paid', label: t('entryTypes.paid') },
+    { value: 'door', label: t('entryTypes.door') },
+  ]
   return (
     <div className="space-y-5">
       <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} showAll />

@@ -238,6 +238,11 @@
       "eskisehir": "Eskişehir",
       "adana": "Adana",
       "kayseri": "Kayseri"
+    },
+    "entryTypes": {
+      "free": "Ücretsiz",
+      "paid": "Ücretli",
+      "door": "Kapıda"
     }
   },
   "footer": {
