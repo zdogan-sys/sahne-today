@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { GraduationCap } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -11,6 +10,15 @@ interface Props {
   initialTeachingInstruments: string[]
   instruments: string[]
   isProIndividual: boolean
+}
+
+async function updateTeaching(artistId: string, patch: { is_teaching?: boolean; teaching_instruments?: string[] }) {
+  const res = await fetch('/api/artist/set-teaching', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ artist_id: artistId, ...patch }),
+  })
+  return res.ok
 }
 
 export function TeachingToggle({
@@ -23,16 +31,12 @@ export function TeachingToggle({
   const [isTeaching, setIsTeaching] = useState(initialIsTeaching)
   const [teachingInstruments, setTeachingInstruments] = useState<string[]>(initialTeachingInstruments)
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   async function toggle() {
     setLoading(true)
     const next = !isTeaching
-    const { error } = await supabase
-      .from('artists')
-      .update({ is_teaching: next } as any)
-      .eq('id', artistId)
-    if (!error) setIsTeaching(next)
+    const ok = await updateTeaching(artistId, { is_teaching: next })
+    if (ok) setIsTeaching(next)
     setLoading(false)
   }
 
@@ -41,10 +45,7 @@ export function TeachingToggle({
       ? teachingInstruments.filter((i) => i !== instrument)
       : [...teachingInstruments, instrument]
     setTeachingInstruments(next)
-    await supabase
-      .from('artists')
-      .update({ teaching_instruments: next } as any)
-      .eq('id', artistId)
+    await updateTeaching(artistId, { teaching_instruments: next })
   }
 
   if (!isProIndividual) return null
@@ -81,11 +82,6 @@ export function TeachingToggle({
               {instrument}
             </button>
           ))}
-          {instruments.length === 0 && (
-            <p className="text-text-muted text-[10px]">
-              Önce profiline enstrüman ekle.
-            </p>
-          )}
         </div>
       )}
     </div>
