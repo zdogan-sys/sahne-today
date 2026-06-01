@@ -17,7 +17,7 @@ export default async function ArtistsPage() {
 
   const { data: artists } = await supabase
     .from('artists')
-    .select('*, profiles(display_name, avatar_url, city)')
+    .select('*, profiles(display_name, avatar_url, city, is_pro_individual)')
     .eq('is_hidden', false)
     .order('created_at', { ascending: false })
     .limit(60)

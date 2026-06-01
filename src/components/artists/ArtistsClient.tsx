@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
-import { MapPin } from 'lucide-react'
+import { MapPin, GraduationCap } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { cn } from '@/lib/utils'
 import type { Artist, Profile } from '@/lib/supabase/types'
@@ -150,6 +150,12 @@ function ArtistCard({ artist }: { artist: ArtistFull }) {
           {artist.instruments?.slice(0, 2).map((i) => (
             <span key={i} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{i}</span>
           ))}
+          {(artist as any).is_teaching && (artist as any).teaching_instruments?.length > 0 && (
+            <span className="chip flex items-center gap-1 bg-[#d4a820]/10 text-[#d4a820] border border-[#d4a820]/30">
+              <GraduationCap size={9} />
+              Ders Veriyor
+            </span>
+          )}
         </div>
       </div>
     </Link>
