@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VenueCalendarPage({ params }: Props) {
   const { id } = await params
   const locale = await getLocale()
+  const isEn = locale === 'en'
   const dayNames = getDayNames(locale)
   const supabase = await createClient()
 
@@ -112,13 +113,13 @@ export default async function VenueCalendarPage({ params }: Props) {
       </Link>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-bebas text-3xl text-text-primary">SAHNE TAKVİMİ</h1>
+        <h1 className="font-bebas text-3xl text-text-primary">{isEn ? 'STAGE CALENDAR' : 'SAHNE TAKVİMİ'}</h1>
         <VenueCalendarSubscribe venueId={id} venueName={v.name} />
       </div>
 
       {events.length === 0 && slots.length === 0 && !isOwner ? (
         <div className="card p-8 text-center text-text-muted text-sm">
-          <p>Bu mekanda henüz takvim verisi bulunmuyor.</p>
+          <p>{isEn ? 'No calendar data for this venue yet.' : 'Bu mekanda henüz takvim verisi bulunmuyor.'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px,1fr] gap-8 items-start">
@@ -126,7 +127,7 @@ export default async function VenueCalendarPage({ params }: Props) {
           <div className="space-y-6">
             {sortedSlots.length > 0 && (
               <div>
-                <h2 className="font-bebas text-xl text-text-primary mb-3">AÇIK SAHNELER</h2>
+                <h2 className="font-bebas text-xl text-text-primary mb-3">{isEn ? 'OPEN STAGES' : 'AÇIK SAHNELER'}</h2>
                 <div className="space-y-2">
                   {sortedSlots.map((slot: any) => (
                     <div key={slot.id} className="card p-3">
@@ -140,8 +141,8 @@ export default async function VenueCalendarPage({ params }: Props) {
                       {slot.fee_model && slot.fee_model !== 'free' && (
                         <p className="text-text-muted text-xs mt-0.5">
                           {slot.fee_model === 'guarantee' && slot.fee_value ? `${slot.fee_value}₺ Garanti` : ''}
-                          {slot.fee_model === 'door_share' ? 'Kapı Paylaşımı' : ''}
-                          {slot.fee_model === 'negotiable' ? 'Pazarlığa Açık' : ''}
+                          {slot.fee_model === 'door_share' ? (isEn ? 'Door Share' : 'Kapı Paylaşımı') : ''}
+                          {slot.fee_model === 'negotiable' ? (isEn ? 'Negotiable' : 'Pazarlığa Açık') : ''}
                         </p>
                       )}
                     </div>
@@ -152,7 +153,7 @@ export default async function VenueCalendarPage({ params }: Props) {
 
             {upcomingEvents.length > 0 && (
               <div>
-                <h2 className="font-bebas text-xl text-text-primary mb-3">ETKİNLİKLER</h2>
+                <h2 className="font-bebas text-xl text-text-primary mb-3">{isEn ? 'EVENTS' : 'ETKİNLİKLER'}</h2>
                 <div className="space-y-2">
                   {upcomingEvents.map((ev: any) => (
                     <div key={ev.id} className="card p-3">
@@ -172,7 +173,7 @@ export default async function VenueCalendarPage({ params }: Props) {
             )}
 
             {sortedSlots.length === 0 && upcomingEvents.length === 0 && (
-              <p className="text-text-muted text-sm">Henüz veri yok.</p>
+              <p className="text-text-muted text-sm">{isEn ? 'No data yet.' : 'Henüz veri yok.'}</p>
             )}
           </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { ArrowLeft, Ticket, User, Mail, Phone, Users, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
 
@@ -20,6 +21,7 @@ interface EventInfo {
 
 export default function TicketPurchasePage() {
   const { id } = useParams<{ id: string }>()
+  const isEn = useLocale() === 'en'
 
   const [event, setEvent] = useState<EventInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +41,7 @@ export default function TicketPurchasePage() {
     fetch(`/api/events/${id}/info`)
       .then(r => r.json())
       .then(setEvent)
-      .catch(() => setError('Etkinlik yüklenemedi'))
+      .catch(() => setError(isEn ? 'Could not load event' : 'Etkinlik yüklenemedi'))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -77,24 +79,24 @@ export default function TicketPurchasePage() {
         body: JSON.stringify({ event_id: id, ...form }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Bir hata oluştu'); return }
+      if (!res.ok) { setError(data.error ?? (isEn ? 'An error occurred' : 'Bir hata oluştu')); return }
       setPaytrToken(data.token)
     } catch {
-      setError('Bağlantı hatası')
+      setError(isEn ? 'Connection error' : 'Bağlantı hatası')
     } finally {
       setSubmitting(false)
     }
   }
 
   if (loading) return (
-    <div className="max-w-lg mx-auto px-4 py-10 text-center text-text-muted">Yükleniyor...</div>
+    <div className="max-w-lg mx-auto px-4 py-10 text-center text-text-muted">{isEn ? 'Loading...' : 'Yükleniyor...'}</div>
   )
 
   if (!event || !event.ticketing_enabled) return (
     <div className="max-w-lg mx-auto px-4 py-10 text-center">
-      <p className="text-text-muted">Bu etkinlik için bilet satışı mevcut değil.</p>
+      <p className="text-text-muted">{isEn ? 'Ticket sales are not available for this event.' : 'Bu etkinlik için bilet satışı mevcut değil.'}</p>
       <Link href={`/events/${id}`} className="mt-4 inline-flex items-center gap-2 text-accent text-sm">
-        <ArrowLeft size={14} /> Etkinliğe dön
+        <ArrowLeft size={14} /> {isEn ? 'Back to event' : 'Etkinliğe dön'}
       </Link>
     </div>
   )
@@ -103,7 +105,7 @@ export default function TicketPurchasePage() {
     <>
       <div className="max-w-lg mx-auto px-4 py-6">
         <Link href={`/events/${id}`} className="flex items-center gap-2 text-text-muted text-sm mb-6 hover:text-text-primary transition-colors">
-          <ArrowLeft size={16} /> Etkinliğe Dön
+          <ArrowLeft size={16} /> {isEn ? 'Back to Event' : 'Etkinliğe Dön'}
         </Link>
 
         <div className="card p-5 mb-4">
@@ -128,30 +130,30 @@ export default function TicketPurchasePage() {
             <div className="card p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-text-muted mb-1.5 font-medium">Ad</label>
+                  <label className="block text-xs text-text-muted mb-1.5 font-medium">{isEn ? 'First Name' : 'Ad'}</label>
                   <div className="relative">
                     <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                     <input
                       required value={form.buyer_name}
                       onChange={e => setForm(f => ({ ...f, buyer_name: e.target.value }))}
                       className="w-full bg-[rgba(228,224,216,0.06)] border border-[rgba(228,224,216,0.12)] rounded-lg pl-9 pr-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent/50"
-                      placeholder="Ad"
+                      placeholder={isEn ? 'First Name' : 'Ad'}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-text-muted mb-1.5 font-medium">Soyad</label>
+                  <label className="block text-xs text-text-muted mb-1.5 font-medium">{isEn ? 'Last Name' : 'Soyad'}</label>
                   <input
                     required value={form.buyer_surname}
                     onChange={e => setForm(f => ({ ...f, buyer_surname: e.target.value }))}
                     className="w-full bg-[rgba(228,224,216,0.06)] border border-[rgba(228,224,216,0.12)] rounded-lg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent/50"
-                    placeholder="Soyad"
+                    placeholder={isEn ? 'Last Name' : 'Soyad'}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-text-muted mb-1.5 font-medium">E-posta</label>
+                <label className="block text-xs text-text-muted mb-1.5 font-medium">{isEn ? 'Email' : 'E-posta'}</label>
                 <div className="relative">
                   <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                   <input
@@ -164,7 +166,7 @@ export default function TicketPurchasePage() {
               </div>
 
               <div>
-                <label className="block text-xs text-text-muted mb-1.5 font-medium">Telefon</label>
+                <label className="block text-xs text-text-muted mb-1.5 font-medium">{isEn ? 'Phone' : 'Telefon'}</label>
                 <div className="relative">
                   <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                   <input
@@ -177,7 +179,7 @@ export default function TicketPurchasePage() {
               </div>
 
               <div>
-                <label className="block text-xs text-text-muted mb-1.5 font-medium">Kişi Sayısı</label>
+                <label className="block text-xs text-text-muted mb-1.5 font-medium">{isEn ? 'Number of People' : 'Kişi Sayısı'}</label>
                 <div className="relative">
                   <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                   <select
@@ -186,7 +188,7 @@ export default function TicketPurchasePage() {
                     className="w-full bg-[rgba(228,224,216,0.06)] border border-[rgba(228,224,216,0.12)] rounded-lg pl-9 pr-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent/50 appearance-none"
                   >
                     {Array.from({ length: Math.min(10, remaining) }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>{n} kişi</option>
+                      <option key={n} value={n}>{n} {isEn ? 'people' : 'kişi'}</option>
                     ))}
                   </select>
                 </div>
@@ -196,21 +198,21 @@ export default function TicketPurchasePage() {
             <div className="card p-5">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-text-muted">
-                  <span>Bilet fiyatı</span>
+                  <span>{isEn ? 'Ticket price' : 'Bilet fiyatı'}</span>
                   <span>{commissionIncluded ? event.ticket_price.toFixed(2) : event.ticket_price.toFixed(2)}₺</span>
                 </div>
                 <div className="flex justify-between text-text-muted">
-                  <span>Hizmet bedeli {commissionIncluded ? '(dahil)' : `(%${commissionRate})`}</span>
+                  <span>{isEn ? 'Service fee' : 'Hizmet bedeli'} {commissionIncluded ? (isEn ? '(included)' : '(dahil)') : `(%${commissionRate})`}</span>
                   <span>{commissionIncluded ? '' : '+'}{commissionAmount.toFixed(2)}₺</span>
                 </div>
                 {form.quantity > 1 && (
                   <div className="flex justify-between text-text-muted">
-                    <span>Kişi sayısı</span>
+                    <span>{isEn ? 'Number of people' : 'Kişi sayısı'}</span>
                     <span>× {form.quantity}</span>
                   </div>
                 )}
                 <div className="pt-2 border-t border-[rgba(228,224,216,0.08)] flex justify-between font-semibold text-text-primary">
-                  <span>Toplam</span>
+                  <span>{isEn ? 'Total' : 'Toplam'}</span>
                   <span className="text-accent text-lg">{total.toFixed(2)}₺</span>
                 </div>
               </div>
@@ -226,7 +228,7 @@ export default function TicketPurchasePage() {
               type="submit" disabled={submitting}
               className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold text-base disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
-              {submitting ? 'Yönlendiriliyor...' : `Ödemeye Geç · ${total.toFixed(2)}₺`}
+              {submitting ? (isEn ? 'Redirecting...' : 'Yönlendiriliyor...') : `${isEn ? 'Proceed to Payment' : 'Ödemeye Geç'} · ${total.toFixed(2)}₺`}
             </button>
           </form>
         )}
@@ -236,11 +238,11 @@ export default function TicketPurchasePage() {
       {paytrToken && (
         <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 bg-[#141414] border-b border-[rgba(228,224,216,0.1)] flex-shrink-0">
-            <span className="text-text-primary font-semibold text-sm">Güvenli Ödeme</span>
+            <span className="text-text-primary font-semibold text-sm">{isEn ? 'Secure Payment' : 'Güvenli Ödeme'}</span>
             <button
               onClick={() => setPaytrToken(null)}
               className="p-1.5 text-text-muted hover:text-text-primary transition-colors"
-              aria-label="Kapat"
+              aria-label={isEn ? 'Close' : 'Kapat'}
             >
               <X size={20} />
             </button>

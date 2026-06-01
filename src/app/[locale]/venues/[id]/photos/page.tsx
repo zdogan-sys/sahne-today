@@ -9,7 +9,7 @@ import { isAdminUser } from '@/lib/admin'
 import { VenuePhotoAlbum } from '@/components/venues/VenuePhotoAlbum'
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,7 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function VenuePhotosPage({ params }: Props) {
-  const { id } = await params
+  const { id, locale } = await params
+  const isEn = locale === 'en'
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,8 +44,8 @@ export default async function VenuePhotosPage({ params }: Props) {
       </Link>
 
       <div className="flex items-center justify-between mb-5">
-        <h1 className="font-bebas text-4xl text-text-primary">FOTOĞRAFLAR</h1>
-        <span className="text-text-muted text-sm">{(v.photos ?? []).length} fotoğraf</span>
+        <h1 className="font-bebas text-4xl text-text-primary">{isEn ? 'PHOTOS' : 'FOTOĞRAFLAR'}</h1>
+        <span className="text-text-muted text-sm">{(v.photos ?? []).length} {isEn ? 'photos' : 'fotoğraf'}</span>
       </div>
 
       <VenuePhotoAlbum venueId={v.id} initialPhotos={v.photos ?? []} isOwner={isOwner} />
