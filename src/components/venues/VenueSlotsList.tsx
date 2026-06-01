@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import { Trash2, Plus, Pencil } from 'lucide-react'
-import { getDayNames, FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
+import { getDayNames, FEE_MODEL_LABELS, formatTime, translateGenre } from '@/lib/utils'
 import { closeSlot, createSlot, updateSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
@@ -27,6 +27,7 @@ const STATUS_CONFIG: Record<string, { border: string; bg: string; color: string;
   pending: { border: '#d4a820', bg: 'rgba(212,168,32,0.15)',  color: '#d4a820', label: 'Bekliyor' },
   booked:  { border: '#8f88d4', bg: 'rgba(143,136,212,0.15)', color: '#8f88d4', label: 'Dolu' },
 }
+const STATUS_LABELS_EN: Record<string, string> = { open: 'Open', pending: 'Pending', booked: 'Booked' }
 
 const EMPTY_FORM = {
   day_of_week: 5,
@@ -102,7 +103,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
       event_type: newSlot.event_type || null,
     })
     if (!res.success) {
-      setError(res.error ?? 'Slot eklenirken bir hata oluştu.')
+      setError(res.error ?? (isEn ? 'An error occurred while adding the slot.' : 'Slot eklenirken bir hata oluştu.'))
     } else {
       setShowAdd(false)
       setNewSlot(EMPTY_FORM)
@@ -126,7 +127,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
       event_type: editForm.event_type || null,
     })
     if (!res.success) {
-      setError(res.error ?? 'Güncellenemedi.')
+      setError(res.error ?? (isEn ? 'Could not update.' : 'Güncellenemedi.'))
     } else {
       setSlots(prev => prev.map(s => s.id === editingSlot.id ? {
         ...s,
@@ -187,10 +188,10 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
                     <span className="font-medium text-text-primary text-sm">{dayNames[slot.day_of_week]}</span>
                     <span className="text-text-muted text-sm">{formatTime(slot.start_time)} – {formatTime(slot.end_time)}</span>
                     <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
-                      {slot.recurrence === 'weekly' ? 'Haftalık' : slot.recurrence === 'biweekly' ? '2 Haftada Bir' : 'Tek Sefer'}
+                      {slot.recurrence === 'weekly' ? (isEn ? 'Weekly' : 'Haftalık') : slot.recurrence === 'biweekly' ? (isEn ? 'Every 2 Weeks' : '2 Haftada Bir') : (isEn ? 'One Time' : 'Tek Sefer')}
                     </span>
                     <span style={{ backgroundColor: cfg.bg, color: cfg.color, fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                      {cfg.label}
+                      {isEn ? (STATUS_LABELS_EN[slot.status] ?? cfg.label) : cfg.label}
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-text-muted">
@@ -206,7 +207,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
                       <button
                         onClick={() => openEdit(slot)}
                         className="w-8 h-8 rounded-lg bg-[rgba(228,224,216,0.06)] text-text-muted hover:text-accent hover:bg-accent/10 flex items-center justify-center transition-colors"
-                        title="Düzenle"
+                        title={isEn ? 'Edit' : 'Düzenle'}
                       >
                         <Pencil size={14} />
                       </button>
@@ -236,15 +237,15 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
       <BottomSheet open={showAdd} onClose={() => setShowAdd(false)} title="Yeni Slot Ekle">
         <SlotForm form={newSlot} setForm={setNewSlot} error={error} dayNames={dayNames} />
         <button onClick={handleAddSlot} disabled={adding} className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-2">
-          {adding ? 'Ekleniyor...' : 'Slotu Ekle'}
+          {adding ? (isEn ? 'Adding...' : 'Ekleniyor...') : (isEn ? 'Add Slot' : 'Slotu Ekle')}
         </button>
       </BottomSheet>
 
       {/* Edit BottomSheet */}
-      <BottomSheet open={!!editingSlot} onClose={() => setEditingSlot(null)} title="Slotu Düzenle">
+      <BottomSheet open={!!editingSlot} onClose={() => setEditingSlot(null)} title={isEn ? 'Edit Slot' : 'Slotu Düzenle'}>
         <SlotForm form={editForm} setForm={setEditForm} error={error} dayNames={dayNames} />
         <button onClick={handleSaveEdit} disabled={saving} className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-2">
-          {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          {saving ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save' : 'Kaydet')}
         </button>
       </BottomSheet>
     </div>
@@ -257,60 +258,62 @@ function SlotForm({ form, setForm, error, dayNames }: {
   error: string
   dayNames: string[]
 }) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   return (
     <div className="space-y-4 pb-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Gün</label>
+          <label className="label">{isEn ? 'Day' : 'Gün'}</label>
           <select value={form.day_of_week} onChange={e => setForm({ ...form, day_of_week: parseInt(e.target.value) })} className="input-field text-sm">
             {dayNames.map((d, i) => <option key={i} value={i}>{d}</option>)}
           </select>
         </div>
         <div>
-          <label className="label">Tekrar</label>
+          <label className="label">{isEn ? 'Recurrence' : 'Tekrar'}</label>
           <select value={form.recurrence} onChange={e => setForm({ ...form, recurrence: e.target.value })} className="input-field text-sm">
-            <option value="weekly">Haftalık</option>
-            <option value="biweekly">2 Haftada Bir</option>
-            <option value="once">Tek Sefer</option>
+            <option value="weekly">{isEn ? 'Weekly' : 'Haftalık'}</option>
+            <option value="biweekly">{isEn ? 'Every 2 Weeks' : '2 Haftada Bir'}</option>
+            <option value="once">{isEn ? 'One Time' : 'Tek Sefer'}</option>
           </select>
         </div>
         <div>
-          <label className="label">Başlangıç</label>
+          <label className="label">{isEn ? 'Start' : 'Başlangıç'}</label>
           <input type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} className="input-field text-sm" />
         </div>
         <div>
-          <label className="label">Bitiş</label>
+          <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
           <input type="time" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} className="input-field text-sm" />
         </div>
         <div>
-          <label className="label">Ücret Modeli</label>
+          <label className="label">{isEn ? 'Fee Model' : 'Ücret Modeli'}</label>
           <select value={form.fee_model} onChange={e => setForm({ ...form, fee_model: e.target.value })} className="input-field text-sm">
-            <option value="free">Ücretsiz</option>
-            <option value="door_share">Kapı Paylaşımı</option>
-            <option value="guarantee">Garanti</option>
-            <option value="negotiable">Pazarlığa Açık</option>
+            <option value="free">{isEn ? 'Free' : 'Ücretsiz'}</option>
+            <option value="door_share">{isEn ? 'Door Share' : 'Kapı Paylaşımı'}</option>
+            <option value="guarantee">{isEn ? 'Guarantee' : 'Garanti'}</option>
+            <option value="negotiable">{isEn ? 'Negotiable' : 'Pazarlığa Açık'}</option>
           </select>
         </div>
         <div>
-          <label className="label">Tutar (₺)</label>
+          <label className="label">{isEn ? 'Amount (₺)' : 'Tutar (₺)'}</label>
           <input type="number" value={form.fee_value} onChange={e => setForm({ ...form, fee_value: e.target.value })} placeholder="0" className="input-field text-sm" />
         </div>
       </div>
       <div>
-        <label className="label">Etkinlik Türü</label>
+        <label className="label">{isEn ? 'Event Type' : 'Etkinlik Türü'}</label>
         <select value={form.event_type} onChange={e => setForm({ ...form, event_type: e.target.value })} className="input-field text-sm">
-          <option value="">Seçin</option>
-          <optgroup label="Müzik">
-            {MUSIC_GENRES.map(t => <option key={t} value={t}>{t}</option>)}
+          <option value="">{isEn ? 'Select' : 'Seçin'}</option>
+          <optgroup label={isEn ? 'Music' : 'Müzik'}>
+            {MUSIC_GENRES.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
           </optgroup>
-          <optgroup label="Sahne">
-            {STAGE_GENRES.map(t => <option key={t} value={t}>{t}</option>)}
+          <optgroup label={isEn ? 'Stage' : 'Sahne'}>
+            {STAGE_GENRES.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
           </optgroup>
         </select>
       </div>
       <div>
-        <label className="label">Notlar</label>
-        <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Özel koşullar..." className="input-field text-sm" />
+        <label className="label">{isEn ? 'Notes' : 'Notlar'}</label>
+        <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder={isEn ? 'Special conditions...' : 'Özel koşullar...'} className="input-field text-sm" />
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
     </div>

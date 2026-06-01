@@ -7,6 +7,7 @@ import { Pencil, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { updateEvent } from '@/app/actions/event'
 import { ALL_GENRES } from '@/lib/constants'
+import { translateGenre } from '@/lib/utils'
 
 interface Props {
   eventId: string
@@ -104,48 +105,48 @@ export function EventEditor({ eventId, initial }: Props) {
 
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           <div>
-            <label className="label">Etkinlik Adı *</label>
-            <input value={title} onChange={e => setTitle(e.target.value)} className="input-field text-sm" placeholder="Etkinlik adı..." />
+            <label className="label">{isEn ? 'Event Name *' : 'Etkinlik Adı *'}</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} className="input-field text-sm" placeholder={isEn ? 'Event name...' : 'Etkinlik adı...'} />
           </div>
 
           <div>
-            <label className="label">Tarih *</label>
+            <label className="label">{isEn ? 'Date *' : 'Tarih *'}</label>
             <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="input-field text-sm" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Başlangıç *</label>
+              <label className="label">{isEn ? 'Start *' : 'Başlangıç *'}</label>
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm" />
             </div>
             <div>
-              <label className="label">Bitiş</label>
+              <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
               <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm" />
             </div>
           </div>
 
           <div>
-            <label className="label">Müzik Türü</label>
+            <label className="label">{isEn ? 'Music Genre' : 'Müzik Türü'}</label>
             <select value={genre} onChange={e => setGenre(e.target.value)} className="input-field text-sm">
-              <option value="">Seçin</option>
-              {ALL_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+              <option value="">{isEn ? 'Select' : 'Seçin'}</option>
+              {ALL_GENRES.map(g => <option key={g} value={g}>{translateGenre(g, isEn ? 'en' : 'tr')}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="label">Giriş</label>
+            <label className="label">{isEn ? 'Entry' : 'Giriş'}</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setEntryType('free')}
                 className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${entryType === 'free' ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
               >
-                Ücretsiz
+                {isEn ? 'Free' : 'Ücretsiz'}
               </button>
               <button
                 onClick={() => setEntryType('paid')}
                 className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${entryType === 'paid' ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
               >
-                Ücretli
+                {isEn ? 'Paid' : 'Ücretli'}
               </button>
             </div>
             {entryType === 'paid' && (
@@ -154,20 +155,20 @@ export function EventEditor({ eventId, initial }: Props) {
                 value={entryFee}
                 onChange={e => setEntryFee(e.target.value)}
                 className="input-field text-sm mt-2"
-                placeholder="Bilet ücreti (₺)"
+                placeholder={isEn ? 'Ticket price (₺)' : 'Bilet ücreti (₺)'}
                 min="0"
               />
             )}
           </div>
 
           <div>
-            <label className="label">Açıklama</label>
+            <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="input-field text-sm resize-none"
               rows={3}
-              placeholder="Etkinlik açıklaması..."
+              placeholder={isEn ? 'Event description...' : 'Etkinlik açıklaması...'}
             />
           </div>
 
@@ -175,8 +176,8 @@ export function EventEditor({ eventId, initial }: Props) {
           <div className="border-t border-[rgba(228,224,216,0.08)] pt-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-sm text-text-primary font-medium">Online Bilet Satışı</p>
-                <p className="text-xs text-text-muted">Sahne.Today üzerinden bilet sat</p>
+                <p className="text-sm text-text-primary font-medium">{isEn ? 'Online Ticket Sales' : 'Online Bilet Satışı'}</p>
+                <p className="text-xs text-text-muted">{isEn ? 'Sell tickets through The Stage.Today' : 'Sahne.Today üzerinden bilet sat'}</p>
               </div>
               <button
                 type="button"
@@ -191,7 +192,7 @@ export function EventEditor({ eventId, initial }: Props) {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Bilet Fiyatı (₺)</label>
+                    <label className="label">{isEn ? 'Ticket Price (₺)' : 'Bilet Fiyatı (₺)'}</label>
                     <input
                       type="number"
                       value={ticketPrice}
@@ -203,35 +204,35 @@ export function EventEditor({ eventId, initial }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="label">Kontenjan</label>
+                    <label className="label">{isEn ? 'Quota' : 'Kontenjan'}</label>
                     <input
                       type="number"
                       value={ticketCount}
                       onChange={e => setTicketCount(e.target.value)}
                       className="input-field text-sm"
-                      placeholder="Kaç bilet?"
+                      placeholder={isEn ? 'How many tickets?' : 'Kaç bilet?'}
                       min="1"
                     />
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-[rgba(228,224,216,0.1)] p-3 space-y-2">
-                  <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Komisyon Modeli</p>
+                  <p className="text-xs text-text-muted font-medium uppercase tracking-wide">{isEn ? 'Commission Model' : 'Komisyon Modeli'}</p>
                   <button
                     type="button"
                     onClick={() => setCommissionIncluded(true)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${commissionIncluded ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
                   >
-                    <span className="font-medium">Komisyon dahil</span>
-                    <span className="block text-xs opacity-70 mt-0.5">Girdiğin fiyat alıcının ödediği son fiyattır</span>
+                    <span className="font-medium">{isEn ? 'Commission included' : 'Komisyon dahil'}</span>
+                    <span className="block text-xs opacity-70 mt-0.5">{isEn ? 'The price you enter is the final price the buyer pays' : 'Girdiğin fiyat alıcının ödediği son fiyattır'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setCommissionIncluded(false)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${!commissionIncluded ? 'border-accent bg-accent/10 text-accent' : 'border-[rgba(228,224,216,0.1)] text-text-muted hover:border-[rgba(228,224,216,0.25)]'}`}
                   >
-                    <span className="font-medium">Komisyon üstüne eklenir</span>
-                    <span className="block text-xs opacity-70 mt-0.5">Alıcı girdiğin fiyat + hizmet bedelini öder</span>
+                    <span className="font-medium">{isEn ? 'Commission added on top' : 'Komisyon üstüne eklenir'}</span>
+                    <span className="block text-xs opacity-70 mt-0.5">{isEn ? 'The buyer pays your price + the service fee' : 'Alıcı girdiğin fiyat + hizmet bedelini öder'}</span>
                   </button>
                 </div>
               </div>
@@ -247,7 +248,7 @@ export function EventEditor({ eventId, initial }: Props) {
             disabled={loading || !title || !eventDate || !startTime}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50"
           >
-            {loading ? 'Kaydediliyor...' : 'Kaydet'}
+            {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save' : 'Kaydet')}
           </button>
         </div>
       </div>
