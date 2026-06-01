@@ -645,7 +645,11 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
     setDeleting(null)
   }
 
-  async function handleTogglePro(profileId: string, currentPro: boolean) {
+  async function handleTogglePro(profileId: string | null, currentPro: boolean) {
+    if (!profileId) {
+      alert('Bu sanatçının kullanıcı hesabı yok, pro yapılamaz.')
+      return
+    }
     setTogglingPro(profileId)
     const res = await fetch('/api/admin/set-pro', {
       method: 'POST',
@@ -658,6 +662,9 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
           ? { ...a, profiles: { ...a.profiles, is_pro_individual: !currentPro } }
           : a
       ))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert('Hata: ' + (data.error ?? 'Pro durumu güncellenemedi.'))
     }
     setTogglingPro(null)
   }
