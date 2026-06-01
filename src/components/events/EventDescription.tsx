@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateEvent } from '@/app/actions/event'
 import { useRouter } from 'next/navigation'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function EventDescription({ eventId, initialDescription, isParty }: Props) {
+  const isEn = useLocale() === 'en'
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(initialDescription ?? '')
   const [saved, setSaved] = useState(initialDescription ?? '')
@@ -39,7 +41,7 @@ export function EventDescription({ eventId, initialDescription, isParty }: Props
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <p className="text-text-muted text-xs font-medium uppercase tracking-wide">Açıklama</p>
+        <p className="text-text-muted text-xs font-medium uppercase tracking-wide">{isEn ? 'Description' : 'Açıklama'}</p>
         {isParty && !editing && (
           <button
             onClick={() => setEditing(true)}
@@ -67,14 +69,14 @@ export function EventDescription({ eventId, initialDescription, isParty }: Props
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/80 transition-colors disabled:opacity-50"
             >
               <Check size={12} />
-              {loading ? 'Kaydediliyor…' : 'Kaydet'}
+              {loading ? (isEn ? 'Saving...' : 'Kaydediliyor…') : (isEn ? 'Save' : 'Kaydet')}
             </button>
             <button
               onClick={handleCancel}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[rgba(228,224,216,0.1)] text-text-muted text-xs hover:text-text-primary transition-colors"
             >
               <X size={12} />
-              İptal
+              {isEn ? 'Cancel' : 'İptal'}
             </button>
           </div>
         </div>
@@ -90,7 +92,7 @@ export function EventDescription({ eventId, initialDescription, isParty }: Props
           onClick={() => setEditing(true)}
           className="text-text-muted text-sm hover:text-accent transition-colors"
         >
-          + Açıklama ekle
+          {isEn ? '+ Add description' : '+ Açıklama ekle'}
         </button>
       )}
     </div>

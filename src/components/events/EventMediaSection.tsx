@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Camera, Loader2, X, Plus, ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateEventPoster, addEventPhoto, removeEventPhoto } from '@/app/actions/event'
@@ -28,6 +29,7 @@ interface PosterProps {
 }
 
 export function EventPosterSection({ eventId, initialPoster, isParty }: PosterProps) {
+  const isEn = useLocale() === 'en'
   const [poster, setPoster] = useState(initialPoster)
   const [uploading, setUploading] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
@@ -72,7 +74,7 @@ export function EventPosterSection({ eventId, initialPoster, isParty }: PosterPr
         className="w-full h-full min-h-[320px] sm:min-h-full border-r border-dashed border-[rgba(228,224,216,0.15)] bg-[rgba(228,224,216,0.02)] hover:bg-[rgba(228,224,216,0.05)] transition-colors flex flex-col items-center justify-center gap-2 text-text-muted hover:text-text-primary"
       >
         {uploading ? <Loader2 size={24} className="animate-spin" /> : <ImageIcon size={24} />}
-        <span className="text-sm font-medium">{uploading ? 'Yükleniyor...' : 'Afiş Ekle'}</span>
+        <span className="text-sm font-medium">{uploading ? (isEn ? 'Uploading...' : 'Yükleniyor...') : (isEn ? 'Add Poster' : 'Afiş Ekle')}</span>
         <input ref={ref} type="file" accept="image/*" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
       </button>
@@ -89,6 +91,7 @@ interface PhotosProps {
 }
 
 export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosProps) {
+  const isEn = useLocale() === 'en'
   const [photos, setPhotos] = useState(initialPhotos)
   const [uploading, setUploading] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -118,20 +121,20 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="label">Etkinlik Fotoğrafları</h3>
+        <h3 className="label">{isEn ? 'Event Photos' : 'Etkinlik Fotoğrafları'}</h3>
         {isParty && !uploading && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => cameraRef.current?.click()}
               className="flex items-center gap-1 text-xs text-accent border border-accent/30 rounded-lg px-2.5 py-1 hover:bg-accent/10 transition-colors"
             >
-              <Camera size={11} /> Kamera
+              <Camera size={11} /> {isEn ? 'Camera' : 'Kamera'}
             </button>
             <button
               onClick={() => ref.current?.click()}
               className="flex items-center gap-1 text-xs text-text-muted border border-[rgba(228,224,216,0.15)] rounded-lg px-2.5 py-1 hover:border-accent/40 hover:text-accent transition-colors"
             >
-              <Plus size={11} /> Galeri
+              <Plus size={11} /> {isEn ? 'Gallery' : 'Galeri'}
             </button>
           </div>
         )}
@@ -145,19 +148,19 @@ export function EventPhotosSection({ eventId, initialPhotos, isParty }: PhotosPr
       {photos.length === 0 ? (
         <div className="w-full py-8 rounded-xl border border-dashed border-[rgba(228,224,216,0.2)] bg-[rgba(228,224,216,0.03)] flex flex-col items-center gap-3 text-text-muted">
           <Camera size={20} />
-          <span className="text-sm">Etkinlik fotoğrafı ekle</span>
+          <span className="text-sm">{isEn ? 'Add event photo' : 'Etkinlik fotoğrafı ekle'}</span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => cameraRef.current?.click()}
               className="flex items-center gap-1.5 text-xs text-accent border border-accent/30 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors font-medium"
             >
-              <Camera size={12} /> Kamera ile Çek
+              <Camera size={12} /> {isEn ? 'Take Photo' : 'Kamera ile Çek'}
             </button>
             <button
               onClick={() => ref.current?.click()}
               className="flex items-center gap-1.5 text-xs text-text-muted border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-1.5 hover:border-accent/40 hover:text-accent transition-colors"
             >
-              <Plus size={12} /> Galeriden Seç
+              <Plus size={12} /> {isEn ? 'From Gallery' : 'Galeriden Seç'}
             </button>
           </div>
         </div>

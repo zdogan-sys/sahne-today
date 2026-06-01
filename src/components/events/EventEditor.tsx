@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocale } from 'next-intl'
 import { Pencil, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { updateEvent } from '@/app/actions/event'
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function EventEditor({ eventId, initial }: Props) {
+  const isEn = useLocale() === 'en'
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -94,7 +96,7 @@ export function EventEditor({ eventId, initial }: Props) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative w-full max-w-md bg-surface rounded-2xl border border-[rgba(228,224,216,0.15)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)] flex-shrink-0">
-          <p className="font-semibold text-text-primary text-sm">Etkinliği Düzenle</p>
+          <p className="font-semibold text-text-primary text-sm">{isEn ? 'Edit Event' : 'Etkinliği Düzenle'}</p>
           <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.08)] transition-colors">
             <X size={15} />
           </button>
@@ -260,7 +262,7 @@ export function EventEditor({ eventId, initial }: Props) {
         className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary border border-[rgba(228,224,216,0.1)] hover:border-[rgba(228,224,216,0.25)] px-3 py-1.5 rounded-full transition-colors"
       >
         <Pencil size={12} />
-        Düzenle
+        {isEn ? 'Edit' : 'Düzenle'}
       </button>
       {modal}
     </>
