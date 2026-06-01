@@ -6,10 +6,13 @@ import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { getDayNames, formatTime, formatDate, translateVenueType } from '@/lib/utils'
 import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
+
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { respondToCancelRequest } from '@/app/actions/event'
 import { ProBadge } from '@/components/ui/ProBadge'
+import { TeachingToggle } from '@/components/artists/TeachingToggle'
+import { ExternalLink, GraduationCap } from 'lucide-react'
 import { respondToVenueOffer } from '@/app/actions/offer'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
 import { BandSection } from '@/components/bands/BandSection'
@@ -195,18 +198,28 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'MY PROFILE' : 'PROFİLİM'}</h2>
-          <ArtistProfileEditor
-            artistId={artist.id}
-            initialData={{
-              stage_name: artist.stage_name,
-              city: artist.city,
-              genres: artist.genres,
-              instruments: artist.instruments,
-              bio: artist.bio,
-              social_links: artist.social_links,
-              is_hidden: artist.is_hidden,
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/artists/${artist.id}`}
+              target="_blank"
+              className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.12)] hover:border-accent/30 px-2.5 py-1.5 rounded-md"
+            >
+              <ExternalLink size={11} />
+              {isEn ? 'View Profile' : 'Profil Sayfam'}
+            </Link>
+            <ArtistProfileEditor
+              artistId={artist.id}
+              initialData={{
+                stage_name: artist.stage_name,
+                city: artist.city,
+                genres: artist.genres,
+                instruments: artist.instruments,
+                bio: artist.bio,
+                social_links: artist.social_links,
+                is_hidden: artist.is_hidden,
+              }}
+            />
+          </div>
         </div>
         <div className="card p-4 space-y-4">
           <div>
@@ -399,22 +412,27 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
           </h2>
         </div>
         {isProIndividual ? (
-          <div className="space-y-2">
-            <div className="card p-4 flex items-center justify-between">
-              <div>
-                <p className="text-text-primary text-sm font-medium">{isEn ? 'Lesson Schedule' : 'Ders Saatlerim'}</p>
-                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Set your available teaching times' : 'Öğrencilerin rezervasyon yapabileceği saatleri belirle'}</p>
-              </div>
-              <Link href="/dashboard/teaching-slots" className="btn-accent py-1.5 px-3 text-xs">
-                {isEn ? 'Manage →' : 'Yönet →'}
-              </Link>
+          <div className="space-y-3">
+            {/* Kurs Veriyorum toggle */}
+            <div className="card p-4">
+              <p className="text-text-muted text-xs mb-2 uppercase tracking-wide">{isEn ? 'Teaching Status' : 'Ders Durumu'}</p>
+              <TeachingToggle
+                artistId={artist.id}
+                initialIsTeaching={artist.is_teaching ?? false}
+                initialTeachingInstruments={artist.teaching_instruments ?? []}
+                instruments={artist.instruments ?? []}
+                isProIndividual={true}
+              />
             </div>
             <div className="card p-4 flex items-center justify-between">
               <div>
-                <p className="text-text-primary text-sm font-medium">{isEn ? 'Courses' : 'Kurslarım'}</p>
-                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Manage your courses and sessions' : 'Kurs ve seans yönetimi'}</p>
+                <p className="text-text-primary text-sm font-medium flex items-center gap-1.5">
+                  <GraduationCap size={13} className="text-[#d4a820]" />
+                  {isEn ? 'Lesson Schedule' : 'Ders Saatlerim'}
+                </p>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Set your available teaching times' : 'Müsait saatlerini belirle, öğrenciler rezervasyon yapsın'}</p>
               </div>
-              <Link href="/dashboard/courses" className="btn-accent py-1.5 px-3 text-xs">
+              <Link href={`/dashboard/teaching-slots?artist=${artist.id}`} className="btn-accent py-1.5 px-3 text-xs">
                 {isEn ? 'Manage →' : 'Yönet →'}
               </Link>
             </div>

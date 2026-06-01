@@ -201,23 +201,7 @@ export default async function ArtistPage({ params }: Props) {
             <div className="mt-3 flex flex-col gap-2">
               <div className="flex items-center gap-3 flex-wrap">
                 <LfbToggle artistId={artist.id} initialValue={(artist as any).looking_for_band ?? false} />
-                <TeachingToggle
-                  artistId={artist.id}
-                  initialIsTeaching={(artist as any).is_teaching ?? false}
-                  initialTeachingInstruments={(artist as any).teaching_instruments ?? []}
-                  instruments={artist.instruments ?? []}
-                  isProIndividual={!!(profile as any)?.is_pro_individual}
-                />
               </div>
-              {(artist as any).is_teaching && isOwner && (
-                <Link
-                  href={`/dashboard/teaching-slots?artist=${artist.id}`}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-[#d4a820]/30 text-[#d4a820] hover:bg-[#d4a820]/10 transition-colors w-fit"
-                >
-                  <GraduationCap size={11} />
-                  Ders Saatlerimi Yönet →
-                </Link>
-              )}
               <ArtistProfileEditor
                 artistId={artist.id}
                 initialData={{
