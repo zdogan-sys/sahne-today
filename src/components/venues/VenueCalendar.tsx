@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { ChevronLeft, ChevronRight, X, Music2, Users, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatTime, cn } from '@/lib/utils'
+import { formatTime, cn, translateGenre } from '@/lib/utils'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 import { addVenueEvent } from '@/app/actions/event'
 
@@ -54,8 +55,10 @@ interface Props {
   initialBands?: { id: string; name: string; city: string | null }[]
 }
 
-const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-const DAY_HEADERS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const MONTH_NAMES_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+const MONTH_NAMES_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const DAY_HEADERS_TR = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const DAY_HEADERS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function jsToGrid(jsDay: number): number {
   return jsDay === 0 ? 6 : jsDay - 1
@@ -66,6 +69,10 @@ function toISO(date: Date): string {
 }
 
 export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner, initialArtists = [], initialBands = [] }: Props) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
+  const MONTH_NAMES = isEn ? MONTH_NAMES_EN : MONTH_NAMES_TR
+  const DAY_HEADERS = isEn ? DAY_HEADERS_EN : DAY_HEADERS_TR
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -244,7 +251,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       status: 'pending',
     } as any)
     if (err) {
-      setError(err.code === '23505' ? 'Bu tarih için zaten talepte bulundunuz.' : 'İstek gönderilemedi. Tekrar deneyin.')
+      setError(err.code === '23505'
+        ? (isEn ? 'You have already applied for this date.' : 'Bu tarih için zaten talepte bulundunuz.')
+        : (isEn ? 'Could not send request. Try again.' : 'İstek gönderilemedi. Tekrar deneyin.'))
     } else {
       setSuccess(true)
     }
@@ -334,7 +343,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
   ]
 
-  const dateLabel = selectedDate?.toLocaleDateString('tr-TR', {
+  const dateLabel = selectedDate?.toLocaleDateString(isEn ? 'en-US' : 'tr-TR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
 
@@ -347,7 +356,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       <div className="relative w-full sm:max-w-md bg-surface sm:rounded-2xl rounded-t-2xl border border-[rgba(228,224,216,0.15)] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)] flex-shrink-0">
           <p className="font-semibold text-text-primary text-sm">
-            {selectedDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {selectedDate.toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
           <button onClick={() => { setSelectedDate(null); setSelectedDayEvents([]) }} className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.08)] transition-colors">
             <X size={15} />
@@ -377,9 +386,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           {selectedSlot && artistId && (
             <div className="px-4 py-3 space-y-3">
               <div>
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-1">Boş Sahne</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-1">{isEn ? 'Open Stage' : 'Boş Sahne'}</p>
                 <p className="text-text-muted text-xs">
-                  {selectedSlot.event_type ?? 'Belirtilmemiş'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
+                  {selectedSlot.event_type ?? (isEn ? 'Unspecified' : 'Belirtilmemiş')} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
                   {selectedSlot.fee_value ? ` · ${selectedSlot.fee_value}₺` : ''}
                   {selectedSlot.notes ? ` · ${selectedSlot.notes}` : ''}
                 </p>
@@ -387,39 +396,39 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
               {success ? (
                 <div className="text-center py-2">
-                  <p className="text-success text-sm font-medium">✓ Talebiniz alındı!</p>
-                  <p className="text-text-muted text-xs mt-0.5">Mekan sahibi en kısa sürede dönüş yapacak.</p>
+                  <p className="text-success text-sm font-medium">{isEn ? '✓ Your request was received!' : '✓ Talebiniz alındı!'}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{isEn ? 'The venue owner will get back to you shortly.' : 'Mekan sahibi en kısa sürede dönüş yapacak.'}</p>
                 </div>
               ) : (
                 <>
                   <div>
-                    <label className="label">Başvuru Türü</label>
+                    <label className="label">{isEn ? 'Application Type' : 'Başvuru Türü'}</label>
                     <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)]">
                       <button type="button" onClick={() => { setApplyAs('self'); setBandId('') }}
                         className={cn('flex-1 py-2 text-sm transition-colors', applyAs === 'self' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}>
-                        Kendi Adıma
+                        {isEn ? 'As Myself' : 'Kendi Adıma'}
                       </button>
                       <button type="button" onClick={() => setApplyAs('band')} disabled={artistBands.length === 0}
                         className={cn('flex-1 py-2 text-sm transition-colors border-l border-[rgba(228,224,216,0.15)] disabled:opacity-30', applyAs === 'band' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}>
-                        Grup Adına
+                        {isEn ? 'As a Band' : 'Grup Adına'}
                       </button>
                     </div>
                     {applyAs === 'band' && artistBands.length > 0 && (
                       <select value={bandId} onChange={e => setBandId(e.target.value)} className="input-field text-sm mt-2">
-                        <option value="">Grup seçin...</option>
+                        <option value="">{isEn ? 'Select band...' : 'Grup seçin...'}</option>
                         {artistBands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
                     )}
                   </div>
                   <div>
-                    <label className="label">Mesaj (isteğe bağlı)</label>
+                    <label className="label">{isEn ? 'Message (optional)' : 'Mesaj (isteğe bağlı)'}</label>
                     <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2}
-                      placeholder="Kendinizi tanıtın, repertuarınızdan bahsedin..."
+                      placeholder={isEn ? 'Introduce yourself, tell us about your repertoire...' : 'Kendinizi tanıtın, repertuarınızdan bahsedin...'}
                       className="input-field resize-none text-sm" />
                   </div>
                   {error && <p className="text-red-400 text-xs">{error}</p>}
                   <button onClick={handleApply} disabled={loading} className="btn-accent w-full py-2.5 text-sm disabled:opacity-50">
-                    {loading ? 'Gönderiliyor...' : 'Sahne Al'}
+                    {loading ? (isEn ? 'Sending...' : 'Gönderiliyor...') : (isEn ? 'Apply for Stage' : 'Sahne Al')}
                   </button>
                 </>
               )}
@@ -470,9 +479,9 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           {ownerSuccess ? (
             <div className="px-5 py-8 text-center">
               <p className="text-success text-2xl mb-2">✓</p>
-              <p className="text-text-primary text-sm font-medium">{ownerAddType === 'event' ? 'Etkinlik' : 'Açık Slot'} eklendi</p>
+              <p className="text-text-primary text-sm font-medium">{ownerAddType === 'event' ? (isEn ? 'Event' : 'Etkinlik') : (isEn ? 'Open Slot' : 'Açık Slot')} {isEn ? 'added' : 'eklendi'}</p>
               <button onClick={() => { setOwnerSuccess(false); window.location.reload() }} className="text-text-muted text-xs mt-2 hover:text-text-primary underline">
-                Kapat ve Yenile
+                {isEn ? 'Close and Refresh' : 'Kapat ve Yenile'}
               </button>
             </div>
           ) : (
@@ -483,14 +492,14 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   onClick={() => setOwnerAddType('event')}
                   className={cn('flex-1 py-2 text-xs font-medium transition-colors', ownerAddType === 'event' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
                 >
-                  Etkinlik
+                  {isEn ? 'Event' : 'Etkinlik'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setOwnerAddType('slot')}
                   className={cn('flex-1 py-2 text-xs font-medium transition-colors border-l border-[rgba(228,224,216,0.15)]', ownerAddType === 'slot' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
                 >
-                  Açık Slot
+                  {isEn ? 'Open Slot' : 'Açık Slot'}
                 </button>
               </div>
 
@@ -498,16 +507,16 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                 <>
               {selectedSlot && (
                 <div className="text-xs text-text-muted bg-accent/5 border border-accent/15 rounded-lg px-3 py-2">
-                  Boş sahne: {selectedSlot.event_type ?? 'Belirtilmemiş'} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
+                  {isEn ? 'Open stage' : 'Boş sahne'}: {selectedSlot.event_type ?? (isEn ? 'Unspecified' : 'Belirtilmemiş')} · {formatTime(selectedSlot.start_time)} – {formatTime(selectedSlot.end_time)}
                 </div>
               )}
 
                   <div>
-                    <label className="label">Etkinlik Adı *</label>
+                    <label className="label">{isEn ? 'Event Name *' : 'Etkinlik Adı *'}</label>
                     <input
                       value={ownerTitle}
                       onChange={e => setOwnerTitle(e.target.value)}
-                      placeholder="Konser adı..."
+                      placeholder={isEn ? 'Concert name...' : 'Konser adı...'}
                       className="input-field text-sm"
                       autoFocus
                     />
@@ -515,18 +524,18 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="label">Başlangıç *</label>
+                      <label className="label">{isEn ? 'Start *' : 'Başlangıç *'}</label>
                       <input type="time" value={ownerStartTime} onChange={e => setOwnerStartTime(e.target.value)} className="input-field text-sm" />
                     </div>
                     <div>
-                      <label className="label">Bitiş</label>
+                      <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
                       <input type="time" value={ownerEndTime} onChange={e => setOwnerEndTime(e.target.value)} className="input-field text-sm" />
                     </div>
                   </div>
 
                   {/* Performer search — inline list, touch-friendly */}
                   <div>
-                    <label className="label">Sanatçı / Grup</label>
+                    <label className="label">{isEn ? 'Artist / Band' : 'Sanatçı / Grup'}</label>
                     {selectedPerformer ? (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
                         {selectedPerformer.type === 'artist'
@@ -534,7 +543,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                           : <Users size={13} className="text-accent flex-shrink-0" />
                         }
                         <span className="text-text-primary text-sm flex-1">{selectedPerformer.name}</span>
-                        <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                        <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? (isEn ? 'Artist' : 'Sanatçı') : (isEn ? 'Band' : 'Grup')}</span>
                         <button
                           type="button"
                           onClick={() => { setSelectedPerformer(null); setPerformerQuery('') }}
@@ -552,7 +561,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                             className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors',
                               performerTab === 'artist' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
                           >
-                            <Music2 size={11} /> Sanatçı ({allArtists.length})
+                            <Music2 size={11} /> {isEn ? 'Artist' : 'Sanatçı'} ({allArtists.length})
                           </button>
                           <button
                             type="button"
@@ -560,13 +569,13 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                             className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors border-l border-[rgba(228,224,216,0.15)]',
                               performerTab === 'band' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
                           >
-                            <Users size={11} /> Grup ({allBands.length})
+                            <Users size={11} /> {isEn ? 'Band' : 'Grup'} ({allBands.length})
                           </button>
                         </div>
                         <input
                           value={performerQuery}
                           onChange={e => setPerformerQuery(e.target.value)}
-                          placeholder={performerTab === 'artist' ? 'İsimle ara...' : 'Grup adıyla ara...'}
+                          placeholder={performerTab === 'artist' ? (isEn ? 'Search by name...' : 'İsimle ara...') : (isEn ? 'Search by band name...' : 'Grup adıyla ara...')}
                           className="input-field text-sm"
                           autoComplete="off"
                         />
@@ -581,14 +590,14 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                                 className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] active:bg-[rgba(228,224,216,0.1)] transition-colors border-b border-[rgba(228,224,216,0.06)] last:border-b-0"
                               >
                                 <span className="text-text-primary text-sm flex-1 truncate">{p.name}</span>
-                                <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                                <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? (isEn ? 'Artist' : 'Sanatçı') : (isEn ? 'Band' : 'Grup')}</span>
                               </button>
                             ))}
                           </div>
                         )}
                         {performerQuery.trim() && filteredPerformers.length === 0 && (
                           <p className="text-text-muted text-xs mt-1.5 px-1">
-                            {performerTab === 'artist' ? 'Kayıtlı sanatçı bulunamadı' : 'Kayıtlı grup bulunamadı'} — ad olarak kaydedilecek
+                            {performerTab === 'artist' ? (isEn ? 'No registered artist found' : 'Kayıtlı sanatçı bulunamadı') : (isEn ? 'No registered band found' : 'Kayıtlı grup bulunamadı')}{isEn ? ' — will be saved as name' : ' — ad olarak kaydedilecek'}
                           </p>
                         )}
                       </>
@@ -596,12 +605,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   </div>
 
                   <div>
-                    <label className="label">Açıklama</label>
+                    <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
                     <textarea
                       value={ownerDescription}
                       onChange={e => setOwnerDescription(e.target.value)}
                       rows={2}
-                      placeholder="Etkinlik hakkında kısa bir not..."
+                      placeholder={isEn ? 'A short note about the event...' : 'Etkinlik hakkında kısa bir not...'}
                       className="input-field text-sm resize-none w-full"
                     />
                   </div>
@@ -610,61 +619,61 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="label">Etkinlik Türü</label>
+                      <label className="label">{isEn ? 'Event Type' : 'Etkinlik Türü'}</label>
                       <select value={slotEventType} onChange={(e) => setSlotEventType(e.target.value)} className="input-field text-sm">
-                        <option value="">Seçin</option>
-                        <optgroup label="Müzik">
+                        <option value="">{isEn ? 'Select' : 'Seçin'}</option>
+                        <optgroup label={isEn ? 'Music' : 'Müzik'}>
                           {MUSIC_GENRES.map(t => (
-                            <option key={t} value={t}>{t}</option>
+                            <option key={t} value={t}>{translateGenre(t, locale)}</option>
                           ))}
                         </optgroup>
-                        <optgroup label="Sahne">
+                        <optgroup label={isEn ? 'Stage' : 'Sahne'}>
                           {STAGE_GENRES.map(t => (
-                            <option key={t} value={t}>{t}</option>
+                            <option key={t} value={t}>{translateGenre(t, locale)}</option>
                           ))}
                         </optgroup>
                       </select>
                     </div>
                     <div>
-                      <label className="label">Tekrar</label>
+                      <label className="label">{isEn ? 'Recurrence' : 'Tekrar'}</label>
                       <select value={slotRecurrence} onChange={(e) => setSlotRecurrence(e.target.value)} className="input-field text-sm">
-                        <option value="weekly">Haftalık</option>
-                        <option value="biweekly">2 Haftada Bir</option>
-                        <option value="once">Tek Sefer</option>
+                        <option value="weekly">{isEn ? 'Weekly' : 'Haftalık'}</option>
+                        <option value="biweekly">{isEn ? 'Every 2 Weeks' : '2 Haftada Bir'}</option>
+                        <option value="once">{isEn ? 'One Time' : 'Tek Sefer'}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="label">Başlangıç</label>
+                      <label className="label">{isEn ? 'Start' : 'Başlangıç'}</label>
                       <input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} className="input-field text-sm" />
                     </div>
                     <div>
-                      <label className="label">Bitiş</label>
+                      <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
                       <input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} className="input-field text-sm" />
                     </div>
                     <div>
-                      <label className="label">Ücret Modeli</label>
+                      <label className="label">{isEn ? 'Fee Model' : 'Ücret Modeli'}</label>
                       <select value={slotFeeModel} onChange={(e) => setSlotFeeModel(e.target.value)} className="input-field text-sm">
-                        <option value="free">Ücretsiz</option>
-                        <option value="door_share">Kapı Paylaşımı</option>
-                        <option value="guarantee">Garanti</option>
-                        <option value="negotiable">Pazarlığa Açık</option>
+                        <option value="free">{isEn ? 'Free' : 'Ücretsiz'}</option>
+                        <option value="door_share">{isEn ? 'Door Share' : 'Kapı Paylaşımı'}</option>
+                        <option value="guarantee">{isEn ? 'Guarantee' : 'Garanti'}</option>
+                        <option value="negotiable">{isEn ? 'Negotiable' : 'Pazarlığa Açık'}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="label">Tutar (₺)</label>
+                      <label className="label">{isEn ? 'Amount (₺)' : 'Tutar (₺)'}</label>
                       <input type="number" value={slotFeeValue} onChange={(e) => setSlotFeeValue(e.target.value)} placeholder="0" className="input-field text-sm" />
                     </div>
                   </div>
                   <div>
-                    <label className="label">Notlar</label>
-                    <input value={slotNotes} onChange={(e) => setSlotNotes(e.target.value)} placeholder="Özel koşullar..." className="input-field text-sm" />
+                    <label className="label">{isEn ? 'Notes' : 'Notlar'}</label>
+                    <input value={slotNotes} onChange={(e) => setSlotNotes(e.target.value)} placeholder={isEn ? 'Special conditions...' : 'Özel koşullar...'} className="input-field text-sm" />
                   </div>
                 </>
               )}
 
               {selectedPerformer && (
                 <div>
-                  <label className="label">Teklif Geçerlilik Süresi</label>
+                  <label className="label">{isEn ? 'Offer Validity Period' : 'Teklif Geçerlilik Süresi'}</label>
                   <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)]">
                     {([24, 48] as const).map(h => (
                       <button
@@ -674,11 +683,11 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                         className={cn('flex-1 py-1.5 text-xs font-medium transition-colors border-l border-[rgba(228,224,216,0.15)] first:border-l-0',
                           offerTtl === h ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
                       >
-                        {h} saat
+                        {h} {isEn ? 'hours' : 'saat'}
                       </button>
                     ))}
                   </div>
-                  <p className="text-text-muted text-xs mt-1">Sanatçı bu süre içinde yanıt vermezse teklif otomatik sona erer.</p>
+                  <p className="text-text-muted text-xs mt-1">{isEn ? 'If the artist does not respond within this time, the offer expires automatically.' : 'Sanatçı bu süre içinde yanıt vermezse teklif otomatik sona erer.'}</p>
                 </div>
               )}
 
@@ -694,7 +703,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
               disabled={ownerLoading || (ownerAddType === 'event' && (!ownerTitle || !ownerStartTime))}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
-              {ownerLoading ? 'Ekleniyor...' : selectedPerformer ? `Teklif Gönder (${offerTtl}sa)` : 'Takvime Ekle'}
+              {ownerLoading ? (isEn ? 'Adding...' : 'Ekleniyor...') : selectedPerformer ? (isEn ? `Send Offer (${offerTtl}h)` : `Teklif Gönder (${offerTtl}sa)`) : (isEn ? 'Add to Calendar' : 'Takvime Ekle')}
             </button>
           </div>
         )}
@@ -789,12 +798,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
         {(artistId || isOwner) && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-accent/15 border border-accent/20" />
-            <span>Boş Sahne</span>
+            <span>{isEn ? 'Open Stage' : 'Boş Sahne'}</span>
           </div>
         )}
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-success/25 border border-success/30" />
-          <span>Etkinlik Planlandı</span>
+          <span>{isEn ? 'Event Scheduled' : 'Etkinlik Planlandı'}</span>
         </div>
       </div>
       </div>{/* end max-w-[500px] */}
