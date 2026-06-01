@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Send, ArrowLeft, ShieldAlert, Lock, Unlock, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -39,6 +40,7 @@ export function ChatWindow({
   blockedReason,
   isAdmin = false,
 }: Props) {
+  const isEn = useLocale() === 'en'
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [draft, setDraft] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -124,7 +126,7 @@ export function ChatWindow({
   // Group messages by date
   const grouped: { date: string; messages: Message[] }[] = []
   for (const msg of messages) {
-    const date = new Date(msg.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+    const date = new Date(msg.created_at).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
     const last = grouped[grouped.length - 1]
     if (last && last.date === date) last.messages.push(msg)
     else grouped.push({ date, messages: [msg] })
@@ -142,7 +144,7 @@ export function ChatWindow({
           <div className="flex-1 min-w-0">
             <p className="text-text-primary text-sm font-semibold truncate">{contextName}</p>
             <Link href={contextHref} className="text-text-muted text-xs hover:text-accent transition-colors">
-              Profil →
+              {isEn ? 'Profile →' : 'Profil →'}
             </Link>
           </div>
           {isAdmin && (
@@ -158,7 +160,7 @@ export function ChatWindow({
                   disabled={adminActing}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-green-500/30 text-green-400 bg-green-500/10 hover:bg-green-500/20 transition-colors disabled:opacity-40"
                 >
-                  <Unlock size={11} /> Kilidi Aç
+                  <Unlock size={11} /> {isEn ? 'Unlock' : 'Kilidi Aç'}
                 </button>
               ) : (
                 <button
@@ -172,12 +174,12 @@ export function ChatWindow({
                   disabled={adminActing}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-orange-500/30 text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors disabled:opacity-40"
                 >
-                  <Lock size={11} /> Kilitle
+                  <Lock size={11} /> {isEn ? 'Lock' : 'Kilitle'}
                 </button>
               )}
               <button
                 onClick={async () => {
-                  if (!confirm(`"${contextName}" sohbetini ve tüm mesajlarını silmek istediğinizden emin misiniz?`)) return
+                  if (!confirm(isEn ? `Are you sure you want to delete "${contextName}" and all its messages?` : `"${contextName}" sohbetini ve tüm mesajlarını silmek istediğinizden emin misiniz?`)) return
                   setAdminActing(true)
                   await adminDeleteConversation(conversationId)
                   router.push('/messages')
@@ -185,7 +187,7 @@ export function ChatWindow({
                 disabled={adminActing}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors disabled:opacity-40"
               >
-                <Trash2 size={11} /> Sil
+                <Trash2 size={11} /> {isEn ? 'Delete' : 'Sil'}
               </button>
             </div>
           )}
@@ -196,7 +198,7 @@ export function ChatWindow({
               type="text"
               value={blockReason}
               onChange={e => setBlockReason(e.target.value)}
-              placeholder="Kilitleme nedeni (isteğe bağlı)"
+              placeholder={isEn ? 'Lock reason (optional)' : 'Kilitleme nedeni (isteğe bağlı)'}
               className="w-full bg-surface border border-[rgba(228,224,216,0.1)] rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-orange-500/30"
             />
           </div>
@@ -207,7 +209,7 @@ export function ChatWindow({
       <div className="px-4 pt-4 pb-4 space-y-4 min-h-[40vh]">
         {messages.length === 0 && (
           <p className="text-center text-text-muted text-sm py-8">
-            Henüz mesaj yok. İlk mesajı sen gönder!
+            {isEn ? 'No messages yet. Be the first to send one!' : 'Henüz mesaj yok. İlk mesajı sen gönder!'}
           </p>
         )}
         {grouped.map((group) => (
@@ -242,7 +244,7 @@ export function ChatWindow({
                       {msg.body}
                     </div>
                     <span className="text-[9px] text-text-muted mt-0.5 mx-1">
-                      {new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(msg.created_at).toLocaleTimeString(isEn ? 'en-US' : 'tr-TR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
@@ -267,7 +269,7 @@ export function ChatWindow({
             {blocked && isAdmin && (
               <div className="flex items-center gap-1.5 mb-2 px-1">
                 <ShieldAlert size={12} className="text-orange-400" />
-                <p className="text-orange-400 text-xs">Kilitli sohbet — admin olarak mesaj gönderiyorsunuz</p>
+                <p className="text-orange-400 text-xs">{isEn ? 'Locked chat — you are sending as admin' : 'Kilitli sohbet — admin olarak mesaj gönderiyorsunuz'}</p>
               </div>
             )}
             {error && <p className="text-red-400 text-xs mb-2 px-1">{error}</p>}
@@ -276,7 +278,7 @@ export function ChatWindow({
                 value={draft}
                 onChange={e => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Mesaj yaz… (Enter ile gönder)"
+                placeholder={isEn ? 'Write a message… (Enter to send)' : 'Mesaj yaz… (Enter ile gönder)'}
                 rows={1}
                 className="flex-1 resize-none bg-surface border border-[rgba(228,224,216,0.12)] rounded-xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/40 transition-colors max-h-32"
                 style={{ scrollbarWidth: 'none' }}
