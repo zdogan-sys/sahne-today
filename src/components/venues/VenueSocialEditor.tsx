@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function VenueSocialEditor({ venueId, initialLinks }: Props) {
+  const isEn = useLocale() === 'en'
   const [links, setLinks] = useState<SocialLinksData>(initialLinks)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -28,7 +30,7 @@ export function VenueSocialEditor({ venueId, initialLinks }: Props) {
       <SocialLinksEditor value={links} onChange={setLinks} />
       <button onClick={handleSave} disabled={saving}
         className="btn-outline text-sm py-2 px-4 disabled:opacity-40">
-        {saving ? 'Kaydediliyor...' : saved ? '✓ Kaydedildi' : 'Kaydet'}
+        {saving ? (isEn ? 'Saving...' : 'Kaydediliyor...') : saved ? (isEn ? '✓ Saved' : '✓ Kaydedildi') : (isEn ? 'Save' : 'Kaydet')}
       </button>
     </div>
   )

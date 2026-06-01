@@ -290,12 +290,12 @@ export default async function VenuePage({ params }: Props) {
         {/* Social links */}
         {isOwner ? (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">SOSYAL MEDYA</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'SOCIAL MEDIA' : 'SOSYAL MEDYA'}</h2>
             <VenueSocialEditor venueId={venue.id} initialLinks={socialLinks} />
           </div>
         ) : Object.keys(socialLinks).length > 0 ? (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">SOSYAL MEDYA</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'SOCIAL MEDIA' : 'SOSYAL MEDYA'}</h2>
             <SocialLinks links={socialLinks} />
           </div>
         ) : null}

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Edit2, Camera, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -119,6 +120,7 @@ function ImageUploadField({
 }
 
 export function VenueProfileEditor({ venueId, initialData }: Props) {
+  const isEn = useLocale() === 'en'
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -191,10 +193,10 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
         className="pointer-events-auto flex items-center gap-1.5 text-xs text-black bg-white hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors absolute top-4 right-4 z-30 font-medium"
       >
         <Edit2 size={12} />
-        Profili Düzenle
+        {isEn ? 'Edit Profile' : 'Profili Düzenle'}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Mekan Profilini Düzenle">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={isEn ? 'Edit Venue Profile' : 'Mekan Profilini Düzenle'}>
         <div className="space-y-4">
 
           {/* Images */}

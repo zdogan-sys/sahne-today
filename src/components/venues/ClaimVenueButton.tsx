@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { Building2 } from 'lucide-react'
 import { claimVenue } from '@/app/actions/venue'
 
 export function ClaimVenueButton({ venueId }: { venueId: string }) {
+  const isEn = useLocale() === 'en'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -39,7 +41,7 @@ export function ClaimVenueButton({ venueId }: { venueId: string }) {
         className="flex items-center gap-1.5 text-xs text-accent border border-accent/40 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors disabled:opacity-50 font-medium"
       >
         <Building2 size={13} />
-        {loading ? 'Bağlanıyor...' : 'Bu benim mekanım'}
+        {loading ? (isEn ? 'Connecting...' : 'Bağlanıyor...') : (isEn ? 'This is my venue' : 'Bu benim mekanım')}
       </button>
       {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
     </div>

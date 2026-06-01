@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { VideoEmbed } from '@/components/artists/VideoEmbed'
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function VenueVideoEditor({ venueId, initialUrls, readOnly = false }: Props) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [urls, setUrls] = useState<string[]>(initialUrls)
   const [input, setInput] = useState('')
   const supabase = createClient()
@@ -39,7 +42,7 @@ export function VenueVideoEditor({ venueId, initialUrls, readOnly = false }: Pro
     if (urls.length === 0) return null
     return (
       <div>
-        <h2 className="font-bebas text-2xl text-text-primary mb-3">VİDEOLAR</h2>
+        <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'VIDEOS' : 'VİDEOLAR'}</h2>
         <div className="space-y-3">
           {urls.map((url, i) => <VideoEmbed key={i} url={url} />)}
         </div>
@@ -76,7 +79,7 @@ export function VenueVideoEditor({ venueId, initialUrls, readOnly = false }: Pro
         <button type="button" onClick={add} disabled={!input.trim()}
           className="btn-outline px-3 disabled:opacity-40 flex items-center gap-1">
           <Plus size={14} />
-          Ekle
+          {isEn ? 'Add' : 'Ekle'}
         </button>
       </div>
     </div>

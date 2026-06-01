@@ -375,7 +375,7 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
               tab === 'add' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
           >
             <Plus size={14} />
-            Ekle
+            {locale === 'en' ? 'Add' : 'Ekle'}
           </button>
         )}
       </div>
@@ -384,13 +384,13 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
         addSuccess ? (
           <div className="text-center py-8 space-y-3">
             <p className="text-success text-2xl">✓</p>
-            <p className="text-text-primary text-sm font-medium">Etkinlik eklendi</p>
+            <p className="text-text-primary text-sm font-medium">{locale === 'en' ? 'Event added' : 'Etkinlik eklendi'}</p>
             <div className="flex gap-2 justify-center">
               <button
                 onClick={resetAddForm}
                 className="px-4 py-2 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/80 transition-colors"
               >
-                Yeni Ekle
+                {locale === 'en' ? 'Add Another' : 'Yeni Ekle'}
               </button>
               <button
                 onClick={() => { setTab('upcoming'); resetAddForm() }}
@@ -525,7 +525,11 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
               disabled={addLoading || !addTitle.trim() || !addDate || !addStartTime}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
-              {addLoading ? 'Ekleniyor...' : selectedPerformer ? `Teklif Gönder (${offerTtl}sa)` : 'Takvime Ekle'}
+              {addLoading
+                ? (locale === 'en' ? 'Adding...' : 'Ekleniyor...')
+                : selectedPerformer
+                  ? (locale === 'en' ? `Send Offer (${offerTtl}h)` : `Teklif Gönder (${offerTtl}sa)`)
+                  : (locale === 'en' ? 'Add to Calendar' : 'Takvime Ekle')}
             </button>
           </div>
         )

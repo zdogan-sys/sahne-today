@@ -48,6 +48,7 @@ interface Props {
 
 export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser }: Props) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const dayNames = getDayNames(locale)
   const [slots, setSlots] = useState(initialSlots)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -148,14 +149,14 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bebas text-2xl text-text-primary">{isOwner ? 'SLOTLAR' : 'AÇIK SLOTLAR'}</h2>
+        <h2 className="font-bebas text-2xl text-text-primary">{isOwner ? (isEn ? 'SLOTS' : 'SLOTLAR') : (isEn ? 'OPEN SLOTS' : 'AÇIK SLOTLAR')}</h2>
         {isOwner && (
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-1 text-xs text-accent hover:underline px-2 py-1 bg-accent/10 rounded-md transition-colors"
           >
             <Plus size={12} />
-            Yeni Slot Ekle
+            {isEn ? 'Add New Slot' : 'Yeni Slot Ekle'}
           </button>
         )}
       </div>
@@ -164,10 +165,10 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
 
       {slots.length === 0 ? (
         <div className="text-center py-8 border border-dashed border-[rgba(228,224,216,0.12)] rounded-xl">
-          <p className="text-text-muted text-sm mb-2">Henüz açık slot yok.</p>
+          <p className="text-text-muted text-sm mb-2">{isEn ? 'No open slots yet.' : 'Henüz açık slot yok.'}</p>
           {isOwner && (
             <button onClick={() => setShowAdd(true)} className="text-accent text-xs hover:underline">
-              İlk slotu ekle →
+              {isEn ? 'Add first slot →' : 'İlk slotu ekle →'}
             </button>
           )}
         </div>

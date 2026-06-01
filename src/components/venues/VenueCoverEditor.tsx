@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Camera, Loader2, Music, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function VenueCoverEditor({ venueId, initialUrl, name, isOwner }: Props) {
+  const isEn = useLocale() === 'en'
   const [url, setUrl] = useState(initialUrl)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -77,7 +79,7 @@ export function VenueCoverEditor({ venueId, initialUrl, name, isOwner }: Props) 
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/80 text-white text-xs font-medium hover:bg-red-500 transition-colors disabled:opacity-50"
             >
               {uploading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-              Kaldır
+              {isEn ? 'Remove' : 'Kaldır'}
             </button>
           )}
           <button
@@ -86,7 +88,7 @@ export function VenueCoverEditor({ venueId, initialUrl, name, isOwner }: Props) 
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-            {url ? 'Değiştir' : 'Fotoğraf Ekle'}
+            {url ? (isEn ? 'Change' : 'Değiştir') : (isEn ? 'Add Photo' : 'Fotoğraf Ekle')}
           </button>
         </div>
       )}
