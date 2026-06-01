@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { buildAlternates, localeBase } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -29,17 +30,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+  const { id, locale } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('artists').select('stage_name, bio, city, profiles(avatar_url)').eq('id', id).single()
   const artist = data as any | null
-  if (!artist) return { title: 'Sanatçı Bulunamadı' }
+  if (!artist) return { title: locale === 'en' ? 'Artist Not Found' : 'Sanatçı Bulunamadı' }
   const title = `${artist.stage_name}${artist.city ? ` — ${artist.city}` : ''}`
   const description = artist.bio ?? undefined
-  const image = artist.profiles?.avatar_url ?? 'https://sahne.today/icon-512.png'
+  const image = artist.profiles?.avatar_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,
     description,
+    alternates: buildAlternates(locale, `/artists/${id}`),
     openGraph: { title, description, images: [{ url: image }] },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
   }

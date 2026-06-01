@@ -1,8 +1,11 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/seo'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://sahne.today'
+  const siteUrl = await getSiteUrl()
+  const locale = siteUrl.includes('thestage.today') ? 'en' : 'tr'
+  const baseUrl = `${siteUrl}/${locale}`
   const supabase = await createClient()
 
   const [eventsRes, venuesRes, artistsRes] = await Promise.all([

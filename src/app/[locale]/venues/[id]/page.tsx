@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import { buildAlternates, localeBase } from '@/lib/seo'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -27,17 +28,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+  const { id, locale } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('venues').select('name, description, city, photo_url').eq('id', id).single()
   const venue = data as any | null
-  if (!venue) return { title: 'Mekan Bulunamadı' }
+  if (!venue) return { title: locale === 'en' ? 'Venue Not Found' : 'Mekan Bulunamadı' }
   const title = `${venue.name} — ${venue.city}`
   const description = venue.description ?? undefined
-  const image = venue.photo_url ?? 'https://sahne.today/icon-512.png'
+  const image = venue.photo_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,
     description,
+    alternates: buildAlternates(locale, `/venues/${id}`),
     openGraph: { title, description, images: [{ url: image }] },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
   }

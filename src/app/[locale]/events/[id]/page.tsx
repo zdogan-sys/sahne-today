@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getLocale } from 'next-intl/server'
+import { buildAlternates, localeBase } from '@/lib/seo'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Clock, Ticket, Music2, Users, ShoppingCart, QrCode, BarChart2, ImageIcon } from 'lucide-react'
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('id', id)
     .single()
   const event = data as any | null
-  if (!event) return { title: 'Etkinlik Bulunamadı' }
+  if (!event) return { title: locale === 'en' ? 'Event Not Found' : 'Etkinlik Bulunamadı' }
   const title = event.title
   const venue = event.venues
   const dateStr = event.event_date ? formatDate(event.event_date, locale) : null
@@ -40,10 +41,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = event.description
     ?? [dateStr, locationStr].filter(Boolean).join(' · ')
     ?? undefined
-  const image = event.poster_url ?? 'https://sahne.today/icon-512.png'
+  const image = event.poster_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,
     description,
+    alternates: buildAlternates(locale, `/events/${id}`),
     openGraph: { title, description, images: [{ url: image }], type: 'website' },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
   }

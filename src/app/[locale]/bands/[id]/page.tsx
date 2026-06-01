@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { buildAlternates, localeBase } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -30,17 +31,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+  const { id, locale } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('bands').select('name, bio, city, photo_url').eq('id', id).single()
   const band = data as any | null
-  if (!band) return { title: 'Grup Bulunamadı' }
+  if (!band) return { title: locale === 'en' ? 'Band Not Found' : 'Grup Bulunamadı' }
   const title = `${band.name}${band.city ? ` — ${band.city}` : ''}`
   const description = band.bio ?? undefined
-  const image = band.photo_url ?? 'https://sahne.today/icon-512.png'
+  const image = band.photo_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,
     description,
+    alternates: buildAlternates(locale, `/bands/${id}`),
     openGraph: { title, description, images: [{ url: image }] },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
   }

@@ -3,28 +3,42 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import { getSiteUrl, buildAlternates } from '@/lib/seo'
 import '../globals.css'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { TopNav } from '@/components/layout/TopNav'
 import { PWAInstallBanner } from '@/components/PWAInstallBanner'
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Sahne.Today — Live Music & Performance Ecosystem',
-    template: '%s | Sahne.Today',
-  },
-  description: 'Find open stages, book artists, discover live events — for independent musicians, comedians, and boutique venues.',
-  openGraph: {
-    type: 'website',
-    siteName: 'Sahne.Today',
-    images: [{ url: '/icon-512.png', width: 512, height: 512 }],
-  },
-  robots: { index: true, follow: true },
-}
-
 interface Props {
   children: React.ReactNode
   params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
+  const isEn = locale === 'en'
+  const siteUrl = await getSiteUrl()
+  const siteName = isEn ? 'The Stage.Today' : 'Sahne.Today'
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: isEn
+        ? 'The Stage.Today — Live Music & Performance Ecosystem'
+        : 'Sahne.Today — Canlı Müzik ve Performans Ekosistemi',
+      template: `%s | ${siteName}`,
+    },
+    description: isEn
+      ? 'Find open stages, book artists, discover live events — for independent musicians, comedians, and boutique venues.'
+      : 'Açık sahne bul, sanatçı ayırt, canlı etkinlikleri keşfet — bağımsız müzisyenler, komedyenler ve butik mekanlar için.',
+    alternates: buildAlternates(locale, ''),
+    openGraph: {
+      type: 'website',
+      siteName,
+      images: [{ url: '/icon-512.png', width: 512, height: 512 }],
+    },
+    robots: { index: true, follow: true },
+  }
 }
 
 export default async function LocaleLayout({ children, params }: Props) {

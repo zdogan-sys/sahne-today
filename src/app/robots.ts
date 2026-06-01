@@ -1,12 +1,14 @@
 import { MetadataRoute } from 'next'
+import { getSiteUrl } from '@/lib/seo'
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const baseUrl = await getSiteUrl()
   return {
     rules: {
       userAgent: '*',
       allow: '/',
       disallow: ['/dashboard/', '/auth/'],
     },
-    sitemap: 'https://sahne.today/sitemap.xml',
+    sitemap: `${baseUrl}/sitemap.xml`,
   }
 }
