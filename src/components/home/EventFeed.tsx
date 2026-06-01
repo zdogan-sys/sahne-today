@@ -2,30 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/supabase/types'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
 import { MapPin, Clock } from 'lucide-react'
-import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
-
-const TIME_FILTERS = ['Bugün', 'Bu Hafta', 'Bu Ay'] as const
-type TimeFilter = typeof TIME_FILTERS[number]
 
 type EventWithRelations = Event & {
   venues: { name: string; district: string; city: string } | null
   artists: { stage_name: string } | null
 }
 
-function getDateRange(period: TimeFilter): { from: string; to: string } {
+type TimePeriod = 'today' | 'week' | 'month'
+
+function getDateRange(period: TimePeriod): { from: string; to: string } {
   const now = new Date()
-  // Gece yarısı - 04:00 arası önceki günün devamı sayılır
   const effective = now.getHours() < 4 ? new Date(now.getTime() - 86400000) : now
   const from = effective.toISOString().split('T')[0]
 
-  if (period === 'Bugün') {
+  if (period === 'today') {
     return { from, to: from }
-  } else if (period === 'Bu Hafta') {
+  } else if (period === 'week') {
     const to = new Date(now.getTime() + 7 * 86400000).toISOString().split('T')[0]
     return { from, to }
   } else {
@@ -35,9 +33,31 @@ function getDateRange(period: TimeFilter): { from: string; to: string } {
 }
 
 export function EventFeed() {
+  const t = useTranslations('filters')
+  const tCommon = useTranslations('common')
+  const locale = useLocale()
+
+  const MUSIC_GENRES = locale === 'en'
+    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk']
+    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
+
+  const STAGE_GENRES = locale === 'en'
+    ? ['Stand-Up', 'Improvisation', 'Alternative Stage']
+    : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+
+  const ALL_LABEL = t('all')
+  const MUSIC_LABEL = locale === 'en' ? 'Music' : 'Müzik'
+  const STAGE_LABEL = locale === 'en' ? 'Stage' : 'Sahne'
+
+  const TIME_FILTERS: { value: TimePeriod; label: string }[] = [
+    { value: 'today', label: t('dateRanges.today') },
+    { value: 'week', label: t('dateRanges.week') },
+    { value: 'month', label: t('dateRanges.month') },
+  ]
+
   const [events, setEvents] = useState<EventWithRelations[]>([])
-  const [timePeriod, setTimePeriod] = useState<TimeFilter>('Bu Hafta')
-  const [activeGenre, setActiveGenre] = useState<string>('Tümü')
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('week')
+  const [activeGenre, setActiveGenre] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -56,7 +76,7 @@ export function EventFeed() {
         .order('start_time', { ascending: true })
         .limit(30)
 
-      if (activeGenre !== 'Tümü') {
+      if (activeGenre !== 'all') {
         query = query.eq('genre', activeGenre)
       }
 
@@ -71,17 +91,17 @@ export function EventFeed() {
     <div>
       {/* Time period tabs */}
       <div className="flex gap-1 mb-5 bg-surface rounded-xl p-1 border border-[rgba(228,224,216,0.08)]">
-        {TIME_FILTERS.map((period) => (
+        {TIME_FILTERS.map(({ value, label }) => (
           <button
-            key={period}
-            onClick={() => setTimePeriod(period)}
+            key={value}
+            onClick={() => setTimePeriod(value)}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-              timePeriod === period
+              timePeriod === value
                 ? 'bg-accent text-white'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            {period}
+            {label}
           </button>
         ))}
       </div>
@@ -89,24 +109,24 @@ export function EventFeed() {
       {/* Genre filter chips */}
       <div className="space-y-3 mb-5">
         {[
-          { label: null, genres: ['Tümü'] },
-          { label: 'Müzik', genres: MUSIC_GENRES },
-          { label: 'Sahne', genres: STAGE_GENRES },
+          { label: null, genres: [{ key: 'all', display: ALL_LABEL }] },
+          { label: MUSIC_LABEL, genres: MUSIC_GENRES.map((g, i) => ({ key: g, display: g })) },
+          { label: STAGE_LABEL, genres: STAGE_GENRES.map((g) => ({ key: g, display: g })) },
         ].map(({ label, genres }) => (
           <div key={label ?? 'all'}>
             {label && <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{label}</p>}
             <div className="flex flex-wrap gap-1.5">
-              {genres.map((g) => (
+              {genres.map(({ key, display }) => (
                 <button
-                  key={g}
-                  onClick={() => setActiveGenre(g)}
+                  key={key}
+                  onClick={() => setActiveGenre(key)}
                   className={`flex-shrink-0 chip transition-colors border ${
-                    activeGenre === g
+                    activeGenre === key
                       ? 'bg-accent text-white border-accent'
                       : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
                   }`}
                 >
-                  {g}
+                  {display}
                 </button>
               ))}
             </div>
@@ -132,21 +152,25 @@ export function EventFeed() {
         <div className="text-center py-12">
           <div className="text-4xl mb-3 opacity-30">🎵</div>
           <p className="text-text-primary text-sm font-medium mb-1">
-            {timePeriod === 'Bugün' ? 'Bugün etkinlik yok' : `${timePeriod} için etkinlik bulunamadı`}
+            {locale === 'en'
+              ? timePeriod === 'today' ? 'No events today' : `No events found for this period`
+              : timePeriod === 'today' ? 'Bugün etkinlik yok' : `Bu dönem için etkinlik bulunamadı`}
           </p>
           <p className="text-text-muted text-xs">
-            {activeGenre !== 'Tümü' ? `"${activeGenre}" türünde etkinlik yok.` : 'Farklı bir dönem seçin.'}
+            {activeGenre !== 'all'
+              ? (locale === 'en' ? `No events in this genre.` : `"${activeGenre}" türünde etkinlik yok.`)
+              : (locale === 'en' ? 'Try a different period.' : 'Farklı bir dönem seçin.')}
           </p>
-          {activeGenre !== 'Tümü' && (
-            <button onClick={() => setActiveGenre('Tümü')} className="mt-2 text-accent text-xs hover:underline">
-              Tüm türleri göster
+          {activeGenre !== 'all' && (
+            <button onClick={() => setActiveGenre('all')} className="mt-2 text-accent text-xs hover:underline">
+              {locale === 'en' ? 'Show all genres' : 'Tüm türleri göster'}
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} locale={locale} />
           ))}
         </div>
       )}
@@ -154,10 +178,10 @@ export function EventFeed() {
   )
 }
 
-function EventCard({ event }: { event: EventWithRelations }) {
+function EventCard({ event, locale }: { event: EventWithRelations; locale: string }) {
   const date = new Date(event.event_date)
   const dayNum = date.getDate()
-  const month = date.toLocaleDateString('tr-TR', { month: 'short' })
+  const month = date.toLocaleDateString(locale === 'en' ? 'en-US' : 'tr-TR', { month: 'short' })
 
   return (
     <Link href={`/events/${event.id}`} className="card p-4 flex gap-4 hover:border-accent/30 transition-colors block">
@@ -187,11 +211,11 @@ function EventCard({ event }: { event: EventWithRelations }) {
             {formatTime(event.start_time)}
           </span>
           {event.entry_type === 'free' ? (
-            <span className="text-success">Ücretsiz</span>
+            <span className="text-success">{locale === 'en' ? 'Free' : 'Ücretsiz'}</span>
           ) : event.entry_fee ? (
             <span>{event.entry_fee}₺</span>
           ) : (
-            <span>Kapıda</span>
+            <span>{locale === 'en' ? 'At the Door' : 'Kapıda'}</span>
           )}
         </div>
       </div>
