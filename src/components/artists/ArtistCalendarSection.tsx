@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { X, MapPin, Trash2, Plus, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Props) {
+  const locale = useLocale()
   const [events, setEvents] = useState<CalendarEventItem[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dayEvents, setDayEvents] = useState<CalendarEventItem[]>([])
@@ -398,7 +400,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
 
   return (
     <div>
-      <h3 className="label mb-4">Etkinlik Takvimi</h3>
+      <h3 className="label mb-4">{locale === 'en' ? 'Event Calendar' : 'Etkinlik Takvimi'}</h3>
       <EventCalendar
         events={events}
         onDayClick={handleDayClick}

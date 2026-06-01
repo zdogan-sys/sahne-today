@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -10,7 +11,7 @@ import { formatDate } from '@/lib/utils'
 import { MapPin, ArrowLeft, ChevronDown, Mail, Building2 } from 'lucide-react'
 import type { Artist, Profile, Event, Venue } from '@/lib/supabase/types'
 import { SocialLinks } from '@/components/ui/SocialLinks'
-import { VENUE_TYPE_LABELS } from '@/lib/utils'
+import { VENUE_TYPE_LABELS, translateInstrument } from '@/lib/utils'
 import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
@@ -24,7 +25,7 @@ type ArtistFull = Artist & { profiles: Profile | null; social_links?: SocialLink
 type EventFull = Event & { venues: Pick<Venue, 'name' | 'city'> | null; bands: { name: string } | null }
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -45,7 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArtistPage({ params }: Props) {
-  const { id } = await params
+  const { id, locale } = await params
+  const isEn = locale === 'en'
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -122,7 +124,7 @@ export default async function ArtistPage({ params }: Props) {
       />
       <Link href="/artists" className="flex items-center gap-2 text-text-muted text-sm mb-6 hover:text-text-primary w-fit">
         <ArrowLeft size={16} />
-        Sanatçılar
+        {isEn ? 'Artists' : 'Sanatçılar'}
       </Link>
 
       <div className="flex items-start gap-5 mb-6">
@@ -195,10 +197,10 @@ export default async function ArtistPage({ params }: Props) {
       <div className="space-y-6">
         {artist.instruments && artist.instruments.length > 0 && (
           <div>
-            <h3 className="label">Enstrümanlar</h3>
+            <h3 className="label">{isEn ? 'Instruments' : 'Enstrümanlar'}</h3>
             <div className="flex flex-wrap gap-2">
               {artist.instruments.map((i: string) => (
-                <span key={i} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{i}</span>
+                <span key={i} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{translateInstrument(i, locale)}</span>
               ))}
             </div>
           </div>
@@ -206,14 +208,14 @@ export default async function ArtistPage({ params }: Props) {
 
         {(artist.bio || profile?.bio) && (
           <div>
-            <h3 className="label">Hakkında</h3>
+            <h3 className="label">{isEn ? 'About' : 'Hakkında'}</h3>
             <p className="text-text-primary text-sm leading-relaxed">{artist.bio || profile?.bio}</p>
           </div>
         )}
 
         {artist.video_urls && artist.video_urls.length > 0 && (
           <div>
-            <h3 className="label mb-3">Videolar</h3>
+            <h3 className="label mb-3">{isEn ? 'Videos' : 'Videolar'}</h3>
             <div className="space-y-3">
               {artist.video_urls.map((url: string, i: number) => (
                 <VideoEmbed key={i} url={url} />
@@ -225,7 +227,7 @@ export default async function ArtistPage({ params }: Props) {
         {artist.technical_rider && (
           <details className="card p-4 group">
             <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-text-primary list-none">
-              Teknik Rider
+              {isEn ? 'Technical Rider' : 'Teknik Rider'}
               <ChevronDown size={16} className="text-text-muted group-open:rotate-180 transition-transform" />
             </summary>
             <p className="mt-3 text-text-muted text-sm leading-relaxed whitespace-pre-wrap">{artist.technical_rider}</p>
@@ -234,7 +236,7 @@ export default async function ArtistPage({ params }: Props) {
 
         {artist.past_venues && artist.past_venues.length > 0 && (
           <div>
-            <h3 className="label">Daha Önce Sahne Aldığı Yerler</h3>
+            <h3 className="label">{isEn ? 'Past Venues' : 'Daha Önce Sahne Aldığı Yerler'}</h3>
             <div className="flex flex-wrap gap-2">
               {artist.past_venues.map((v: string) => (
                 <span key={v} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{v}</span>
@@ -245,7 +247,7 @@ export default async function ArtistPage({ params }: Props) {
 
         {bands.length > 0 && (
           <div>
-            <h3 className="label">Gruplar</h3>
+            <h3 className="label">{isEn ? 'Bands' : 'Gruplar'}</h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {bands.map((band: any) => (
                 <Link
@@ -290,7 +292,7 @@ export default async function ArtistPage({ params }: Props) {
 
         {ownedVenue && (
           <div>
-            <h3 className="label">Mekan</h3>
+            <h3 className="label">{isEn ? 'Venue' : 'Mekan'}</h3>
             <Link
               href={`/venues/${ownedVenue.id}`}
               className="card p-4 flex items-center gap-4 hover:border-accent/30 transition-colors"
@@ -321,7 +323,7 @@ export default async function ArtistPage({ params }: Props) {
 
         {artist.social_links && Object.keys(artist.social_links).length > 0 && (
           <div>
-            <h3 className="label">Sosyal Medya</h3>
+            <h3 className="label">{isEn ? 'Social Media' : 'Sosyal Medya'}</h3>
             <SocialLinks links={artist.social_links} />
           </div>
         )}
@@ -329,7 +331,7 @@ export default async function ArtistPage({ params }: Props) {
         <div className="pt-2">
           <a href={`mailto:${profile?.display_name ?? artist.stage_name}`} className="btn-accent w-full flex items-center justify-center gap-2 py-3">
             <Mail size={16} />
-            İletişime Geç
+            {isEn ? 'Contact' : 'İletişime Geç'}
           </a>
         </div>
       </div>
