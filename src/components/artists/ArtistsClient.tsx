@@ -3,22 +3,41 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { MapPin } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { cn } from '@/lib/utils'
 import type { Artist, Profile } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Filter } from 'lucide-react'
-import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS } from '@/lib/constants'
 
 type ArtistFull = Artist & { profiles: Pick<Profile, 'display_name' | 'avatar_url' | 'city'> | null }
 
-const CITIES = CITY_OPTIONS
-const INSTRUMENTS = INSTRUMENT_OPTIONS
-
 export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[] }) {
   const t = useTranslations('filters')
+  const locale = useLocale()
+
+  const MUSIC_GENRES = locale === 'en'
+    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk']
+    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
+
+  const STAGE_GENRES = locale === 'en'
+    ? ['Stand-Up', 'Improvisation', 'Alternative Stage']
+    : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+
+  const CITIES = locale === 'en'
+    ? ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri']
+    : CITY_OPTIONS
+
+  const INSTRUMENTS = locale === 'en'
+    ? ['Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Vocals', 'Saz', 'Flute', 'Trumpet', 'Oud']
+    : ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
+
+  const artistsLabel = locale === 'en' ? 'Artists' : 'Sanatçılar'
+  const instrumentLabel = locale === 'en' ? 'Instrument' : 'Enstrüman'
+  const noArtistsLabel = locale === 'en' ? 'No artists found.' : 'Sanatçı bulunamadı.'
+
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
   const [instrument, setInstrument] = useState('')
@@ -38,19 +57,19 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
       <aside className="hidden md:block w-56 flex-shrink-0">
         <div className="card p-4 sticky top-20 space-y-5">
           <h3 className="text-sm font-semibold text-text-primary">{t('title')}</h3>
-          <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
-          <FilterGroup label="Enstrüman" options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
+          <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
+          <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
         </div>
       </aside>
 
       <div className="flex-1">
         <div className="md:hidden flex items-center justify-between mb-4">
-          <span className="text-sm text-text-muted">{filtered.length} sanatçı</span>
+          <span className="text-sm text-text-muted">{filtered.length} {artistsLabel}</span>
           <button onClick={() => setFilterOpen(true)} className="flex items-center gap-2 btn-outline py-1.5 text-sm">
             <Filter size={14} />
-            Filtre
+            {t('title')}
             {activeFilters > 0 && (
               <span className="bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{activeFilters}</span>
             )}
@@ -58,7 +77,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-center py-16 text-text-muted text-sm">Sanatçı bulunamadı.</div>
+          <div className="text-center py-16 text-text-muted text-sm">{noArtistsLabel}</div>
         ) : (
           <div className="space-y-3">
             {filtered.map((artist) => <ArtistCard key={artist.id} artist={artist} />)}
@@ -66,12 +85,12 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
         )}
       </div>
 
-      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={`${t('title')} Sanatçıları`}>
+      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={`${t('title')} ${artistsLabel}`}>
         <div className="space-y-5">
-          <FilterGroup label="Müzik Türü" options={MUSIC_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label="Sahne Türü" options={STAGE_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label="Şehir" options={CITIES} value={city} onChange={setCity} />
-          <FilterGroup label="Enstrüman" options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
+          <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
+          <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
+          <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
         </div>
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           {t('title')} ({filtered.length})
