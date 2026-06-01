@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { cn } from '@/lib/utils'
 import { Trash2, Pencil, Plus, ExternalLink, Users, X, CalendarPlus, Check, Lock, Unlock, Star } from 'lucide-react'
+import { ProBadge } from '@/components/ui/ProBadge'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -633,6 +634,8 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
   const [editing, setEditing] = useState<any>(null)
   const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [localArtists, setLocalArtists] = useState<any[]>(artists)
+  const [togglingPro, setTogglingPro] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
     if (!confirm('Bu sanatçıyı silmek istediğinizden emin misiniz?')) return
@@ -642,38 +645,75 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
     setDeleting(null)
   }
 
+  async function handleTogglePro(profileId: string, currentPro: boolean) {
+    setTogglingPro(profileId)
+    const res = await fetch('/api/admin/set-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'individual', id: profileId, is_pro: !currentPro }),
+    })
+    if (res.ok) {
+      setLocalArtists(prev => prev.map(a =>
+        a.profile_id === profileId
+          ? { ...a, profiles: { ...a.profiles, is_pro_individual: !currentPro } }
+          : a
+      ))
+    }
+    setTogglingPro(null)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-text-muted text-sm">{artists.length} sanatçı</p>
+        <p className="text-text-muted text-sm">{localArtists.length} sanatçı</p>
         <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
           className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
           <Plus size={14} /> Sanatçı Ekle
         </button>
       </div>
       <div className="space-y-2">
-        {artists.map((a) => (
-          <div key={a.id} className="card p-3 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-medium truncate">{a.stage_name}</p>
-              <p className="text-text-muted text-xs truncate">
-                {a.city ?? '—'} · {a.genres?.slice(0, 2).join(', ') || '—'}
-                {a.is_hidden ? ' · 🙈 Gizli' : ''}
-              </p>
+        {localArtists.map((a) => {
+          const isPro = a.profiles?.is_pro_individual ?? false
+          return (
+            <div key={a.id} className="card p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-text-primary text-sm font-medium truncate">{a.stage_name}</p>
+                  {isPro && <ProBadge />}
+                </div>
+                <p className="text-text-muted text-xs truncate">
+                  {a.city ?? '—'} · {a.genres?.slice(0, 2).join(', ') || '—'}
+                  {a.is_hidden ? ' · 🙈 Gizli' : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {a.profile_id && (
+                  <button
+                    onClick={() => handleTogglePro(a.profile_id, isPro)}
+                    disabled={togglingPro === a.profile_id}
+                    className={cn(
+                      'text-xs px-2.5 py-1 rounded font-medium transition-colors disabled:opacity-40',
+                      isPro
+                        ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                        : 'bg-[#1D9E75]/10 text-[#1D9E75] hover:bg-[#1D9E75]/20'
+                    )}
+                  >
+                    {togglingPro === a.profile_id ? '...' : isPro ? "Pro'yu Kaldır" : 'Pro Yap'}
+                  </button>
+                )}
+                <Link href={`/artists/${a.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
+                  <ExternalLink size={13} />
+                </Link>
+                <button onClick={() => { setEditing(a); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => handleDelete(a.id)} disabled={deleting === a.id} className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40">
+                  <Trash2 size={13} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Link href={`/artists/${a.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
-                <ExternalLink size={13} />
-              </Link>
-              <button onClick={() => { setEditing(a); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
-                <Pencil size={13} />
-              </button>
-              <button onClick={() => handleDelete(a.id)} disabled={deleting === a.id} className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40">
-                <Trash2 size={13} />
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <ArtistForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
     </div>
@@ -769,6 +809,8 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
   const [newKey, setNewKey] = useState(0)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [slotVenue, setSlotVenue] = useState<any>(null)
+  const [localVenues, setLocalVenues] = useState<any[]>(venues)
+  const [togglingPro, setTogglingPro] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
     if (!confirm('Bu mekanı silmek istediğinizden emin misiniz?')) return
@@ -778,41 +820,74 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
     setDeleting(null)
   }
 
+  async function handleTogglePro(venueId: string, currentPro: boolean) {
+    setTogglingPro(venueId)
+    const res = await fetch('/api/admin/set-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'venue', id: venueId, is_pro: !currentPro }),
+    })
+    if (res.ok) {
+      setLocalVenues(prev => prev.map(v =>
+        v.id === venueId ? { ...v, is_pro_venue: !currentPro } : v
+      ))
+    }
+    setTogglingPro(null)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-text-muted text-sm">{venues.length} mekan</p>
+        <p className="text-text-muted text-sm">{localVenues.length} mekan</p>
         <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
           className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
           <Plus size={14} /> Mekan Ekle
         </button>
       </div>
       <div className="space-y-2">
-        {venues.map((v) => (
-          <div key={v.id} className="card p-3 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-medium truncate">{v.name}</p>
-              <p className="text-text-muted text-xs truncate">
-                {v.district ? `${v.district}, ` : ''}{v.city} · {VENUE_TYPE_LABELS[v.venue_type] ?? v.venue_type}
-                {v.verified ? ' · ✓ Onaylı' : ''}
-              </p>
+        {localVenues.map((v) => {
+          const isPro = v.is_pro_venue ?? false
+          return (
+            <div key={v.id} className="card p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-text-primary text-sm font-medium truncate">{v.name}</p>
+                  {isPro && <ProBadge />}
+                </div>
+                <p className="text-text-muted text-xs truncate">
+                  {v.district ? `${v.district}, ` : ''}{v.city} · {VENUE_TYPE_LABELS[v.venue_type] ?? v.venue_type}
+                  {v.verified ? ' · ✓ Onaylı' : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => handleTogglePro(v.id, isPro)}
+                  disabled={togglingPro === v.id}
+                  className={cn(
+                    'text-xs px-2.5 py-1 rounded font-medium transition-colors disabled:opacity-40',
+                    isPro
+                      ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      : 'bg-[#1D9E75]/10 text-[#1D9E75] hover:bg-[#1D9E75]/20'
+                  )}
+                >
+                  {togglingPro === v.id ? '...' : isPro ? "Pro'yu Kaldır" : 'Pro Yap'}
+                </button>
+                <Link href={`/venues/${v.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
+                  <ExternalLink size={13} />
+                </Link>
+                <button onClick={() => setSlotVenue(v)} className="p-1.5 text-text-muted hover:text-accent" title="Slot Ekle">
+                  <CalendarPlus size={13} />
+                </button>
+                <button onClick={() => { setEditing(v); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id} className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40">
+                  <Trash2 size={13} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Link href={`/venues/${v.id}`} target="_blank" className="p-1.5 text-text-muted hover:text-text-primary">
-                <ExternalLink size={13} />
-              </Link>
-              <button onClick={() => setSlotVenue(v)} className="p-1.5 text-text-muted hover:text-accent" title="Slot Ekle">
-                <CalendarPlus size={13} />
-              </button>
-              <button onClick={() => { setEditing(v); setFormOpen(true) }} className="p-1.5 text-text-muted hover:text-accent">
-                <Pencil size={13} />
-              </button>
-              <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id} className="p-1.5 text-text-muted hover:text-red-400 disabled:opacity-40">
-                <Trash2 size={13} />
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <VenueForm key={editing?.id ?? `new-${newKey}`} open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSaved={() => { setFormOpen(false); onRefresh() }} />
       <SlotForm venueId={slotVenue?.id ?? null} venueName={slotVenue?.name ?? ''} onClose={() => setSlotVenue(null)} />

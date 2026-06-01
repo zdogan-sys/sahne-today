@@ -21,11 +21,11 @@ async function getAdminData() {
         .order('event_date', { ascending: false })
         .limit(50),
       admin.from('artists')
-        .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profiles(display_name, avatar_url)')
+        .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profile_id, profiles(display_name, avatar_url, is_pro_individual)')
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('venues')
-        .select('id, name, city, district, venue_type, phone, email, description, verified, created_at')
+        .select('id, name, city, district, venue_type, phone, email, description, verified, is_pro_venue, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
       admin.from('profiles')

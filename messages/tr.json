@@ -266,6 +266,14 @@
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
   },
+  "pro": {
+    "badge": "PRO",
+    "make_pro": "Pro Yap",
+    "remove_pro": "Pro'yu Kaldır",
+    "individual": "Bireysel Pro",
+    "venue": "Mekan Pro",
+    "required": "Bu özellik Pro üyelik gerektirir"
+  },
   "errors": {
     "authRequired": "Oturum açmanız gerekiyor.",
     "loginRequired": "Giriş yapmanız gerekiyor.",

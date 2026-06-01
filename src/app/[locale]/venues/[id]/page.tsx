@@ -20,6 +20,7 @@ import { VenueSlotsList } from '@/components/venues/VenueSlotsList'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { VenueEventTabs } from '@/components/venues/VenueEventTabs'
 import { ClaimVenueButton } from '@/components/venues/ClaimVenueButton'
+import { ProBadge } from '@/components/ui/ProBadge'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import type { Venue, Slot, Event } from '@/lib/supabase/types'
 
@@ -196,6 +197,7 @@ export default async function VenuePage({ params }: Props) {
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="font-bebas text-5xl md:text-6xl text-text-primary drop-shadow-lg">{venue.name}</h1>
+                {(venue as any).is_pro_venue && <ProBadge />}
                 {user?.id !== venue.owner_id && (
                   <span className="pointer-events-auto mt-1">
                     <FollowButton targetType="venue" targetId={venue.id} initialFollowing={isFollowing} userId={user?.id ?? null} />

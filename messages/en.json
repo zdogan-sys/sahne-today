@@ -267,6 +267,14 @@
   "footer": {
     "allRightsReserved": "All rights reserved."
   },
+  "pro": {
+    "badge": "PRO",
+    "make_pro": "Make Pro",
+    "remove_pro": "Remove Pro",
+    "individual": "Individual Pro",
+    "venue": "Venue Pro",
+    "required": "This feature requires a Pro membership"
+  },
   "errors": {
     "authRequired": "You need to sign in.",
     "loginRequired": "You need to sign in.",
