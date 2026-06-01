@@ -209,6 +209,15 @@ export default async function ArtistPage({ params }: Props) {
                   isProIndividual={!!(profile as any)?.is_pro_individual}
                 />
               </div>
+              {(artist as any).is_teaching && (
+                <Link
+                  href="/dashboard/teaching-slots"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-[#d4a820]/30 text-[#d4a820] hover:bg-[#d4a820]/10 transition-colors w-fit"
+                >
+                  <GraduationCap size={11} />
+                  Ders Saatlerimi Yönet →
+                </Link>
+              )}
               <ArtistProfileEditor
                 artistId={artist.id}
                 initialData={{
