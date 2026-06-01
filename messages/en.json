@@ -245,7 +245,7 @@
       "paid": "Paid",
       "door": "At the Door"
     },
-    "dateRanges": ["Today", "This Week", "This Month", "All"],
+    "dateRanges": { "today": "Today", "week": "This Week", "month": "This Month" },
     "musicGenres": ["Acoustic", "Metal", "Rock", "Blues", "Jazz", "Pop", "Electronic", "R&B", "Rap", "Classical", "Ethnic", "Fasıl", "Folk", "Arabesk"],
     "stageTypes": ["Stand-Up", "Improvisation", "Alternative Stage"],
     "venueTypes": {

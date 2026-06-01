@@ -244,7 +244,7 @@
       "paid": "Ücretli",
       "door": "Kapıda"
     },
-    "dateRanges": ["Bugün", "Bu Hafta", "Bu Ay", "Tümü"],
+    "dateRanges": { "today": "Bugün", "week": "Bu Hafta", "month": "Bu Ay" },
     "musicGenres": ["Akustik", "Metal", "Rock", "Blues", "Caz", "Pop", "Elektronik", "R&B", "Rap", "Klasik", "Etnik", "Fasıl", "Türkü", "Arabesk"],
     "stageTypes": ["Stand-Up", "Doğaçlama", "Alternatif Sahne"],
     "venueTypes": {

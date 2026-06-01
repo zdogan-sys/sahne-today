@@ -169,10 +169,10 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
         {/* Date range tabs */}
         <div className="flex gap-1 mb-4 bg-surface rounded-xl p-1 border border-[rgba(228,224,216,0.08)]">
           {([
-            { value: 'all', label: 'Tümü' },
-            { value: 'today', label: 'Bugün' },
-            { value: 'week', label: 'Bu Hafta' },
-            { value: 'month', label: 'Bu Ay' },
+            { value: 'all', label: t('all') },
+            { value: 'today', label: t('dateRanges.today') },
+            { value: 'week', label: t('dateRanges.week') },
+            { value: 'month', label: t('dateRanges.month') },
           ] as const).map(({ value, label }) => (
             <button
               key={value}
@@ -188,7 +188,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-text-muted">{filtered.length} etkinlik</span>
+          <span className="text-sm text-text-muted">{filtered.length} {locale === 'en' ? 'events' : 'etkinlik'}</span>
           <div className="flex items-center gap-2">
             {/* View toggle */}
             <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)]">
@@ -196,13 +196,13 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
                 onClick={() => setView('list')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}
               >
-                Liste
+                {locale === 'en' ? 'List' : 'Liste'}
               </button>
               <button
                 onClick={() => setView('calendar')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}
               >
-                Takvim
+                {locale === 'en' ? 'Calendar' : 'Takvim'}
               </button>
             </div>
 
