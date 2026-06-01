@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Users, UserPlus, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: Props) {
+  const isEn = useLocale() === 'en'
   const [bands, setBands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -112,7 +114,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                 ? 'bg-[rgba(228,224,216,0.1)] text-text-primary border-[rgba(228,224,216,0.2)]'
                 : 'bg-transparent text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary'
             )}
-            title="Eleman Arayan Grupları Bul"
+            title={isEn ? 'Find Bands Looking for Members' : 'Eleman Arayan Grupları Bul'}
           >
             <Search size={11} />
             Grup Bul
@@ -127,7 +129,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
             )}
           >
             <Users size={11} />
-            {lookingForBand ? 'Grup arıyorum · Aktif' : 'Grup arıyorum'}
+            {lookingForBand ? (isEn ? 'Looking for a band · Active' : 'Grup arıyorum · Aktif') : (isEn ? 'Looking for a band' : 'Grup arıyorum')}
           </button>
           <button
             onClick={() => { setShowCreate(!showCreate); setShowSearch(false) }}
@@ -147,31 +149,31 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Grup adı *"
+            placeholder={isEn ? 'Band name *' : 'Grup adı *'}
             className="input-field"
           />
           <div>
             <TabbedGenreSelector
-              label="Müzik Türleri"
+              label={isEn ? 'Music Genres' : 'Müzik Türleri'}
               selected={newGenres}
               onToggle={(g) => setNewGenres(newGenres.includes(g) ? newGenres.filter((x) => x !== g) : [...newGenres, g])}
             />
           </div>
           <select value={newCity} onChange={(e) => setNewCity(e.target.value)} className="input-field">
-            <option value="">Şehir seçin</option>
+            <option value="">{isEn ? 'Select city' : 'Şehir seçin'}</option>
             {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <textarea
             value={newBio}
             onChange={(e) => setNewBio(e.target.value)}
-            placeholder="Kısa açıklama (opsiyonel)"
+            placeholder={isEn ? 'Short description (optional)' : 'Kısa açıklama (opsiyonel)'}
             rows={2}
             className="input-field resize-none text-sm"
           />
           <div className="flex gap-2">
-            <button onClick={() => setShowCreate(false)} className="btn-outline flex-1 text-sm py-2">İptal</button>
+            <button onClick={() => setShowCreate(false)} className="btn-outline flex-1 text-sm py-2">{isEn ? 'Cancel' : 'İptal'}</button>
             <button onClick={handleCreate} disabled={!newName.trim() || creating} className="btn-accent flex-1 text-sm py-2 disabled:opacity-40">
-              {creating ? 'Oluşturuluyor...' : 'Grubu Kur'}
+              {creating ? (isEn ? 'Creating...' : 'Oluşturuluyor...') : (isEn ? 'Create Band' : 'Grubu Kur')}
             </button>
           </div>
         </div>
@@ -180,7 +182,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
       {bands.length === 0 && !showCreate ? (
         <div className="card p-6 text-center text-text-muted text-sm">
           <Users size={28} className="mx-auto mb-2 opacity-40" />
-          <p>Henüz bir grubunuz yok.</p>
+          <p>{isEn ? "You don't have a band yet." : 'Henüz bir grubunuz yok.'}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -215,9 +217,9 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-xs text-text-muted">
-                        <span className="flex items-center gap-1"><Users size={10} />{accepted.length} üye</span>
+                        <span className="flex items-center gap-1"><Users size={10} />{accepted.length} {isEn ? 'members' : 'üye'}</span>
                         {applications.length > 0 && isCreator && (
-                          <span className="text-yellow-400 font-medium bg-yellow-400/10 px-1.5 py-0.5 rounded">{applications.length} yeni başvuru</span>
+                          <span className="text-yellow-400 font-medium bg-yellow-400/10 px-1.5 py-0.5 rounded">{applications.length} {isEn ? 'new applications' : 'yeni başvuru'}</span>
                         )}
                         {pendingInvites > 0 && isCreator && (
                           <span className="text-text-muted">{pendingInvites} davet bekliyor</span>
@@ -234,7 +236,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                       )}
                     >
                       <UserPlus size={12} />
-                      Davet Et
+                      {isEn ? 'Invite' : 'Davet Et'}
                     </button>
                   )}
                 </div>
@@ -255,7 +257,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
 
                 {isCreator && applications.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-[rgba(228,224,216,0.06)] space-y-2">
-                    <p className="text-xs font-medium text-text-primary">Gruba Katılmak İsteyenler</p>
+                    <p className="text-xs font-medium text-text-primary">{isEn ? 'People Who Want to Join' : 'Gruba Katılmak İsteyenler'}</p>
                     {applications.map((app: any) => (
                       <div key={app.id} className="flex items-center justify-between gap-3 bg-[rgba(228,224,216,0.03)] p-2 rounded-lg">
                         <div className="flex items-center gap-2 min-w-0">
@@ -281,7 +283,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                             }}
                             className="text-[10px] px-2 py-1.5 rounded-md bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-colors"
                           >
-                            Reddet
+                            {isEn ? 'Reject' : 'Reddet'}
                           </button>
                           <button
                             onClick={async () => {
@@ -290,7 +292,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                             }}
                             className="text-[10px] px-2 py-1.5 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
                           >
-                            Kabul Et
+                            {isEn ? 'Accept' : 'Kabul Et'}
                           </button>
                         </div>
                       </div>
@@ -299,7 +301,7 @@ export function BandSection({ userId, artistId, lookingForBand, onToggleLfb }: P
                 )}
 
                 {isInviting && (
-                  <BottomSheet open={isInviting} onClose={() => setInvitingBandId(null)} title="Yeni Üye Davet Et">
+                  <BottomSheet open={isInviting} onClose={() => setInvitingBandId(null)} title={isEn ? 'Invite New Member' : 'Yeni Üye Davet Et'}>
                     <BandInviteSearch
                       bandId={band.id}
                       existingMembers={existingMembers}
