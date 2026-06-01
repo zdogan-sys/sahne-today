@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { getDayNames, formatTime, formatDate } from '@/lib/utils'
 import { MapPin, Check, X, Clock, CalendarX, SendHorizonal } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { withdrawVenueOffer } from '@/app/actions/offer'
 import { respondToSlotApplication } from '@/app/actions/venue'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
@@ -16,6 +17,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
   const isEn = locale === 'en'
   const dayNames = getDayNames(locale)
   const [venues, setVenues] = useState<any[]>([])
+  const [studioReservations, setStudioReservations] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [eventRequests, setEventRequests] = useState<any[]>([])
   const [confirmedEvents, setConfirmedEvents] = useState<any[]>([])
@@ -44,6 +46,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
       .from('venues')
       .select('*, slots(*, applications(*))')
       .eq('owner_id', userId)
+      .select('id, name, city, district, venue_type, venue_subtype, is_pro_venue, photo_url, slots(*, applications(*))')
 
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
@@ -89,6 +92,21 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     setEventRequests(eventReqRes.data ?? [])
     setConfirmedEvents(confirmedRes.data ?? [])
     setOfferedEvents(offeredRes.data ?? [])
+
+    const studioVenueIds = (venueData ?? [])
+      .filter((v: any) => v.venue_subtype === 'studio' || v.venue_subtype === 'dance_studio')
+      .map((v: any) => v.id)
+
+    if (studioVenueIds.length > 0) {
+      const { data: reservations } = await supabase
+        .from('studio_reservations')
+        .select('id, venue_id, reserver_name, reserver_email, reserver_phone, reservation_date, start_time, end_time, total_price, status, created_at, venues(name)')
+        .in('venue_id', studioVenueIds)
+        .in('status', ['pending', 'confirmed'])
+        .order('reservation_date', { ascending: true })
+      setStudioReservations(reservations ?? [])
+    }
+
     setLoading(false)
   }
 
@@ -328,6 +346,24 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         </div>
       )}
 
+      {/* Stüdyo rezervasyonları */}
+      {studioReservations.length > 0 && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">{isEn ? 'STUDIO RESERVATIONS' : 'STÜDYO REZERVASYONLARI'}</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">
+            {isEn ? 'Manage incoming studio booking requests.' : 'Gelen stüdyo rezervasyon taleplerini yönetin.'}
+          </p>
+          <div className="space-y-3">
+            {studioReservations.map((res: any) => (
+              <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
+                setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+                supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
+              }} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {applications.length > 0 && (
         <div>
           <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'PENDING APPLICATIONS' : 'BEKLEYEN BAŞVURULAR'}</h2>
@@ -375,6 +411,68 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function StudioReservationCard({
+  reservation, isEn, onUpdate,
+}: {
+  reservation: any
+  isEn: boolean
+  onUpdate: (id: string, status: string) => void
+}) {
+  const [acting, setActing] = useState(false)
+
+  async function handle(status: 'confirmed' | 'cancelled') {
+    setActing(true)
+    onUpdate(reservation.id, status)
+    setActing(false)
+  }
+
+  const statusColor = reservation.status === 'confirmed'
+    ? 'text-success bg-success/10 border-success/20'
+    : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-text-primary text-sm">{reservation.reserver_name}</p>
+          <p className="text-text-muted text-xs mt-0.5">
+            {reservation.reservation_date} · {reservation.start_time?.slice(0, 5)}–{reservation.end_time?.slice(0, 5)}
+          </p>
+          <p className="text-text-muted text-xs mt-0.5">
+            {reservation.reserver_email} · {reservation.reserver_phone}
+          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', statusColor)}>
+              {reservation.status === 'confirmed' ? (isEn ? 'Confirmed' : 'Onaylandı') : (isEn ? 'Pending' : 'Bekliyor')}
+            </span>
+            <span className="font-bebas text-base text-accent">₺{reservation.total_price}</span>
+          </div>
+        </div>
+        {reservation.status === 'pending' && (
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => handle('confirmed')}
+              disabled={acting}
+              className="w-8 h-8 rounded-lg bg-success/10 text-success hover:bg-success/20 flex items-center justify-center transition-colors disabled:opacity-50"
+              title={isEn ? 'Confirm' : 'Onayla'}
+            >
+              <Check size={14} />
+            </button>
+            <button
+              onClick={() => handle('cancelled')}
+              disabled={acting}
+              className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-colors disabled:opacity-50"
+              title={isEn ? 'Reject' : 'Reddet'}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -5,6 +5,8 @@
     "artists": "Sanatçılar",
     "venues": "Mekanlar",
     "bands": "Gruplar",
+    "courses": "Kurslar",
+    "studios": "Stüdyolar",
     "crew": "Ekip",
     "search": "Ara",
     "dashboard": "Panelim",
@@ -265,6 +267,88 @@
   },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
+  },
+  "courses": {
+    "title": "Kurslar",
+    "subtitle": "Müzik, dans ve tiyatro dersleri",
+    "filter": {
+      "category": "Kategori",
+      "level": "Seviye",
+      "type": "Ders Türü",
+      "city": "Şehir",
+      "online": "Online / Yüz yüze",
+      "price": "Fiyat"
+    },
+    "category": {
+      "music": "Müzik",
+      "dance": "Dans",
+      "theater": "Tiyatro",
+      "other": "Diğer"
+    },
+    "type": {
+      "individual": "Bireysel",
+      "group": "Grup",
+      "package": "Paket"
+    },
+    "level": {
+      "beginner": "Başlangıç",
+      "intermediate": "Orta",
+      "advanced": "İleri",
+      "all": "Hepsi"
+    },
+    "enroll": "Kayıt Ol",
+    "spots_left": "kontenjan kaldı",
+    "gender_balance": "Kadın / Erkek dağılımı",
+    "per_session": "seans başı",
+    "duration_min": "dk",
+    "available_sessions": "Müsait Seanslar",
+    "instructor": "Eğitmen",
+    "my_courses": "Kurslarım",
+    "new_course": "Yeni Kurs Oluştur",
+    "no_courses": "Henüz kurs oluşturmadınız.",
+    "enrollments": "Kayıt İstekleri",
+    "session_date": "Seans Tarihi",
+    "session_time": "Seans Saati",
+    "add_session": "Seans Ekle",
+    "course_name": "Kurs Adı",
+    "subcategory": "Alt Kategori",
+    "price_per_session": "Seans Ücreti (₺)",
+    "min_participants": "Min. Katılımcı",
+    "max_participants": "Maks. Katılımcı",
+    "min_female": "Min. Kadın",
+    "min_male": "Min. Erkek",
+    "is_online": "Online Ders",
+    "face_to_face": "Yüz Yüze",
+    "location": "Konum",
+    "description": "Açıklama",
+    "status": {
+      "active": "Aktif",
+      "paused": "Durduruldu",
+      "full": "Dolu",
+      "cancelled": "İptal"
+    }
+  },
+  "studios": {
+    "title": "Stüdyolar",
+    "subtitle": "Prova ve kayıt stüdyoları",
+    "per_hour": "saat başı",
+    "reserve": "Rezervasyon Yap",
+    "available_hours": "Müsait Saatler",
+    "select_date": "Tarih Seçin",
+    "select_time": "Saat Seçin",
+    "duration": "Süre (saat)",
+    "total_price": "Toplam Tutar",
+    "reservation_details": "Rezervasyon Bilgileri",
+    "your_name": "Ad Soyad",
+    "your_email": "E-posta",
+    "your_phone": "Telefon",
+    "notes": "Notlar",
+    "confirm_reservation": "Rezervasyonu Onayla",
+    "my_reservations": "Rezervasyonlarım",
+    "type": {
+      "studio": "Müzik Stüdyosu",
+      "dance_studio": "Dans Stüdyosu"
+    }
   },
   "pro": {
     "badge": "PRO",

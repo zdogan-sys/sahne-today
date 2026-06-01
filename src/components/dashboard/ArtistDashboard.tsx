@@ -9,6 +9,7 @@ import { Clock, Check, X, MapPin, Building2 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { respondToCancelRequest } from '@/app/actions/event'
+import { ProBadge } from '@/components/ui/ProBadge'
 import { respondToVenueOffer } from '@/app/actions/offer'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
 import { BandSection } from '@/components/bands/BandSection'
@@ -22,6 +23,7 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
   const dayNames = getDayNames(locale)
   const [artist, setArtist] = useState<any>(null)
   const [venue, setVenue] = useState<any>(null)
+  const [isProIndividual, setIsProIndividual] = useState(false)
   const [applications, setApplications] = useState<any[]>([])
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -44,13 +46,15 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
   }, [])
 
   async function load() {
-    const [{ data: artistData }, { data: venueData }] = await Promise.all([
+    const [{ data: artistData }, { data: venueData }, { data: profileData }] = await Promise.all([
       supabase.from('artists').select('*').eq('profile_id', userId).single(),
       supabase.from('venues').select('id, name, city, district, venue_type, photo_url').eq('owner_id', userId).maybeSingle(),
+      supabase.from('profiles').select('is_pro_individual').eq('id', userId).single(),
     ])
 
     setArtist(artistData)
     setVenue(venueData)
+    setIsProIndividual(!!(profileData as any)?.is_pro_individual)
 
     if (artistData) {
       const [appRes, inviteRes, membershipRes] = await Promise.all([
@@ -385,6 +389,39 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
           </div>
         </div>
       )}
+
+      {/* Kurslar bölümü */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bebas text-2xl text-text-primary flex items-center gap-2">
+            {isEn ? 'COURSES' : 'KURSLAR'}
+            {isProIndividual && <ProBadge />}
+          </h2>
+        </div>
+        {isProIndividual ? (
+          <div className="card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Course Management' : 'Kurs Yönetimi'}</p>
+              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Create and manage your courses' : 'Kurslarınızı oluşturun ve yönetin'}</p>
+            </div>
+            <Link href="/dashboard/courses" className="btn-accent py-1.5 px-3 text-xs">
+              {isEn ? 'Manage →' : 'Yönet →'}
+            </Link>
+          </div>
+        ) : (
+          <div className="card p-4 flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Give Lessons' : 'Ders Ver'}</p>
+              <p className="text-text-muted text-xs mt-0.5">
+                {isEn ? 'Pro membership required for this feature' : 'Bu özellik için Pro üyelik gereklidir'}
+              </p>
+            </div>
+            <span className="text-[10px] text-[#d4a820] bg-[rgba(212,168,32,0.12)] border border-[rgba(212,168,32,0.3)] rounded px-2 py-1 font-bold uppercase tracking-wider flex-shrink-0">
+              PRO
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Bands */}
       <BandSection

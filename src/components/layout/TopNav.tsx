@@ -24,6 +24,8 @@ export function TopNav() {
     { href: '/venues' as const, label: t('nav.venues') },
     { href: '/artists' as const, label: t('nav.artists') },
     { href: '/bands' as const, label: t('nav.bands') },
+    { href: '/courses' as const, label: t('nav.courses') },
+    { href: '/studios' as const, label: t('nav.studios') },
   ]
 
   const logoText = locale === 'tr' ? 'SAHNE.TODAY' : 'THE STAGE'
