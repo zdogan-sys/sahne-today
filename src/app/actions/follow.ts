@@ -28,7 +28,7 @@ export async function toggleFollow(
   return { following: true }
 }
 
-export async function notifyFollowers(eventId: string) {
+export async function notifyFollowers(eventId: string, locale: 'tr' | 'en' = 'tr') {
   const admin = createAdminClient()
 
   const { data: ev } = await admin
@@ -75,14 +75,19 @@ export async function notifyFollowers(eventId: string) {
   const venue = (ev as any).venues
   const performer = (ev as any).artists?.stage_name ?? (ev as any).bands?.name ?? ''
   const location = venue ? `${venue.name}, ${venue.city}` : ''
-  const eventDate = new Date((ev as any).event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  const dateOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' }
+  const eventDate = new Date((ev as any).event_date).toLocaleDateString(locale === 'en' ? 'en-US' : 'tr-TR', dateOptions)
+  const notificationTitle = locale === 'en'
+    ? `New Event: ${(ev as any).title}`
+    : `Yeni Etkinlik: ${(ev as any).title}`
+  const viewButtonText = locale === 'en' ? 'View Event →' : 'Etkinliği Gör →'
 
   // In-app notifications
   await admin.from('notifications').insert(
     followers.map(f => ({
       user_id: f.userId,
       type: 'event_confirmed',
-      title: `Yeni Etkinlik: ${(ev as any).title}`,
+      title: notificationTitle,
       body: `${performer}${location ? ` · ${location}` : ''} · ${eventDate}`,
       link: `/events/${eventId}`,
     }))
@@ -95,9 +100,9 @@ export async function notifyFollowers(eventId: string) {
     await Promise.all(
       followers.map(f =>
         resend.emails.send({
-          from: 'Sahne.Today <bildirim@sahne.today>',
+          from: locale === 'en' ? 'The Stage.Today <notifications@thestage.today>' : 'Sahne.Today <bildirim@sahne.today>',
           to: f.email,
-          subject: `Yeni Etkinlik: ${(ev as any).title}`,
+          subject: notificationTitle,
           html: followEventEmailHtml({
             name: f.name,
             eventTitle: (ev as any).title,
@@ -105,6 +110,8 @@ export async function notifyFollowers(eventId: string) {
             location,
             eventDate,
             eventId,
+            locale,
+            viewButtonText,
           }),
         }).catch(() => {})
       )
@@ -119,19 +126,26 @@ function followEventEmailHtml(p: {
   location: string
   eventDate: string
   eventId: string
+  locale: 'tr' | 'en'
+  viewButtonText: string
 }) {
+  const domain = p.locale === 'en' ? 'thestage.today' : 'sahne.today'
+  const disclaimer = p.locale === 'en'
+    ? `You received this email because you follow this account. <a href="https://${domain}/dashboard" style="color:#a09a8e">Manage your follows</a>`
+    : `Takip ettiğiniz için bu e-postayı aldınız. <a href="https://${domain}/dashboard" style="color:#a09a8e">Takiplerimi yönet</a>`
+
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#111;color:#e4e0d8;padding:32px;border-radius:12px">
       <h2 style="font-size:22px;margin:0 0 8px">🎵 ${p.eventTitle}</h2>
       ${p.performer ? `<p style="color:#a09a8e;margin:0 0 4px">${p.performer}</p>` : ''}
       ${p.location ? `<p style="color:#a09a8e;margin:0 0 4px">📍 ${p.location}</p>` : ''}
       <p style="color:#a09a8e;margin:0 0 24px">📅 ${p.eventDate}</p>
-      <a href="https://sahne.today/events/${p.eventId}"
+      <a href="https://${domain}/events/${p.eventId}"
          style="background:#e8622a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
-        Etkinliği Gör →
+        ${p.viewButtonText}
       </a>
       <p style="color:#666;font-size:12px;margin-top:32px">
-        Takip ettiğiniz için bu e-postayı aldınız. <a href="https://sahne.today/dashboard" style="color:#a09a8e">Takiplerimi yönet</a>
+        ${disclaimer}
       </p>
     </div>
   `

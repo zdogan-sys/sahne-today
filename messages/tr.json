@@ -239,5 +239,33 @@
   },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
+  },
+  "errors": {
+    "authRequired": "Oturum açmanız gerekiyor.",
+    "loginRequired": "Giriş yapmanız gerekiyor.",
+    "unauthorized": "Yetkiniz yok.",
+    "notFound": "Bulunamadı.",
+    "addFailed": "Eklenemedi.",
+    "venueNotFound": "Mekan bulunamadı.",
+    "slotNotFound": "Slot bulunamadı.",
+    "eventNotFound": "Etkinlik bulunamadı.",
+    "artistProfileNotFound": "Sanatçı profili bulunamadı.",
+    "offerExpired": "Bu teklif artık geçerli değil.",
+    "offerCannotWithdraw": "Bu teklif geri çekilemez."
+  },
+  "notifications": {
+    "newStageOffer": "Yeni Sahne Teklifi",
+    "offerAcceptedTitle": "🎉 Teklif Kabul Edildi",
+    "offerRejectedTitle": "Teklif Reddedildi",
+    "offerWithdrawnTitle": "Teklif Geri Çekildi",
+    "competingOfferRejectedTitle": "Teklifiniz Yanıtsız Kaldı",
+    "newEventTitle": "Yeni Etkinlik: {title}",
+    "viewEventButton": "Etkinliği Gör →",
+    "offerAcceptedBody": "{performer}, {date} tarihli teklifinizi kabul etti!",
+    "offerRejectedBody": "{performer}, {date} tarihli teklifinizi reddetti.",
+    "offerWithdrawnBody": "Size gönderilen sahne teklifi mekan tarafından geri çekildi.",
+    "competingOfferRejectedBody": "{performer}, {date} tarihi için başka bir teklifi kabul etti. Takviminizi doldurmak için diğer sanatçıları keşfedin.",
+    "newVenueOfferBody": "{venue} sizi {date} tarihine davet etti. {hours} saat içinde yanıtlayın.",
+    "followEmailDisclaimer": "Takip ettiğiniz için bu e-postayı aldınız."
   }
 }

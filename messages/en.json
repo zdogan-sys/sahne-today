@@ -240,5 +240,33 @@
   },
   "footer": {
     "allRightsReserved": "All rights reserved."
+  },
+  "errors": {
+    "authRequired": "You need to sign in.",
+    "loginRequired": "You need to sign in.",
+    "unauthorized": "You don't have permission.",
+    "notFound": "Not found.",
+    "addFailed": "Could not add.",
+    "venueNotFound": "Venue not found.",
+    "slotNotFound": "Slot not found.",
+    "eventNotFound": "Event not found.",
+    "artistProfileNotFound": "Artist profile not found.",
+    "offerExpired": "This offer is no longer valid.",
+    "offerCannotWithdraw": "This offer cannot be withdrawn."
+  },
+  "notifications": {
+    "newStageOffer": "New Stage Offer",
+    "offerAcceptedTitle": "🎉 Offer Accepted",
+    "offerRejectedTitle": "Offer Rejected",
+    "offerWithdrawnTitle": "Offer Withdrawn",
+    "competingOfferRejectedTitle": "Your Offer Went Unanswered",
+    "newEventTitle": "New Event: {title}",
+    "viewEventButton": "View Event →",
+    "offerAcceptedBody": "{performer} accepted your offer for {date}!",
+    "offerRejectedBody": "{performer} declined your offer for {date}.",
+    "offerWithdrawnBody": "A stage offer sent to you was withdrawn by the venue.",
+    "competingOfferRejectedBody": "{performer} accepted another offer for {date}. Discover other artists to fill your schedule.",
+    "newVenueOfferBody": "{venue} invited you to perform on {date}. Respond within {hours} hours.",
+    "followEmailDisclaimer": "You received this email because you follow this account."
   }
 }
