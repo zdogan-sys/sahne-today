@@ -39,6 +39,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
   onUpdated: (updated: EventItem) => void
   onRemoved: (id: string) => void
 }) {
+  const locale = useLocale()
   const [editing, setEditing] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
