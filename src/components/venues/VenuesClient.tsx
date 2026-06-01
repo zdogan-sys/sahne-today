@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
 import { MapPin, Filter, Music, CalendarDays } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
-import { cn, formatTime } from '@/lib/utils'
+import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
