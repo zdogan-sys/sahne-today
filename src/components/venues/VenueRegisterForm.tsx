@@ -2,18 +2,37 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
-import { VENUE_TYPE_LABELS, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 
-const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
+const EQUIPMENT_OPTIONS_TR = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
+const EQUIPMENT_OPTIONS_EN = ['Sound System', 'Microphone', 'Keyboard', 'Drum Kit', 'Lighting', 'Projector', 'Stage']
+
+const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
+  { key: 'pub', tr: 'Pub', en: 'Pub' },
+  { key: 'turku_bar', tr: 'Türkü Bar', en: 'Turkish Folk Bar' },
+  { key: 'live_music', tr: 'Canlı Müzik', en: 'Live Music Venue' },
+  { key: 'bookstore', tr: 'Kitabevi', en: 'Bookstore' },
+  { key: 'theater', tr: 'Tiyatro', en: 'Theater' },
+  { key: 'cafe', tr: 'Kafe', en: 'Cafe' },
+  { key: 'other', tr: 'Diğer', en: 'Other' },
+]
 
 type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
 
+function venueTypeLabel(key: VenueType | '', isEn: boolean): string {
+  const found = VENUE_TYPES.find((v) => v.key === key)
+  if (!found) return ''
+  return isEn ? found.en : found.tr
+}
+
 function ProgressBar({ step }: { step: number }) {
+  const isEn = useLocale() === 'en'
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
@@ -34,9 +53,9 @@ function ProgressBar({ step }: { step: number }) {
         ))}
       </div>
       <div className="flex justify-between text-xs text-text-muted">
-        <span>Temel Bilgiler</span>
-        <span>Sahne & Kapasite</span>
-        <span>Önizleme</span>
+        <span>{isEn ? 'Basic Info' : 'Temel Bilgiler'}</span>
+        <span>{isEn ? 'Stage & Capacity' : 'Sahne & Kapasite'}</span>
+        <span>{isEn ? 'Preview' : 'Önizleme'}</span>
       </div>
     </div>
   )
@@ -69,6 +88,8 @@ function ChipSelector({ options, selected, onToggle, label }: {
 
 export function VenueRegisterForm() {
   const router = useRouter()
+  const isEn = useLocale() === 'en'
+  const EQUIPMENT_OPTIONS = isEn ? EQUIPMENT_OPTIONS_EN : EQUIPMENT_OPTIONS_TR
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -119,7 +140,7 @@ export function VenueRegisterForm() {
       .single()
 
     if (venueErr || !venueData) {
-      setError('Mekan kaydedilemedi.')
+      setError(isEn ? 'Could not save venue.' : 'Mekan kaydedilemedi.')
       setLoading(false)
       return
     }
@@ -143,55 +164,55 @@ export function VenueRegisterForm() {
 
       {step === 1 && (
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold text-text-primary">Temel Bilgiler</h2>
+          <h2 className="font-semibold text-text-primary">{isEn ? 'Basic Info' : 'Temel Bilgiler'}</h2>
           <div>
-            <label className="label">Mekan Adı *</label>
+            <label className="label">{isEn ? 'Venue Name *' : 'Mekan Adı *'}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="The Backstage" className="input-field" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Şehir *</label>
+              <label className="label">{isEn ? 'City *' : 'Şehir *'}</label>
               <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field">
-                <option value="">Seçin</option>
+                <option value="">{isEn ? 'Select' : 'Seçin'}</option>
                 {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Bölge *</label>
+              <label className="label">{isEn ? 'District *' : 'Bölge *'}</label>
               {city && DISTRICTS_BY_CITY[city] ? (
                 <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field">
-                  <option value="">Seçin</option>
+                  <option value="">{isEn ? 'Select' : 'Seçin'}</option>
                   {DISTRICTS_BY_CITY[city].map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               ) : (
-                <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Bölge" className="input-field" />
+                <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder={isEn ? 'District' : 'Bölge'} className="input-field" />
               )}
             </div>
           </div>
           <div>
-            <label className="label">Adres *</label>
+            <label className="label">{isEn ? 'Address *' : 'Adres *'}</label>
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Moda Cad. No:12" className="input-field" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Telefon</label>
+              <label className="label">{isEn ? 'Phone' : 'Telefon'}</label>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+90 212 000 00 00" className="input-field" />
             </div>
             <div>
-              <label className="label">E-posta</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="info@mekan.com" className="input-field" />
+              <label className="label">{isEn ? 'Email' : 'E-posta'}</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="info@venue.com" className="input-field" />
             </div>
           </div>
           <div>
-            <label className="label">Mekan Türü *</label>
+            <label className="label">{isEn ? 'Venue Type *' : 'Mekan Türü *'}</label>
             <div className="flex flex-wrap gap-2 mt-1">
-              {Object.entries(VENUE_TYPE_LABELS).map(([key, label]) => (
-                <button key={key} type="button" onClick={() => setVenueType(key as VenueType)}
+              {VENUE_TYPES.map(({ key, tr, en }) => (
+                <button key={key} type="button" onClick={() => setVenueType(key)}
                   className={cn('chip border transition-colors', venueType === key
                     ? 'bg-accent/10 text-accent border-accent/30'
                     : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
                   )}>
-                  {label}
+                  {isEn ? en : tr}
                 </button>
               ))}
             </div>
@@ -199,44 +220,44 @@ export function VenueRegisterForm() {
           <button onClick={() => { if (name && city && district && address && venueType) setStep(2) }}
             disabled={!name || !city || !district || !address || !venueType}
             className="btn-accent w-full py-3 disabled:opacity-40">
-            Devam Et →
+            {isEn ? 'Continue →' : 'Devam Et →'}
           </button>
         </div>
       )}
 
       {step === 2 && (
         <div className="card p-6 space-y-5">
-          <h2 className="font-semibold text-text-primary">Sahne & Kapasite</h2>
+          <h2 className="font-semibold text-text-primary">{isEn ? 'Stage & Capacity' : 'Sahne & Kapasite'}</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="label">Oturma Kapasitesi</label>
+              <label className="label">{isEn ? 'Seated Capacity' : 'Oturma Kapasitesi'}</label>
               <input value={capacitySeated} onChange={(e) => setCapacitySeated(e.target.value)} type="number" placeholder="80" className="input-field" />
             </div>
             <div>
-              <label className="label">Ayakta Kapasite</label>
+              <label className="label">{isEn ? 'Standing Capacity' : 'Ayakta Kapasite'}</label>
               <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" placeholder="150" className="input-field" />
             </div>
             <div>
-              <label className="label">Sahne Alanı (m²)</label>
+              <label className="label">{isEn ? 'Stage Area (m²)' : 'Sahne Alanı (m²)'}</label>
               <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" placeholder="20" className="input-field" />
             </div>
           </div>
           <ChipSelector options={EQUIPMENT_OPTIONS} selected={equipment}
             onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
-            label="Mevcut Ekipman" />
+            label={isEn ? 'Available Equipment' : 'Mevcut Ekipman'} />
           <TabbedGenreSelector selected={genres}
             onToggle={(v) => setGenres((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
-            label="Ağırlıklı Türler" />
+            label={isEn ? 'Primary Genres' : 'Ağırlıklı Türler'} />
           <div>
-            <label className="label">Açıklama</label>
+            <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-              placeholder="Mekanınızı anlatan kısa bir metin..." className="input-field resize-none" />
+              placeholder={isEn ? 'A short text about your venue...' : 'Mekanınızı anlatan kısa bir metin...'} className="input-field resize-none" />
           </div>
-          <ImageUpload value={photoUrl} onChange={setPhotoUrl} bucket="venues" label="Mekan Fotoğrafı" />
+          <ImageUpload value={photoUrl} onChange={setPhotoUrl} bucket="venues" label={isEn ? 'Venue Photo' : 'Mekan Fotoğrafı'} />
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
           <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="btn-outline flex-1 py-3">← Geri</button>
-            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">Önizleme →</button>
+            <button onClick={() => setStep(1)} className="btn-outline flex-1 py-3">{isEn ? '← Back' : '← Geri'}</button>
+            <button onClick={() => setStep(3)} className="btn-accent flex-1 py-3">{isEn ? 'Preview →' : 'Önizleme →'}</button>
           </div>
         </div>
       )}
@@ -244,19 +265,19 @@ export function VenueRegisterForm() {
       {step === 3 && (
         <div className="space-y-4">
           <div className="card p-6">
-            <h2 className="font-semibold text-text-primary mb-4">Önizleme</h2>
+            <h2 className="font-semibold text-text-primary mb-4">{isEn ? 'Preview' : 'Önizleme'}</h2>
             <div className="space-y-3 text-sm">
-              <div className="flex gap-2"><span className="text-text-muted w-28">Mekan:</span><span className="text-text-primary font-medium">{name}</span></div>
-              <div className="flex gap-2"><span className="text-text-muted w-28">Konum:</span><span className="text-text-primary">{district}, {city}</span></div>
-              <div className="flex gap-2"><span className="text-text-muted w-28">Tür:</span><span className="text-text-primary">{VENUE_TYPE_LABELS[venueType as VenueType]}</span></div>
-              {genres.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">Türler:</span><span className="text-text-primary">{genres.join(', ')}</span></div>}
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Venue:' : 'Mekan:'}</span><span className="text-text-primary font-medium">{name}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Location:' : 'Konum:'}</span><span className="text-text-primary">{district}, {city}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Type:' : 'Tür:'}</span><span className="text-text-primary">{venueTypeLabel(venueType, isEn)}</span></div>
+              {genres.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Genres:' : 'Türler:'}</span><span className="text-text-primary">{genres.join(', ')}</span></div>}
             </div>
           </div>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">← Geri</button>
+            <button onClick={() => setStep(2)} className="btn-outline flex-1 py-3">{isEn ? '← Back' : '← Geri'}</button>
             <button onClick={handleSubmit} disabled={loading} className="btn-accent flex-1 py-3 disabled:opacity-50">
-              {loading ? 'Kaydediliyor...' : 'Yayınla'}
+              {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Publish' : 'Yayınla')}
             </button>
           </div>
         </div>
