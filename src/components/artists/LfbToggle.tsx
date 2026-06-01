@@ -2,22 +2,21 @@
 
 import { useState } from 'react'
 import { Search } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 export function LfbToggle({ artistId, initialValue }: { artistId: string; initialValue: boolean }) {
   const [active, setActive] = useState(initialValue)
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   async function toggle() {
     setLoading(true)
     const next = !active
-    const { error } = await supabase
-      .from('artists')
-      .update({ looking_for_band: next } as any)
-      .eq('id', artistId)
-    if (!error) setActive(next)
+    const res = await fetch('/api/artist/set-teaching', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist_id: artistId, looking_for_band: next }),
+    })
+    if (res.ok) setActive(next)
     setLoading(false)
   }
 

@@ -10,10 +10,9 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { artist_id, is_teaching, teaching_instruments } = await req.json()
+  const { artist_id, is_teaching, teaching_instruments, looking_for_band } = await req.json()
   if (!artist_id) return NextResponse.json({ error: 'artist_id gerekli' }, { status: 400 })
 
-  // Admin her sanatçıyı güncelleyebilir, normal kullanıcı sadece kendi profilini
   if (!isAdminUser(user)) {
     const { data: artist } = await supabase
       .from('artists')
@@ -29,6 +28,11 @@ export async function POST(req: NextRequest) {
   const update: Record<string, unknown> = {}
   if (typeof is_teaching === 'boolean') update.is_teaching = is_teaching
   if (Array.isArray(teaching_instruments)) update.teaching_instruments = teaching_instruments
+  if (typeof looking_for_band === 'boolean') update.looking_for_band = looking_for_band
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'Güncellenecek alan yok' }, { status: 400 })
+  }
 
   const { error } = await admin.from('artists').update(update).eq('id', artist_id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
