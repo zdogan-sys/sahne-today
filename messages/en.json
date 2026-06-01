@@ -247,7 +247,22 @@
     },
     "dateRanges": ["Today", "This Week", "This Month", "All"],
     "musicGenres": ["Acoustic", "Metal", "Rock", "Blues", "Jazz", "Pop", "Electronic", "R&B", "Rap", "Classical", "Ethnic", "Fasıl", "Folk", "Arabesk"],
-    "stageTypes": ["Stand-Up", "Improvisation", "Alternative Stage"]
+    "stageTypes": ["Stand-Up", "Improvisation", "Alternative Stage"],
+    "venueTypes": {
+      "pub": "Pub",
+      "turku_bar": "Turkish Folk Bar",
+      "live_music": "Live Music Venue",
+      "bookstore": "Bookstore",
+      "theater": "Theater",
+      "cafe": "Cafe",
+      "other": "Other"
+    },
+    "feeModels": {
+      "free": "Free",
+      "door_share": "Door Share",
+      "guarantee": "Guarantee",
+      "negotiable": "Negotiable"
+    }
   },
   "footer": {
     "allRightsReserved": "All rights reserved."

@@ -246,7 +246,22 @@
     },
     "dateRanges": ["Bugün", "Bu Hafta", "Bu Ay", "Tümü"],
     "musicGenres": ["Akustik", "Metal", "Rock", "Blues", "Caz", "Pop", "Elektronik", "R&B", "Rap", "Klasik", "Etnik", "Fasıl", "Türkü", "Arabesk"],
-    "stageTypes": ["Stand-Up", "Doğaçlama", "Alternatif Sahne"]
+    "stageTypes": ["Stand-Up", "Doğaçlama", "Alternatif Sahne"],
+    "venueTypes": {
+      "pub": "Pub",
+      "turku_bar": "Türkü Bar",
+      "live_music": "Canlı Müzik",
+      "bookstore": "Kitabevi",
+      "theater": "Tiyatro",
+      "cafe": "Kafe",
+      "other": "Diğer"
+    },
+    "feeModels": {
+      "free": "Ücretsiz",
+      "door_share": "Kapı Paylaşımı",
+      "guarantee": "Garanti",
+      "negotiable": "Pazarlığa Açık"
+    }
   },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."
