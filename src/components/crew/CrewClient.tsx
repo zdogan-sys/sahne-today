@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Plus, MapPin, Mail, Calendar } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -15,6 +16,7 @@ type ListingFull = CrewListing & { profiles: Pick<Profile, 'display_name' | 'cit
 const ROLE_OPTIONS = ['Basçı', 'Davulcu', 'Gitarist', 'Klavyeci', 'Vokal', 'Komedyen Ortağı', 'Kemancı', 'Yapımcı', 'DJ']
 
 export function CrewClient({ initialListings }: { initialListings: ListingFull[] }) {
+  const isEn = useLocale() === 'en'
   const [listings, setListings] = useState<ListingFull[]>(initialListings)
   const [formOpen, setFormOpen] = useState(false)
 
@@ -22,7 +24,7 @@ export function CrewClient({ initialListings }: { initialListings: ListingFull[]
     <div className="relative">
       {listings.length === 0 ? (
         <div className="text-center py-16 text-text-muted text-sm">
-          <p>Henüz ilan yok. İlk ilanı siz verin!</p>
+          <p>{isEn ? 'No listings yet. Post the first one!' : 'Henüz ilan yok. İlk ilanı siz verin!'}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -36,7 +38,7 @@ export function CrewClient({ initialListings }: { initialListings: ListingFull[]
       <button
         onClick={() => setFormOpen(true)}
         className="fixed bottom-20 right-4 md:bottom-6 z-40 bg-accent text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-accent/90 transition-colors"
-        aria-label="İlan Ver"
+        aria-label={isEn ? 'Post Listing' : 'İlan Ver'}
       >
         <Plus size={24} />
       </button>
@@ -51,6 +53,7 @@ export function CrewClient({ initialListings }: { initialListings: ListingFull[]
 }
 
 function ListingCard({ listing }: { listing: ListingFull }) {
+  const isEn = useLocale() === 'en'
   const date = new Date(listing.created_at)
   const daysAgo = Math.floor((Date.now() - date.getTime()) / 86400000)
 
@@ -65,7 +68,7 @@ function ListingCard({ listing }: { listing: ListingFull }) {
         </div>
         <span className="text-text-muted text-xs flex-shrink-0 flex items-center gap-1 mt-1">
           <Calendar size={10} />
-          {daysAgo === 0 ? 'Bugün' : `${daysAgo}g önce`}
+          {daysAgo === 0 ? (isEn ? 'Today' : 'Bugün') : (isEn ? `${daysAgo}d ago` : `${daysAgo}g önce`)}
         </span>
       </div>
 
@@ -95,7 +98,7 @@ function ListingCard({ listing }: { listing: ListingFull }) {
           className="flex items-center gap-1.5 text-accent text-xs hover:underline"
         >
           <Mail size={12} />
-          İletişim
+          {isEn ? 'Contact' : 'İletişim'}
         </a>
       </div>
     </div>
@@ -105,6 +108,7 @@ function ListingCard({ listing }: { listing: ListingFull }) {
 function CrewListingForm({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: (listing: any) => void
 }) {
+  const isEn = useLocale() === 'en'
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [genres, setGenres] = useState<string[]>([])
@@ -137,7 +141,7 @@ function CrewListingForm({ open, onClose, onCreated }: {
     } as any).select('*, profiles(display_name, city)').single()
 
     if (err || !data) {
-      setError('İlan gönderilemedi.')
+      setError(isEn ? 'Could not post listing.' : 'İlan gönderilemedi.')
     } else {
       onCreated(data)
       onClose()
@@ -147,19 +151,19 @@ function CrewListingForm({ open, onClose, onCreated }: {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Grup / Ekip Arıyorum">
+    <BottomSheet open={open} onClose={onClose} title={isEn ? 'Looking for a Band / Crew' : 'Grup / Ekip Arıyorum'}>
       <div className="space-y-4">
-        <p className="text-text-muted text-xs -mt-2">Seni arayan gruplara kendini tanıt.</p>
+        <p className="text-text-muted text-xs -mt-2">{isEn ? 'Introduce yourself to bands looking for you.' : 'Seni arayan gruplara kendini tanıt.'}</p>
         <div>
-          <label className="label">Başlık *</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Örn: Davulcuyum, aktif grup arıyorum" className="input-field" />
+          <label className="label">{isEn ? 'Title *' : 'Başlık *'}</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={isEn ? 'e.g. Drummer looking for an active band' : 'Örn: Davulcuyum, aktif grup arıyorum'} className="input-field" />
         </div>
         <div>
-          <label className="label">Hakkında</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Kendinizi tanıtın, deneyiminiz, beklentileriniz..." className="input-field resize-none" />
+          <label className="label">{isEn ? 'About' : 'Hakkında'}</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder={isEn ? 'Introduce yourself, your experience, expectations...' : 'Kendinizi tanıtın, deneyiminiz, beklentileriniz...'} className="input-field resize-none" />
         </div>
         <div>
-          <label className="label">Rollerim</label>
+          <label className="label">{isEn ? 'My Roles' : 'Rollerim'}</label>
           <div className="flex flex-wrap gap-1.5">
             {ROLE_OPTIONS.map((r) => (
               <button key={r} type="button" onClick={() => toggle(roles, setRoles, r)}
@@ -170,7 +174,7 @@ function CrewListingForm({ open, onClose, onCreated }: {
           </div>
         </div>
         <div>
-          <label className="label">Müzik Türlerim</label>
+          <label className="label">{isEn ? 'My Genres' : 'Müzik Türlerim'}</label>
           <div className="flex flex-wrap gap-1.5">
             {ALL_GENRES.map((g) => (
               <button key={g} type="button" onClick={() => toggle(genres, setGenres, g)}
@@ -182,17 +186,17 @@ function CrewListingForm({ open, onClose, onCreated }: {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Şehir</label>
-            <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="İstanbul" className="input-field" />
+            <label className="label">{isEn ? 'City' : 'Şehir'}</label>
+            <input value={city} onChange={(e) => setCity(e.target.value)} placeholder={isEn ? 'Istanbul' : 'İstanbul'} className="input-field" />
           </div>
           <div>
-            <label className="label">İletişim E-posta *</label>
+            <label className="label">{isEn ? 'Contact Email *' : 'İletişim E-posta *'}</label>
             <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="sen@mail.com" className="input-field" />
           </div>
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <button onClick={handleSubmit} disabled={loading || !title || !contactEmail} className="btn-accent w-full py-3 disabled:opacity-40">
-          {loading ? 'Gönderiliyor...' : 'İlan Ver'}
+          {loading ? (isEn ? 'Posting...' : 'Gönderiliyor...') : (isEn ? 'Post Listing' : 'İlan Ver')}
         </button>
       </div>
     </BottomSheet>
