@@ -82,13 +82,21 @@ export default async function DashboardCoursesPage() {
                       {' · '}₺{course.price_per_session} / seans
                     </p>
                   </div>
-                  <Link
-                    href={`/courses/${course.id}`}
-                    className="text-xs text-accent hover:underline flex-shrink-0"
-                    target="_blank"
-                  >
-                    Görüntüle →
-                  </Link>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <Link
+                      href={`/dashboard/courses/${course.id}`}
+                      className="text-xs text-accent hover:underline"
+                    >
+                      Seanslar →
+                    </Link>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="text-xs text-text-muted hover:underline"
+                      target="_blank"
+                    >
+                      Görüntüle
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-[rgba(228,224,216,0.08)]">
