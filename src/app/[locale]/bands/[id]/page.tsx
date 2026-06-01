@@ -16,6 +16,7 @@ import { BandApplyButton } from '@/components/bands/BandApplyButton'
 import { BandProfileEditor } from '@/components/bands/BandProfileEditor'
 import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import { MapPin, ArrowLeft, Users, Images } from 'lucide-react'
+import { translateInstrument } from '@/lib/utils'
 import { BandCalendarSubscribe } from '@/components/bands/BandCalendarSubscribe'
 import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
@@ -208,7 +209,7 @@ export default async function BandPage({ params }: Props) {
                       </div>
                       {artist?.instruments && artist.instruments.length > 0 && (
                         <p className="text-text-muted text-xs truncate mt-0.5">
-                          {artist.instruments.join(', ')}
+                          {artist.instruments.map((i: string) => translateInstrument(i, locale)).join(', ')}
                         </p>
                       )}
                     </div>

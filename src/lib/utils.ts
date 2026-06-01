@@ -7,6 +7,24 @@ export function cn(...inputs: ClassValue[]) {
 
 export { GENRE_COLORS, getGenreColor } from '@/lib/constants'
 
+export const INSTRUMENT_LABELS_EN: Record<string, string> = {
+  'Gitar': 'Guitar',
+  'Bas': 'Bass',
+  'Davul': 'Drums',
+  'Klavye': 'Keyboard',
+  'Keman': 'Violin',
+  'Vokal': 'Vocals',
+  'Saz': 'Saz',
+  'Flüt': 'Flute',
+  'Trompet': 'Trumpet',
+  'Ud': 'Oud',
+}
+
+export function translateInstrument(instrument: string, locale: string): string {
+  if (locale !== 'en') return instrument
+  return INSTRUMENT_LABELS_EN[instrument] ?? instrument
+}
+
 export const VENUE_TYPE_LABELS: Record<string, string> = {
   pub: 'Pub',
   turku_bar: 'Türkü Bar',
