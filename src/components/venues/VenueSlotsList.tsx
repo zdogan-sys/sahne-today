@@ -233,7 +233,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
 
       {/* Add BottomSheet */}
       <BottomSheet open={showAdd} onClose={() => setShowAdd(false)} title="Yeni Slot Ekle">
-        <SlotForm form={newSlot} setForm={setNewSlot} error={error} />
+        <SlotForm form={newSlot} setForm={setNewSlot} error={error} dayNames={dayNames} />
         <button onClick={handleAddSlot} disabled={adding} className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-2">
           {adding ? 'Ekleniyor...' : 'Slotu Ekle'}
         </button>
@@ -241,7 +241,7 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
 
       {/* Edit BottomSheet */}
       <BottomSheet open={!!editingSlot} onClose={() => setEditingSlot(null)} title="Slotu Düzenle">
-        <SlotForm form={editForm} setForm={setEditForm} error={error} />
+        <SlotForm form={editForm} setForm={setEditForm} error={error} dayNames={dayNames} />
         <button onClick={handleSaveEdit} disabled={saving} className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-2">
           {saving ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
@@ -250,10 +250,11 @@ export function VenueSlotsList({ slots: initialSlots, venueId, isOwner, hasUser 
   )
 }
 
-function SlotForm({ form, setForm, error }: {
+function SlotForm({ form, setForm, error, dayNames }: {
   form: typeof EMPTY_FORM
   setForm: (f: typeof EMPTY_FORM) => void
   error: string
+  dayNames: string[]
 }) {
   return (
     <div className="space-y-4 pb-4">
