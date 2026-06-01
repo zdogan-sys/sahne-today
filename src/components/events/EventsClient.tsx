@@ -303,8 +303,8 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
   ]
   return (
     <div className="space-y-5">
-      <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll />
-      <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll />
+      <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
+      <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
       <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
       <div>
         <label className="label">{t('entry')}</label>
@@ -328,8 +328,8 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
   )
 }
 
-function FilterGroup({ label, options, value, onChange, showAll }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean
+function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All' }: {
+  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean; allLabel?: string
 }) {
   return (
     <div>
@@ -344,7 +344,7 @@ function FilterGroup({ label, options, value, onChange, showAll }: {
                 : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
             }`}
           >
-            Hepsi {/* TODO: translate "All" */}
+            {allLabel}
           </button>
         )}
         {options.map((opt) => (
