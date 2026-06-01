@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { KeyRound, Mail, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function AccountSecuritySection({ currentEmail }: { currentEmail?: string | null }) {
+  const isEn = useLocale() === 'en'
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState(currentEmail ?? '')
   const [password, setPassword] = useState('')
@@ -22,17 +24,17 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
     const passwordChanged = password.length > 0
 
     if (!emailChanged && !passwordChanged) {
-      setError('Değiştirilecek bir şey yok.')
+      setError(isEn ? 'Nothing to change.' : 'Değiştirilecek bir şey yok.')
       return
     }
 
     if (passwordChanged) {
       if (password.length < 6) {
-        setError('Şifre en az 6 karakter olmalı.')
+        setError(isEn ? 'Password must be at least 6 characters.' : 'Şifre en az 6 karakter olmalı.')
         return
       }
       if (password !== confirmPassword) {
-        setError('Şifreler eşleşmiyor.')
+        setError(isEn ? 'Passwords do not match.' : 'Şifreler eşleşmiyor.')
         return
       }
     }
@@ -43,7 +45,7 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
     if (emailChanged) {
       const { error: err } = await supabase.auth.updateUser({ email: email.trim() })
       if (err) {
-        setError('E-posta güncellenemedi: ' + err.message)
+        setError((isEn ? 'Could not update email: ' : 'E-posta güncellenemedi: ') + err.message)
         setLoading(false)
         return
       }
@@ -52,7 +54,7 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
     if (passwordChanged) {
       const { error: err } = await supabase.auth.updateUser({ password })
       if (err) {
-        setError('Şifre güncellenemedi: ' + err.message)
+        setError((isEn ? 'Could not update password: ' : 'Şifre güncellenemedi: ') + err.message)
         setLoading(false)
         return
       }
@@ -63,8 +65,8 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
     setConfirmPassword('')
 
     const messages: string[] = []
-    if (emailChanged) messages.push('Yeni e-postanıza doğrulama maili gönderildi.')
-    if (passwordChanged) messages.push('Şifreniz güncellendi.')
+    if (emailChanged) messages.push(isEn ? 'A verification email has been sent to your new address.' : 'Yeni e-postanıza doğrulama maili gönderildi.')
+    if (passwordChanged) messages.push(isEn ? 'Your password has been updated.' : 'Şifreniz güncellendi.')
     setSuccess(messages.join(' '))
   }
 
@@ -77,7 +79,7 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
       >
         <div className="flex items-center gap-2 text-sm text-text-muted">
           <KeyRound size={14} />
-          <span>E-posta & Şifre</span>
+          <span>{isEn ? 'Email & Password' : 'E-posta & Şifre'}</span>
         </div>
         {open ? <ChevronUp size={14} className="text-text-muted" /> : <ChevronDown size={14} className="text-text-muted" />}
       </button>
@@ -86,21 +88,21 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
         <div className="mt-4 space-y-3">
           <div>
             <label className="label flex items-center gap-1.5">
-              <Mail size={12} /> Yeni E-posta
+              <Mail size={12} /> {isEn ? 'New Email' : 'Yeni E-posta'}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-field text-sm"
-              placeholder={currentEmail ?? 'E-posta adresi'}
+              placeholder={currentEmail ?? (isEn ? 'Email address' : 'E-posta adresi')}
             />
-            <p className="text-[10px] text-text-muted mt-1">Değiştirirseniz yeni adrese doğrulama maili gönderilir.</p>
+            <p className="text-[10px] text-text-muted mt-1">{isEn ? 'If you change it, a verification email will be sent to the new address.' : 'Değiştirirseniz yeni adrese doğrulama maili gönderilir.'}</p>
           </div>
 
           <div>
             <label className="label flex items-center gap-1.5">
-              <KeyRound size={12} /> Yeni Şifre
+              <KeyRound size={12} /> {isEn ? 'New Password' : 'Yeni Şifre'}
             </label>
             <div className="relative">
               <input
@@ -108,7 +110,7 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field text-sm pr-10"
-                placeholder="En az 6 karakter"
+                placeholder={isEn ? 'At least 6 characters' : 'En az 6 karakter'}
                 autoComplete="new-password"
               />
               <button
@@ -123,13 +125,13 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
 
           {password.length > 0 && (
             <div>
-              <label className="label">Şifre Tekrar</label>
+              <label className="label">{isEn ? 'Confirm Password' : 'Şifre Tekrar'}</label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input-field text-sm"
-                placeholder="Şifreyi tekrar girin"
+                placeholder={isEn ? 'Re-enter password' : 'Şifreyi tekrar girin'}
                 autoComplete="new-password"
               />
             </div>
@@ -144,7 +146,7 @@ export function AccountSecuritySection({ currentEmail }: { currentEmail?: string
             disabled={loading}
             className="btn-outline w-full py-2.5 text-sm disabled:opacity-50"
           >
-            {loading ? 'Güncelleniyor...' : 'Güvenlik Bilgilerini Güncelle'}
+            {loading ? (isEn ? 'Updating...' : 'Güncelleniyor...') : (isEn ? 'Update Security Info' : 'Güvenlik Bilgilerini Güncelle')}
           </button>
         </div>
       )}

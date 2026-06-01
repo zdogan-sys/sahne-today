@@ -39,6 +39,7 @@ interface Props {
 
 export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const [selectedEventId, setSelectedEventId] = useState<string>('all')
 
   const filteredEvents = useMemo(
@@ -63,7 +64,7 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Ticket size={18} className="text-accent" />
-            <span className="text-accent text-xs font-semibold uppercase tracking-wide">Bilet Satışları</span>
+            <span className="text-accent text-xs font-semibold uppercase tracking-wide">{isEn ? 'Ticket Sales' : 'Bilet Satışları'}</span>
           </div>
           <h1 className="font-bebas text-3xl text-text-primary">{venueName}</h1>
         </div>
@@ -83,7 +84,7 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
             onChange={e => setSelectedEventId(e.target.value)}
             className="w-full sm:w-72 px-3 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] bg-[rgba(228,224,216,0.04)] text-text-primary text-sm focus:outline-none focus:border-accent/50"
           >
-            <option value="all">Tüm Etkinlikler</option>
+            <option value="all">{isEn ? 'All Events' : 'Tüm Etkinlikler'}</option>
             {events.map(event => (
               <option key={event.id} value={event.id}>
                 {event.title} — {formatDate(event.event_date, locale)}
@@ -100,21 +101,21 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
             <TrendingUp size={16} className="text-success" />
           </div>
           <p className="font-bebas text-2xl text-text-primary">{totalRevenue.toFixed(0)}₺</p>
-          <p className="text-text-muted text-xs">Toplam Gelir</p>
+          <p className="text-text-muted text-xs">{isEn ? 'Total Revenue' : 'Toplam Gelir'}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-2">
             <Ticket size={16} className="text-accent" />
           </div>
           <p className="font-bebas text-2xl text-text-primary">{totalSold}</p>
-          <p className="text-text-muted text-xs">Satılan Bilet</p>
+          <p className="text-text-muted text-xs">{isEn ? 'Tickets Sold' : 'Satılan Bilet'}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="w-8 h-8 rounded-lg bg-[rgba(228,224,216,0.06)] flex items-center justify-center mx-auto mb-2">
             <Users size={16} className="text-text-muted" />
           </div>
           <p className="font-bebas text-2xl text-text-primary">{filteredEvents.length}</p>
-          <p className="text-text-muted text-xs">Etkinlik</p>
+          <p className="text-text-muted text-xs">{isEn ? 'Events' : 'Etkinlik'}</p>
         </div>
       </div>
 
@@ -156,7 +157,7 @@ export function TicketsDashboardClient({ events, tickets, venueName }: Props) {
 
         {filteredEvents.length === 0 && (
           <div className="card p-10 text-center text-text-muted">
-            Henüz bilet satışı aktif etkinlik yok.
+            {isEn ? 'No events with active ticket sales yet.' : 'Henüz bilet satışı aktif etkinlik yok.'}
           </div>
         )}
       </div>
