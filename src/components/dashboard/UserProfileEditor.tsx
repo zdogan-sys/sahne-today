@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Edit2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function UserProfileEditor({ userId, initialData }: Props) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -122,7 +125,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
         className="flex items-center gap-1.5 text-xs text-accent hover:underline px-3 py-1.5 bg-accent/10 rounded-lg transition-colors mt-2"
       >
         <Edit2 size={13} />
-        Hesap Bilgilerini Düzenle
+        {isEn ? 'Edit Account' : 'Hesap Bilgilerini Düzenle'}
       </button>
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title="Hesap Bilgilerini Düzenle">
