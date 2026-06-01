@@ -7,11 +7,12 @@ import { Edit2, Camera, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
-import { VENUE_TYPE_LABELS } from '@/lib/utils'
+import { translateVenueType } from '@/lib/utils'
 import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-const EQUIPMENT_OPTIONS = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
+const EQUIPMENT_OPTIONS_TR = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
+const EQUIPMENT_OPTIONS_EN = ['Sound System', 'Microphone', 'Keyboard', 'Drum Kit', 'Lighting', 'Projector', 'Stage']
 
 interface Props {
   venueId: string
@@ -46,6 +47,7 @@ function ImageUploadField({
   onUrl: (v: string | null) => void
   aspect?: 'cover' | 'logo'
 }) {
+  const isEn = useLocale() === 'en'
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
@@ -104,7 +106,7 @@ function ImageUploadField({
               ? <Loader2 size={18} className="animate-spin" />
               : <Camera size={18} />
             }
-            {!uploading && <span className="text-xs">{isCover ? 'Fotoğraf Ekle' : 'Logo Ekle'}</span>}
+            {!uploading && <span className="text-xs">{isCover ? (isEn ? 'Add Photo' : 'Fotoğraf Ekle') : (isEn ? 'Add Logo' : 'Logo Ekle')}</span>}
           </button>
         )}
       </div>
@@ -121,6 +123,8 @@ function ImageUploadField({
 
 export function VenueProfileEditor({ venueId, initialData }: Props) {
   const isEn = useLocale() === 'en'
+  const EQUIPMENT_OPTIONS = isEn ? EQUIPMENT_OPTIONS_EN : EQUIPMENT_OPTIONS_TR
+  const VENUE_TYPE_ENTRIES: [string, string][] = ['pub','turku_bar','live_music','bookstore','theater','cafe','other'].map(k => [k, translateVenueType(k, isEn ? 'en' : 'tr')])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -144,7 +148,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
   async function handleSave() {
     if (!name.trim() || !city || !venueType) {
-      setError('Lütfen zorunlu alanları doldurun.')
+      setError(isEn ? 'Please fill in the required fields.' : 'Lütfen zorunlu alanları doldurun.')
       return
     }
 
@@ -175,7 +179,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
       .eq('id', venueId)
 
     if (err) {
-      setError('Bir hata oluştu: ' + err.message)
+      setError((isEn ? 'An error occurred: ' : 'Bir hata oluştu: ') + err.message)
       setLoading(false)
     } else {
       window.location.reload()
@@ -203,30 +207,30 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
           <div className="flex gap-3 items-end">
             <ImageUploadField label="Logo" url={logoUrl} onUrl={setLogoUrl} aspect="logo" />
             <div className="flex-1">
-              <ImageUploadField label="Kapak Fotoğrafı" url={photoUrl} onUrl={setPhotoUrl} aspect="cover" />
+              <ImageUploadField label={isEn ? 'Cover Photo' : 'Kapak Fotoğrafı'} url={photoUrl} onUrl={setPhotoUrl} aspect="cover" />
             </div>
           </div>
 
           <div>
-            <label className="label">Mekan Adı *</label>
+            <label className="label">{isEn ? 'Venue Name *' : 'Mekan Adı *'}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="input-field text-sm" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Şehir *</label>
+              <label className="label">{isEn ? 'City *' : 'Şehir *'}</label>
               <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field text-sm">
-                <option value="">Şehir Seçin</option>
+                <option value="">{isEn ? 'Select City' : 'Şehir Seçin'}</option>
                 {CITY_OPTIONS.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Bölge *</label>
+              <label className="label">{isEn ? 'District *' : 'Bölge *'}</label>
               {city && DISTRICTS_BY_CITY[city] ? (
                 <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field text-sm">
-                  <option value="">Seçin</option>
+                  <option value="">{isEn ? 'Select' : 'Seçin'}</option>
                   {DISTRICTS_BY_CITY[city].map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               ) : (
@@ -236,25 +240,25 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">Adres *</label>
+            <label className="label">{isEn ? 'Address *' : 'Adres *'}</label>
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="input-field text-sm" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Telefon</label>
+              <label className="label">{isEn ? 'Phone' : 'Telefon'}</label>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field text-sm" />
             </div>
             <div>
-              <label className="label">E-posta</label>
+              <label className="label">{isEn ? 'Email' : 'E-posta'}</label>
               <input value={email} onChange={(e) => setEmail(e.target.value)} className="input-field text-sm" />
             </div>
           </div>
 
           <div>
-            <label className="label">Mekan Türü *</label>
+            <label className="label">{isEn ? 'Venue Type *' : 'Mekan Türü *'}</label>
             <select value={venueType} onChange={(e) => setVenueType(e.target.value)} className="input-field text-sm">
-              {Object.entries(VENUE_TYPE_LABELS).map(([key, label]) => (
+              {VENUE_TYPE_ENTRIES.map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
@@ -262,21 +266,21 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="label text-[10px]">Oturma</label>
+              <label className="label text-[10px]">{isEn ? 'Seated' : 'Oturma'}</label>
               <input value={capacitySeated} onChange={(e) => setCapacitySeated(e.target.value)} type="number" className="input-field text-sm px-2" />
             </div>
             <div>
-              <label className="label text-[10px]">Ayakta</label>
+              <label className="label text-[10px]">{isEn ? 'Standing' : 'Ayakta'}</label>
               <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" className="input-field text-sm px-2" />
             </div>
             <div>
-              <label className="label text-[10px]">Sahne (m²)</label>
+              <label className="label text-[10px]">{isEn ? 'Stage (m²)' : 'Sahne (m²)'}</label>
               <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" className="input-field text-sm px-2" />
             </div>
           </div>
 
           <div>
-            <label className="label">Mevcut Ekipman</label>
+            <label className="label">{isEn ? 'Available Equipment' : 'Mevcut Ekipman'}</label>
             <div className="flex flex-wrap gap-1.5">
               {EQUIPMENT_OPTIONS.map((eq) => (
                 <button
@@ -295,13 +299,13 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
           </div>
 
           <TabbedGenreSelector
-            label="Ağırlıklı Türler"
+            label={isEn ? 'Primary Genres' : 'Ağırlıklı Türler'}
             selected={genres}
             onToggle={(g) => setGenres(genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g])}
           />
 
           <div>
-            <label className="label">Açıklama</label>
+            <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -312,8 +316,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
           <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
             <div>
-              <p className="text-sm text-text-primary">Profili Gizle</p>
-              <p className="text-xs text-text-muted">Mekan listesinde görünmez</p>
+              <p className="text-sm text-text-primary">{isEn ? 'Hide Profile' : 'Profili Gizle'}</p>
+              <p className="text-xs text-text-muted">{isEn ? 'Will not appear in the venue list' : 'Mekan listesinde görünmez'}</p>
             </div>
             <button
               type="button"
@@ -337,7 +341,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
             disabled={loading || !name.trim() || !city || !venueType}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-4"
           >
-            {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+            {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save Changes' : 'Değişiklikleri Kaydet')}
           </button>
 
         </div>

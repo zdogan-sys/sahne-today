@@ -217,6 +217,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
 
 export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, isOwner, venueId, venueCity }: Props) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const today = new Date().toISOString().split('T')[0]
   const [tab, setTab] = useState<Tab>('upcoming')
   const [upcomingList, setUpcomingList] = useState<EventItem[]>(initialUpcoming)

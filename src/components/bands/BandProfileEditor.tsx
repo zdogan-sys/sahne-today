@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { Edit2 } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
@@ -20,6 +21,7 @@ interface Props {
 
 export function BandProfileEditor({ bandId, initialData }: Props) {
   const router = useRouter()
+  const isEn = useLocale() === 'en'
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
 
   async function handleSave() {
     if (!name.trim()) {
-      setError('Grup adı zorunludur.')
+      setError(isEn ? 'Band name is required.' : 'Grup adı zorunludur.')
       return
     }
 
@@ -48,7 +50,7 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
     })
 
     if (!result.success) {
-      setError('Bir hata oluştu: ' + result.error)
+      setError((isEn ? 'An error occurred: ' : 'Bir hata oluştu: ') + result.error)
       setLoading(false)
     } else {
       setOpen(false)
@@ -61,7 +63,7 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
     setError('')
     const result = await deleteBand(bandId)
     if (!result.success) {
-      setError('Grup silinirken hata oluştu: ' + result.error)
+      setError((isEn ? 'Error deleting band: ' : 'Grup silinirken hata oluştu: ') + result.error)
       setLoading(false)
       setConfirmDelete(false)
     } else {
@@ -76,29 +78,29 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
         className="flex items-center gap-1.5 text-xs text-accent hover:underline px-2 py-1 bg-accent/10 rounded-md transition-colors"
       >
         <Edit2 size={12} />
-        Profili Düzenle
+        {isEn ? 'Edit Profile' : 'Profili Düzenle'}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Profili Düzenle">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={isEn ? 'Edit Profile' : 'Profili Düzenle'}>
         <div className="space-y-4">
           <div>
-            <label className="label">Grup Adı *</label>
+            <label className="label">{isEn ? 'Band Name *' : 'Grup Adı *'}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input-field text-sm"
-              placeholder="Grup Adı"
+              placeholder={isEn ? 'Band Name' : 'Grup Adı'}
             />
           </div>
 
           <div>
-            <label className="label">Şehir</label>
+            <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="input-field text-sm"
             >
-              <option value="">Şehir Seçin</option>
+              <option value="">{isEn ? 'Select City' : 'Şehir Seçin'}</option>
               {CITY_OPTIONS.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -106,19 +108,19 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
           </div>
 
           <TabbedGenreSelector
-            label="Türler"
+            label={isEn ? 'Genres' : 'Türler'}
             selected={genres}
             onToggle={(g) => setGenres(genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g])}
           />
 
           <div>
-            <label className="label">Hakkında</label>
+            <label className="label">{isEn ? 'About' : 'Hakkında'}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={4}
               className="input-field text-sm resize-none"
-              placeholder="Grup hakkında kısa bir açıklama..."
+              placeholder={isEn ? 'A short description about the band...' : 'Grup hakkında kısa bir açıklama...'}
             />
           </div>
 
@@ -130,7 +132,7 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
               disabled={loading || !name.trim()}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
-              {loading && !confirmDelete ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              {loading && !confirmDelete ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save Changes' : 'Değişiklikleri Kaydet')}
             </button>
 
             {confirmDelete ? (
@@ -140,14 +142,14 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
                   disabled={loading}
                   className="btn-outline flex-1 py-3 text-sm text-text-muted"
                 >
-                  İptal
+                  {isEn ? 'Cancel' : 'İptal'}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={loading}
                   className="bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors flex-1 py-3 text-sm disabled:opacity-50"
                 >
-                  {loading ? 'Siliniyor...' : 'Evet, Grubu Sil'}
+                  {loading ? (isEn ? 'Deleting...' : 'Siliniyor...') : (isEn ? 'Yes, Delete Band' : 'Evet, Grubu Sil')}
                 </button>
               </div>
             ) : (
@@ -156,7 +158,7 @@ export function BandProfileEditor({ bandId, initialData }: Props) {
                 disabled={loading}
                 className="w-full py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-xl transition-colors mt-2 disabled:opacity-50"
               >
-                Grubu Sil
+                {isEn ? 'Delete Band' : 'Grubu Sil'}
               </button>
             )}
           </div>

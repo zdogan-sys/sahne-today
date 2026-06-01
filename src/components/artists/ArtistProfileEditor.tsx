@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { updateArtistProfile } from '@/app/actions/artist'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
-import { cn } from '@/lib/utils'
+import { cn, translateInstrument } from '@/lib/utils'
 
 interface Props {
   artistId: string
@@ -27,6 +28,7 @@ interface Props {
 
 export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const router = useRouter()
+  const isEn = useLocale() === 'en'
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -44,7 +46,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
 
   async function handleSave() {
     if (!stageName.trim()) {
-      setError('Sahne adı zorunludur.')
+      setError(isEn ? 'Stage name is required.' : 'Sahne adı zorunludur.')
       return
     }
 
@@ -64,7 +66,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
     })
 
     if (!result.success) {
-      setError('Bir hata oluştu: ' + result.error)
+      setError((isEn ? 'An error occurred: ' : 'Bir hata oluştu: ') + result.error)
       setLoading(false)
     } else {
       setOpen(false)
@@ -82,36 +84,36 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
         onClick={() => setOpen(true)}
         className="text-accent text-sm hover:underline flex items-center gap-1"
       >
-        Düzenle
+        {isEn ? 'Edit' : 'Düzenle'}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Profili Düzenle">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={isEn ? 'Edit Profile' : 'Profili Düzenle'}>
         <div className="space-y-4">
           <ImageUpload
             value={avatarUrl}
             onChange={setAvatarUrl}
             bucket="avatars"
-            label="Profil Fotoğrafı"
+            label={isEn ? 'Profile Photo' : 'Profil Fotoğrafı'}
           />
 
           <div>
-            <label className="label">Sahne Adı *</label>
+            <label className="label">{isEn ? 'Stage Name *' : 'Sahne Adı *'}</label>
             <input
               value={stageName}
               onChange={(e) => setStageName(e.target.value)}
               className="input-field text-sm"
-              placeholder="Sahne Adı"
+              placeholder={isEn ? 'Stage Name' : 'Sahne Adı'}
             />
           </div>
 
           <div>
-            <label className="label">Şehir</label>
+            <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="input-field text-sm"
             >
-              <option value="">Şehir Seçin</option>
+              <option value="">{isEn ? 'Select City' : 'Şehir Seçin'}</option>
               {CITY_OPTIONS.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -119,8 +121,8 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">Etkin Olduğum Şehirler</label>
-            <p className="text-xs text-text-muted mb-2">Birden fazla şehirde performans gösteriyorsanız seçin.</p>
+            <label className="label">{isEn ? 'Cities I Perform In' : 'Etkin Olduğum Şehirler'}</label>
+            <p className="text-xs text-text-muted mb-2">{isEn ? 'Select if you perform in multiple cities.' : 'Birden fazla şehirde performans gösteriyorsanız seçin.'}</p>
             <div className="flex flex-wrap gap-1.5">
               {CITY_OPTIONS.map((c) => (
                 <button
@@ -139,7 +141,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
           </div>
 
           <TabbedGenreSelector
-            label="Türler"
+            label={isEn ? 'Genres' : 'Türler'}
             selected={genres}
             onToggle={(g) => setGenres(genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g])}
             onTabChange={setActiveTab}
@@ -147,7 +149,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
 
           {activeTab === 'music' && (
             <div>
-              <label className="label">Enstrümanlar</label>
+              <label className="label">{isEn ? 'Instruments' : 'Enstrümanlar'}</label>
               <div className="flex flex-wrap gap-1.5">
                 {INSTRUMENT_OPTIONS.map((opt) => (
                   <button
@@ -159,7 +161,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
                       : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
                     )}
                   >
-                    {opt}
+                    {translateInstrument(opt, isEn ? 'en' : 'tr')}
                   </button>
                 ))}
               </div>
@@ -167,13 +169,13 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
           )}
 
           <div>
-            <label className="label">Hakkında</label>
+            <label className="label">{isEn ? 'About' : 'Hakkında'}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={4}
               className="input-field text-sm resize-none"
-              placeholder="Kendinizi anlatan kısa bir açıklama..."
+              placeholder={isEn ? 'A short description about yourself...' : 'Kendinizi anlatan kısa bir açıklama...'}
             />
           </div>
 
@@ -181,8 +183,8 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
 
           <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
             <div>
-              <p className="text-sm text-text-primary">Profili Gizle</p>
-              <p className="text-xs text-text-muted">Profilin sanatçı listesinde görünmez</p>
+              <p className="text-sm text-text-primary">{isEn ? 'Hide Profile' : 'Profili Gizle'}</p>
+              <p className="text-xs text-text-muted">{isEn ? 'Your profile will not appear in the artist list' : 'Profilin sanatçı listesinde görünmez'}</p>
             </div>
             <button
               type="button"
@@ -206,7 +208,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
             disabled={loading || !stageName.trim()}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-4"
           >
-            {loading ? 'Kaydediliyor...' : 'Kaydet'}
+            {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save' : 'Kaydet')}
           </button>
 
         </div>
