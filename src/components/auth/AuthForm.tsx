@@ -66,7 +66,10 @@ export function AuthForm() {
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName, role: 'audience' } as Record<string, unknown> },
+      options: {
+        data: { display_name: displayName, role: 'audience' } as Record<string, unknown>,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
     if (err) {
       setError(err.message)
