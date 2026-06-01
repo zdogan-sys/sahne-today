@@ -20,10 +20,14 @@ const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
   { key: 'bookstore', tr: 'Kitabevi', en: 'Bookstore' },
   { key: 'theater', tr: 'Tiyatro', en: 'Theater' },
   { key: 'cafe', tr: 'Kafe', en: 'Cafe' },
+  { key: 'studio', tr: 'Prova / Kayıt Stüdyosu', en: 'Rehearsal / Recording Studio' },
+  { key: 'dance_studio', tr: 'Dans Stüdyosu', en: 'Dance Studio' },
   { key: 'other', tr: 'Diğer', en: 'Other' },
 ]
 
-type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
+type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'studio' | 'dance_studio' | 'other'
+
+const STUDIO_TYPES: VenueType[] = ['studio', 'dance_studio']
 
 function venueTypeLabel(key: VenueType | '', isEn: boolean): string {
   const found = VENUE_TYPES.find((v) => v.key === key)
@@ -110,6 +114,7 @@ export function VenueRegisterForm() {
   const [description, setDescription] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLinksData>({})
+  const [pricePerHour, setPricePerHour] = useState('')
 
   async function handleSubmit() {
     setLoading(true)
@@ -135,6 +140,7 @@ export function VenueRegisterForm() {
         equipment,
         genres,
         social_links: socialLinks,
+        price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
       } as any)
       .select()
       .single()
@@ -253,6 +259,22 @@ export function VenueRegisterForm() {
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
               placeholder={isEn ? 'A short text about your venue...' : 'Mekanınızı anlatan kısa bir metin...'} className="input-field resize-none" />
           </div>
+          {STUDIO_TYPES.includes(venueType as VenueType) && (
+            <div>
+              <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Ücret (₺)'}</label>
+              <input
+                type="number"
+                value={pricePerHour}
+                onChange={(e) => setPricePerHour(e.target.value)}
+                placeholder="500"
+                min="0"
+                className="input-field"
+              />
+              <p className="text-text-muted text-xs mt-1">
+                {isEn ? 'Hourly rental rate for studio reservations.' : 'Stüdyo rezervasyonlarında uygulanacak saat başı ücret.'}
+              </p>
+            </div>
+          )}
           <ImageUpload value={photoUrl} onChange={setPhotoUrl} bucket="venues" label={isEn ? 'Venue Photo' : 'Mekan Fotoğrafı'} />
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
           <div className="flex gap-3">

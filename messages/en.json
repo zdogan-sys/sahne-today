@@ -257,6 +257,8 @@
       "bookstore": "Bookstore",
       "theater": "Theater",
       "cafe": "Cafe",
+      "studio": "Rehearsal / Recording Studio",
+      "dance_studio": "Dance Studio",
       "other": "Other"
     },
     "feeModels": {

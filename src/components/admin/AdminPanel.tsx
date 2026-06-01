@@ -906,8 +906,11 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [email, setEmail] = useState(initial?.email ?? '')
   const [verified, setVerified] = useState(initial?.verified ?? false)
+  const [pricePerHour, setPricePerHour] = useState(initial?.price_per_hour?.toString() ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const isStudio = venueType === 'studio' || venueType === 'dance_studio'
 
   async function handleSave() {
     if (!name || !city) { setError('Ad ve şehir zorunludur.'); return }
@@ -917,6 +920,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
       venue_type: venueType, genres,
       description: description || null,
       phone: phone || null, email: email || null, verified,
+      price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
     }
     const res = initial?.id
       ? await adminUpdateVenue(initial.id, data)
@@ -975,6 +979,12 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field text-sm" />
           </div>
         </div>
+        {isStudio && (
+          <div>
+            <label className="label">Saatlik Ücret (₺)</label>
+            <input type="number" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="500" min="0" className="input-field text-sm" />
+          </div>
+        )}
         <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
           <p className="text-sm text-text-muted">Onaylı Mekan</p>
           <button type="button" onClick={() => setVerified(!verified)}

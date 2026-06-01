@@ -256,6 +256,8 @@
       "bookstore": "Kitabevi",
       "theater": "Tiyatro",
       "cafe": "Kafe",
+      "studio": "Prova / Kayıt Stüdyosu",
+      "dance_studio": "Dans Stüdyosu",
       "other": "Diğer"
     },
     "feeModels": {

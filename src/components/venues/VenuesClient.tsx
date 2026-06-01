@@ -34,6 +34,8 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     { key: 'bookstore', label: t('venueTypes.bookstore') },
     { key: 'theater', label: t('venueTypes.theater') },
     { key: 'cafe', label: t('venueTypes.cafe') },
+    { key: 'studio', label: t('venueTypes.studio') },
+    { key: 'dance_studio', label: t('venueTypes.dance_studio') },
     { key: 'other', label: t('venueTypes.other') },
   ]
   const [city, setCity] = useState('')

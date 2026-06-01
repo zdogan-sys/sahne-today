@@ -33,6 +33,7 @@ interface Props {
     photo_url: string | null
     logo_url: string | null
     is_hidden?: boolean
+    price_per_hour?: number | null
   }
 }
 
@@ -145,6 +146,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialData.photo_url)
   const [logoUrl, setLogoUrl] = useState<string | null>(initialData.logo_url)
   const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
+  const [pricePerHour, setPricePerHour] = useState(initialData.price_per_hour?.toString() || '')
+  const isStudio = venueType === 'studio' || venueType === 'dance_studio'
 
   async function handleSave() {
     if (!name.trim() || !city || !venueType) {
@@ -175,6 +178,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
         photo_url: photoUrl,
         logo_url: logoUrl,
         is_hidden: isHidden,
+        price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
       } as any)
       .eq('id', venueId)
 
@@ -278,6 +282,20 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
               <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" className="input-field text-sm px-2" />
             </div>
           </div>
+
+          {isStudio && (
+            <div>
+              <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Ücret (₺)'}</label>
+              <input
+                value={pricePerHour}
+                onChange={(e) => setPricePerHour(e.target.value)}
+                type="number"
+                min="0"
+                placeholder="500"
+                className="input-field text-sm"
+              />
+            </div>
+          )}
 
           <div>
             <label className="label">{isEn ? 'Available Equipment' : 'Mevcut Ekipman'}</label>

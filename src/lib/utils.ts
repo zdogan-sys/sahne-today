@@ -49,6 +49,8 @@ export const VENUE_TYPE_LABELS: Record<string, string> = {
   bookstore: 'Kitabevi',
   theater: 'Tiyatro',
   cafe: 'Kafe',
+  studio: 'Prova / Kayıt Stüdyosu',
+  dance_studio: 'Dans Stüdyosu',
   other: 'Diğer',
 }
 
@@ -59,6 +61,8 @@ export const VENUE_TYPE_LABELS_EN: Record<string, string> = {
   bookstore: 'Bookstore',
   theater: 'Theater',
   cafe: 'Cafe',
+  studio: 'Rehearsal / Recording Studio',
+  dance_studio: 'Dance Studio',
   other: 'Other',
 }
 

@@ -167,6 +167,7 @@ export default async function VenuePage({ params }: Props) {
               photo_url: venue.photo_url ?? null,
               logo_url: venue.logo_url ?? null,
               is_hidden: (venue as any).is_hidden ?? false,
+              price_per_hour: (venue as any).price_per_hour ?? null,
             }}
           />
         )}
@@ -271,6 +272,24 @@ export default async function VenuePage({ params }: Props) {
             )}
           </div>
         </div>
+
+        {((venue as any).venue_type === 'studio' || (venue as any).venue_type === 'dance_studio') && (venue as any).price_per_hour && (
+          <div className="card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">{isEn ? 'Hourly Rate' : 'Saatlik Ücret'}</p>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bebas text-3xl text-accent">₺{(venue as any).price_per_hour}</span>
+                <span className="text-text-muted text-sm">/ saat</span>
+              </div>
+            </div>
+            <Link
+              href={`/studios/${venue.id}`}
+              className="btn-accent py-2 px-4 text-sm"
+            >
+              {isEn ? 'Reserve' : 'Rezervasyon Yap'}
+            </Link>
+          </div>
+        )}
 
         {venue.genres && venue.genres.length > 0 && (
           <div>

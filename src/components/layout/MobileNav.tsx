@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Home, Calendar, MapPin, Bell, User, BookOpen, Music } from 'lucide-react'
+import { Home, Calendar, MapPin, Bell, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
@@ -55,8 +55,7 @@ export function MobileNav() {
   const items = [
     { href: '/' as const, label: t('nav.home'), icon: Home },
     { href: '/events' as const, label: t('nav.events'), icon: Calendar },
-    { href: '/courses' as const, label: t('nav.courses'), icon: BookOpen },
-    { href: '/studios' as const, label: t('nav.studios'), icon: Music },
+    { href: '/venues' as const, label: t('nav.venues'), icon: MapPin },
     { href: '/notifications' as const, label: t('nav.notifications'), icon: Bell, badge: unread },
     { href: '/dashboard' as const, label: t('nav.dashboard'), icon: User },
   ]
