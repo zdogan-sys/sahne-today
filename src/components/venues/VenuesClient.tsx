@@ -149,7 +149,7 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
       <div>
         <label className="label">{locale === 'en' ? 'Venue Type' : 'Mekan Türü'}</label>
         <div className="flex flex-col gap-2">
-          {VENUE_TYPES.map(({ key, label }) => (
+          {venueTypes.map(({ key, label }) => (
             <label key={key} className="flex items-center gap-2 cursor-pointer group">
               <div className={cn('w-4 h-4 rounded-full border flex items-center justify-center transition-colors', venueType === key ? 'border-accent' : 'border-[rgba(228,224,216,0.2)] group-hover:border-[rgba(228,224,216,0.4)]')}>
                 {venueType === key && <div className="w-2 h-2 rounded-full bg-accent" />}
