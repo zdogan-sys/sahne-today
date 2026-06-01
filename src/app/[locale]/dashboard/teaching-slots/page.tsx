@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, X, Check, Loader2, Calendar, Repeat, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,8 @@ const ADMIN_EMAIL = 'z_dogan@hotmail.com'
 
 export default function TeachingSlotsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const artistParam = searchParams.get('artist')
   const supabase = createClient()
 
   const [artist, setArtist] = useState<any>(null)
@@ -50,11 +52,25 @@ export default function TeachingSlotsPage() {
 
     const isAdmin = user.email === ADMIN_EMAIL
 
-    const { data: artistData } = await supabase
-      .from('artists')
-      .select('id, stage_name, teaching_instruments, profile_id')
-      .eq('profile_id', user.id)
-      .maybeSingle()
+    let artistData: any = null
+
+    if (isAdmin && artistParam) {
+      // Admin belirli bir sanatçıyı yönetiyor
+      const { data } = await supabase
+        .from('artists')
+        .select('id, stage_name, teaching_instruments, profile_id')
+        .eq('id', artistParam)
+        .single()
+      artistData = data
+    } else {
+      // Normal kullanıcı kendi profilini yönetiyor
+      const { data } = await supabase
+        .from('artists')
+        .select('id, stage_name, teaching_instruments, profile_id')
+        .eq('profile_id', user.id)
+        .maybeSingle()
+      artistData = data
+    }
 
     if (!artistData && !isAdmin) { router.push('/dashboard'); return }
 
