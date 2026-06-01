@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Upload, Link, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -13,7 +14,9 @@ interface ImageUploadProps {
   label?: string
 }
 
-export function ImageUpload({ value, onChange, bucket = 'avatars', label = 'Fotoğraf' }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, bucket = 'avatars', label }: ImageUploadProps) {
+  const isEn = useLocale() === 'en'
+  const resolvedLabel = label ?? (isEn ? 'Photo' : 'Fotoğraf')
   const [mode, setMode] = useState<'upload' | 'url'>('upload')
   const [urlInput, setUrlInput] = useState(value)
   const [uploading, setUploading] = useState(false)
@@ -61,11 +64,11 @@ export function ImageUpload({ value, onChange, bucket = 'avatars', label = 'Foto
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="label mb-0">{label}</label>
+        <label className="label mb-0">{resolvedLabel}</label>
         <div className="flex gap-1">
           <button type="button" onClick={() => setMode('upload')}
             className={cn('text-xs px-2 py-0.5 rounded transition-colors', mode === 'upload' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
-            <Upload size={11} className="inline mr-1" />Yükle
+            <Upload size={11} className="inline mr-1" />{isEn ? 'Upload' : 'Yükle'}
           </button>
           <button type="button" onClick={() => setMode('url')}
             className={cn('text-xs px-2 py-0.5 rounded transition-colors', mode === 'url' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
@@ -80,14 +83,14 @@ export function ImageUpload({ value, onChange, bucket = 'avatars', label = 'Foto
             <Image src={value} alt="Profil fotoğrafı" fill className="object-cover" sizes="80px" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs text-text-muted">Mevcut fotoğraf</p>
+            <p className="text-xs text-text-muted">{isEn ? 'Current photo' : 'Mevcut fotoğraf'}</p>
             <button
               type="button"
               onClick={() => { onChange(''); setUrlInput('') }}
               className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
             >
               <X size={12} />
-              Fotoğrafı kaldır
+              {isEn ? 'Remove photo' : 'Fotoğrafı kaldır'}
             </button>
           </div>
         </div>
@@ -106,12 +109,12 @@ export function ImageUpload({ value, onChange, bucket = 'avatars', label = 'Foto
           {uploading ? (
             <div className="flex flex-col items-center gap-2 text-text-muted">
               <Loader2 size={20} className="animate-spin" />
-              <span className="text-xs">Yükleniyor...</span>
+              <span className="text-xs">{isEn ? 'Uploading...' : 'Yükleniyor...'}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2 text-text-muted">
               <Upload size={20} />
-              <span className="text-xs">Tıkla veya sürükle · JPG, PNG, WEBP · max 5MB</span>
+              <span className="text-xs">{isEn ? 'Click or drag · JPG, PNG, WEBP · max 5MB' : 'Tıkla veya sürükle · JPG, PNG, WEBP · max 5MB'}</span>
             </div>
           )}
           <input

@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocale } from 'next-intl'
 import { SOCIAL_PLATFORMS, type SocialLinksData } from './SocialLinks'
 
 export type { SocialLinksData }
@@ -10,13 +11,14 @@ interface Props {
 }
 
 export function SocialLinksEditor({ value, onChange }: Props) {
+  const isEn = useLocale() === 'en'
   function update(key: string, url: string) {
     onChange({ ...value, [key]: url || undefined })
   }
 
   return (
     <div>
-      <label className="label">Sosyal Medya</label>
+      <label className="label">{isEn ? 'Social Media' : 'Sosyal Medya'}</label>
       <div className="space-y-2">
         {SOCIAL_PLATFORMS.map(({ key, label, placeholder, icon: Icon, color }) => (
           <div key={key} className="flex items-center gap-2">

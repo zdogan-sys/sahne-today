@@ -1,4 +1,5 @@
-import { getGenreColor } from '@/lib/utils'
+import { useLocale } from 'next-intl'
+import { getGenreColor, translateGenre } from '@/lib/utils'
 
 interface GenreChipProps {
   genre: string
@@ -6,6 +7,7 @@ interface GenreChipProps {
 }
 
 export function GenreChip({ genre, size = 'sm' }: GenreChipProps) {
+  const locale = useLocale()
   const color = getGenreColor(genre)
   return (
     <span
@@ -16,7 +18,7 @@ export function GenreChip({ genre, size = 'sm' }: GenreChipProps) {
         border: `0.5px solid ${color}40`,
       }}
     >
-      {genre}
+      {translateGenre(genre, locale)}
     </span>
   )
 }

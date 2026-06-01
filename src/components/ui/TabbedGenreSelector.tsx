@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { useLocale } from 'next-intl'
+import { cn, translateGenre } from '@/lib/utils'
 import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
 
 export function TabbedGenreSelector({ selected, onToggle, label, onTabChange }: {
   selected: string[]; onToggle: (v: string) => void; label?: string; onTabChange?: (tab: 'music' | 'stage') => void
 }) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [tab, setTab] = useState<'music' | 'stage'>('music')
-  
+
   useEffect(() => {
     if (onTabChange) onTabChange(tab)
   }, [tab, onTabChange])
@@ -19,11 +22,11 @@ export function TabbedGenreSelector({ selected, onToggle, label, onTabChange }: 
       <div className="flex gap-4 mb-3 border-b border-[rgba(228,224,216,0.1)]">
         <button type="button" onClick={() => setTab('music')}
           className={cn('pb-2 text-sm transition-colors border-b-2', tab === 'music' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary')}>
-          Müzik
+          {isEn ? 'Music' : 'Müzik'}
         </button>
         <button type="button" onClick={() => setTab('stage')}
           className={cn('pb-2 text-sm transition-colors border-b-2', tab === 'stage' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary')}>
-          Sahne
+          {isEn ? 'Stage' : 'Sahne'}
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -33,7 +36,7 @@ export function TabbedGenreSelector({ selected, onToggle, label, onTabChange }: 
               ? 'bg-accent/10 text-accent border-accent/30'
               : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
             )}>
-            {opt}
+            {translateGenre(opt, locale)}
           </button>
         ))}
       </div>

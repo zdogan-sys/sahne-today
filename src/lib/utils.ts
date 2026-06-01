@@ -25,6 +25,23 @@ export function translateInstrument(instrument: string, locale: string): string 
   return INSTRUMENT_LABELS_EN[instrument] ?? instrument
 }
 
+// Genre değerleri DB'de Türkçe saklanır; sadece görünüm İngilizce'ye çevrilir.
+export const GENRE_LABELS_EN: Record<string, string> = {
+  'Akustik': 'Acoustic',
+  'Caz': 'Jazz',
+  'Elektronik': 'Electronic',
+  'Klasik': 'Classical',
+  'Etnik': 'Ethnic',
+  'Türkü': 'Folk',
+  'Doğaçlama': 'Improvisation',
+  'Alternatif Sahne': 'Alternative Stage',
+}
+
+export function translateGenre(genre: string, locale: string): string {
+  if (locale !== 'en') return genre
+  return GENRE_LABELS_EN[genre] ?? genre
+}
+
 export const VENUE_TYPE_LABELS: Record<string, string> = {
   pub: 'Pub',
   turku_bar: 'Türkü Bar',
