@@ -64,6 +64,10 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
             venueType={venueType} setVenueType={setVenueType}
             onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
             canSeeSlots={canSeeSlots}
+            cities={CITIES}
+            venueTypes={VENUE_TYPES}
+            locale={locale}
+            t={t}
           />
         </div>
       </aside>
@@ -111,18 +115,22 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
   )
 }
 
-function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots, canSeeSlots }: {
+function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots, canSeeSlots, cities, venueTypes, locale, t }: {
   city: string; setCity: (v: string) => void
   venueType: string; setVenueType: (v: string) => void
   onlyOpenSlots: boolean; setOnlyOpenSlots: (v: boolean) => void
   canSeeSlots: boolean
+  cities: string[]
+  venueTypes: Array<{ key: string; label: string }>
+  locale: string
+  t: (key: string) => string
 }) {
   return (
     <div className="space-y-5">
       <div>
         <label className="label">Şehir</label>
         <div className="flex flex-wrap gap-1.5">
-          {CITIES.map((c) => (
+          {cities.map((c: string) => (
             <button key={c} onClick={() => setCity(city === c ? '' : c)}
               className={cn('chip border transition-colors', city === c
                 ? 'bg-accent/10 text-accent border-accent/30'
