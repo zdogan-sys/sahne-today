@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { X, MapPin, Trash2, Plus, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatTime } from '@/lib/utils'
+import { formatTime, translateGenre } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { ALL_GENRES } from '@/lib/constants'
 import { addArtistEvent, cancelEvent } from '@/app/actions/event'
@@ -23,6 +23,7 @@ interface Props {
 
 export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Props) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const [events, setEvents] = useState<CalendarEventItem[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dayEvents, setDayEvents] = useState<CalendarEventItem[]>([])
@@ -145,7 +146,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
     })
 
     if (!res.success || !res.data) {
-      setError(res.error ?? 'Etkinlik eklenemedi.')
+      setError(res.error ?? (isEn ? 'Could not add event.' : 'Etkinlik eklenemedi.'))
     } else {
       const d = res.data
       const newItem: CalendarEventItem = {
@@ -166,7 +167,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
     setLoading(false)
   }
 
-  const dateLabel = selectedDate?.toLocaleDateString('tr-TR', {
+  const dateLabel = selectedDate?.toLocaleDateString(isEn ? 'en-US' : 'tr-TR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
 
@@ -199,10 +200,10 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link href={`/events/${ev.id}`} className="text-text-primary text-sm font-medium hover:text-accent transition-colors">{ev.title}</Link>
                       {ev.status === 'pending' && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">Onay Bekliyor</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">{isEn ? 'Pending' : 'Onay Bekliyor'}</span>
                       )}
                       {ev.status === 'offered' && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">Teklif</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">{isEn ? 'Offer' : 'Teklif'}</span>
                       )}
                     </div>
                     <p className="text-text-muted text-xs mt-0.5">
@@ -229,13 +230,13 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                     )}
                     {isOwner && ev.status !== 'offered' && cancelConfirm === ev.id ? (
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-xs text-text-muted">İptal edilsin mi?</span>
+                        <span className="text-xs text-text-muted">{isEn ? 'Cancel this?' : 'İptal edilsin mi?'}</span>
                         <button
                           onClick={() => handleCancel(ev.id)}
                           disabled={cancelling}
                           className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
                         >
-                          {cancelling ? 'İptal ediliyor...' : 'Evet, iptal et'}
+                          {cancelling ? (isEn ? 'Cancelling...' : 'İptal ediliyor...') : (isEn ? 'Yes, cancel' : 'Evet, iptal et')}
                         </button>
                         <button
                           onClick={() => setCancelConfirm(null)}
@@ -267,7 +268,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                 onClick={() => setShowAddForm(true)}
                 className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors"
               >
-                <Plus size={13} /> Etkinlik Ekle
+                <Plus size={13} /> {isEn ? 'Add Event' : 'Etkinlik Ekle'}
               </button>
             </div>
           )}
@@ -275,23 +276,23 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
           {isOwner && success ? (
             <div className="px-5 py-8 text-center">
               <p className="text-success text-2xl mb-2">✓</p>
-              <p className="text-text-primary text-sm font-medium">Etkinlik eklendi</p>
+              <p className="text-text-primary text-sm font-medium">{isEn ? 'Event added' : 'Etkinlik eklendi'}</p>
               <button onClick={() => setSuccess(false)} className="text-text-muted text-xs mt-2 hover:text-text-primary underline">
-                Başka etkinlik ekle
+                {isEn ? 'Add another event' : 'Başka etkinlik ekle'}
               </button>
             </div>
           ) : isOwner && showAddForm ? (
             <div className="px-5 py-4 space-y-4">
               {dayEvents.length > 0 && (
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wide">Etkinlik Ekle</p>
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wide">{isEn ? 'Add Event' : 'Etkinlik Ekle'}</p>
               )}
 
               <div>
-                <label className="label">Etkinlik Adı *</label>
+                <label className="label">{isEn ? 'Event Name *' : 'Etkinlik Adı *'}</label>
                 <input
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="Konser adı..."
+                  placeholder={isEn ? 'Concert name...' : 'Konser adı...'}
                   className="input-field text-sm"
                   autoFocus
                 />
@@ -299,26 +300,26 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Başlangıç *</label>
+                  <label className="label">{isEn ? 'Start *' : 'Başlangıç *'}</label>
                   <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm" />
                 </div>
                 <div>
-                  <label className="label">Bitiş</label>
+                  <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
                   <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm" />
                 </div>
               </div>
 
               <div>
-                <label className="label">Tür</label>
+                <label className="label">{isEn ? 'Genre' : 'Tür'}</label>
                 <select value={genre} onChange={e => setGenre(e.target.value)} className="input-field text-sm">
-                  <option value="">Seçin</option>
-                  {ALL_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                  <option value="">{isEn ? 'Select' : 'Seçin'}</option>
+                  {ALL_GENRES.map(g => <option key={g} value={g}>{translateGenre(g, locale)}</option>)}
                 </select>
               </div>
 
               {/* Venue search */}
               <div>
-                <label className="label">Mekan</label>
+                <label className="label">{isEn ? 'Venue' : 'Mekan'}</label>
                 {selectedVenue ? (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
                     <MapPin size={13} className="text-accent flex-shrink-0" />
@@ -335,7 +336,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                       value={venueQuery}
                       onChange={e => { setVenueQuery(e.target.value); setShowVenueList(true) }}
                       onFocus={() => setShowVenueList(true)}
-                      placeholder="Mekan adı yazın..."
+                      placeholder={isEn ? 'Type venue name...' : 'Mekan adı yazın...'}
                       className="input-field text-sm"
                       autoComplete="off"
                     />
@@ -357,7 +358,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                     )}
                     {showVenueList && venueQuery.trim() && filteredVenues.length === 0 && (
                       <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg px-3 py-2.5 shadow-xl">
-                        <p className="text-text-muted text-xs">Kayıtlı mekan bulunamadı</p>
+                        <p className="text-text-muted text-xs">{isEn ? 'No registered venue found' : 'Kayıtlı mekan bulunamadı'}</p>
                       </div>
                     )}
                   </div>
@@ -367,12 +368,12 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
                     value={venueNameFree}
                     onChange={e => setVenueNameFree(e.target.value)}
                     onFocus={() => setShowVenueList(false)}
-                    placeholder="Kayıtlı değilse mekan adını buraya yaz..."
+                    placeholder={isEn ? 'If not registered, type venue name here...' : 'Kayıtlı değilse mekan adını buraya yaz...'}
                     className="input-field text-sm mt-2"
                   />
                 )}
                 {selectedVenue && (
-                  <p className="text-yellow-400 text-xs mt-1.5">⚠ Mekan yöneticisi onaylayana kadar sarı görünür.</p>
+                  <p className="text-yellow-400 text-xs mt-1.5">{isEn ? '⚠ Shown in yellow until the venue manager approves.' : '⚠ Mekan yöneticisi onaylayana kadar sarı görünür.'}</p>
                 )}
               </div>
 
@@ -389,7 +390,7 @@ export function ArtistCalendarSection({ artistId, initialEvents, isOwner }: Prop
               disabled={loading || !title || !startTime}
               className="btn-accent w-full py-3 text-sm disabled:opacity-50"
             >
-              {loading ? 'Ekleniyor...' : 'Takvime Ekle'}
+              {loading ? (isEn ? 'Adding...' : 'Ekleniyor...') : (isEn ? 'Add to Calendar' : 'Takvime Ekle')}
             </button>
           </div>
         )}
