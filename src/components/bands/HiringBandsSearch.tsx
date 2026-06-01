@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Users, Search, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 export function HiringBandsSearch() {
+  const isEn = useLocale() === 'en'
   const [bands, setBands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -40,7 +42,7 @@ export function HiringBandsSearch() {
     <div className="card p-4 mb-4 space-y-3 bg-[rgba(228,224,216,0.02)]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-text-primary">Eleman Arayan Gruplar</h3>
-        <Link href="/bands" className="text-xs text-accent hover:underline">Tümünü gör →</Link>
+        <Link href="/bands" className="text-xs text-accent hover:underline">{isEn ? 'See all →' : 'Tümünü gör →'}</Link>
       </div>
       
       <div className="relative">
@@ -48,15 +50,15 @@ export function HiringBandsSearch() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Grup adı ara..."
+          placeholder={isEn ? 'Search band name...' : 'Grup adı ara...'}
           className="input-field pl-8 text-sm"
         />
       </div>
 
       {loading ? (
-        <p className="text-xs text-text-muted text-center py-4">Aranıyor...</p>
+        <p className="text-xs text-text-muted text-center py-4">{isEn ? 'Searching...' : 'Aranıyor...'}</p>
       ) : bands.length === 0 ? (
-        <p className="text-xs text-text-muted text-center py-4">Eleman arayan grup bulunamadı.</p>
+        <p className="text-xs text-text-muted text-center py-4">{isEn ? 'No bands looking for members found.' : 'Eleman arayan grup bulunamadı.'}</p>
       ) : (
         <div className="space-y-2 mt-2 max-h-60 overflow-y-auto pr-1">
           {bands.map((band) => (
@@ -73,7 +75,7 @@ export function HiringBandsSearch() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-text-primary truncate">{band.name}</p>
                 <p className="text-xs text-text-muted truncate">
-                  {band.city ? `${band.city} · ` : ''}Arayış: {band.looking_for.join(', ')}
+                  {band.city ? `${band.city} · ` : ''}{isEn ? 'Looking for' : 'Arayış'}: {band.looking_for.join(', ')}
                 </p>
               </div>
             </Link>

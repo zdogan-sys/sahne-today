@@ -11,6 +11,7 @@ import { formatTime, formatDate } from '@/lib/utils'
 
 export function EventModal({ event }: { event: any }) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const router = useRouter()
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function EventModal({ event }: { event: any }) {
             <a
               href={`/events/${event.id}`}
               className="p-1.5 text-text-muted hover:text-accent transition-colors"
-              title="Tam sayfada aç"
+              title={isEn ? 'Open full page' : 'Tam sayfada aç'}
             >
               <ArrowUpRight size={16} />
             </a>
@@ -68,10 +69,10 @@ export function EventModal({ event }: { event: any }) {
             <div className="flex items-center gap-2 text-sm text-text-muted">
               <Ticket size={13} />
               {event.entry_type === 'free'
-                ? <span className="text-success font-medium">Ücretsiz</span>
+                ? <span className="text-success font-medium">{isEn ? 'Free' : 'Ücretsiz'}</span>
                 : event.entry_fee
                   ? <span>{event.entry_fee}₺</span>
-                  : <span>Kapıda Öde</span>}
+                  : <span>{isEn ? 'Pay at Door' : 'Kapıda Öde'}</span>}
             </div>
             {event.genre && <GenreChip genre={event.genre} />}
           </div>
@@ -163,13 +164,13 @@ export function EventModal({ event }: { event: any }) {
                   href={`/events/${event.id}/tickets`}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors"
                 >
-                  <ShoppingCart size={15} /> Bilet Al
+                  <ShoppingCart size={15} /> {isEn ? 'Buy Ticket' : 'Bilet Al'}
                 </a>
-                <span className="text-text-muted text-xs">{remaining} bilet kaldı · {Number(event.ticket_price).toFixed(0)}₺</span>
+                <span className="text-text-muted text-xs">{remaining} {isEn ? 'tickets left' : 'bilet kaldı'} · {Number(event.ticket_price).toFixed(0)}₺</span>
               </div>
             ) : (
               <button disabled className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(228,224,216,0.06)] text-text-muted text-sm font-semibold cursor-not-allowed">
-                <Ticket size={15} /> Tükendi
+                <Ticket size={15} /> {isEn ? 'Sold Out' : 'Tükendi'}
               </button>
             )
           })()}

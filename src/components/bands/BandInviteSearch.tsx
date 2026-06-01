@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Search, UserPlus, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Props) {
+  const isEn = useLocale() === 'en'
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
   const [instrument, setInstrument] = useState('')
@@ -75,7 +77,7 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
       if (onInvited) onInvited()
     } else {
       console.error('Invite error:', res.error)
-      alert('Davet gönderilirken bir hata oluştu: ' + res.error)
+      alert((isEn ? 'An error occurred while sending the invite: ' : 'Davet gönderilirken bir hata oluştu: ') + res.error)
     }
     setInviting(null)
   }
@@ -86,12 +88,12 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
     const mem = existingMembers.find(m => m.artist_id === id)
     if (!mem) return null
 
-    if (mem.status === 'accepted') return { text: 'Grup Üyesi', color: 'text-success bg-success/10' }
+    if (mem.status === 'accepted') return { text: isEn ? 'Member' : 'Grup Üyesi', color: 'text-success bg-success/10', declined: false }
     if (mem.status === 'invited') {
-      if (mem.role === 'Applicant') return { text: 'Başvurdu', color: 'text-yellow-400 bg-yellow-400/10' }
-      return { text: 'Davet Edildi', color: 'text-success bg-success/10' }
+      if (mem.role === 'Applicant') return { text: isEn ? 'Applied' : 'Başvurdu', color: 'text-yellow-400 bg-yellow-400/10', declined: false }
+      return { text: isEn ? 'Invited' : 'Davet Edildi', color: 'text-success bg-success/10', declined: false }
     }
-    if (mem.status === 'declined') return { text: 'Reddedildi', color: 'text-red-400 bg-red-400/10' }
+    if (mem.status === 'declined') return { text: isEn ? 'Rejected' : 'Reddedildi', color: 'text-red-400 bg-red-400/10', declined: true }
     
     return null
   }
@@ -103,18 +105,18 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Sanatçı adı (opsiyonel)"
+          placeholder={isEn ? 'Artist name (optional)' : 'Sanatçı adı (opsiyonel)'}
           className="input-field pl-8 text-sm"
         />
       </div>
 
       <div className="flex gap-2">
         <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field text-sm flex-1">
-          <option value="">Tüm şehirler</option>
+          <option value="">{isEn ? 'All cities' : 'Tüm şehirler'}</option>
           {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={instrument} onChange={(e) => setInstrument(e.target.value)} className="input-field text-sm flex-1">
-          <option value="">Tüm enstrümanlar</option>
+          <option value="">{isEn ? 'All instruments' : 'Tüm enstrümanlar'}</option>
           {INSTRUMENT_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
       </div>
@@ -123,11 +125,11 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
         <div onClick={() => setLfbOnly(!lfbOnly)} className={cn('w-9 h-5 rounded-full relative transition-colors flex-shrink-0', lfbOnly ? 'bg-accent' : 'bg-[rgba(228,224,216,0.15)]')}>
           <span className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform', lfbOnly ? 'translate-x-4' : 'translate-x-0.5')} />
         </div>
-        <span className="text-xs text-text-muted">Sadece grup arayanları göster</span>
+        <span className="text-xs text-text-muted">{isEn ? 'Show only those looking for a band' : 'Sadece grup arayanları göster'}</span>
       </label>
 
-      {loading && <p className="text-text-muted text-xs text-center py-2">Aranıyor...</p>}
-      {!loading && searched && results.length === 0 && <p className="text-text-muted text-xs text-center py-2">Sonuç bulunamadı.</p>}
+      {loading && <p className="text-text-muted text-xs text-center py-2">{isEn ? 'Searching...' : 'Aranıyor...'}</p>}
+      {!loading && searched && results.length === 0 && <p className="text-text-muted text-xs text-center py-2">{isEn ? 'No results found.' : 'Sonuç bulunamadı.'}</p>}
       
       {results.length > 0 && (
         <div className="space-y-1.5">
@@ -158,15 +160,15 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
                   className={cn(
                     'flex items-center gap-1 text-xs px-2.5 py-1 rounded-md transition-colors flex-shrink-0 disabled:cursor-default',
                     state ? state.color : 'text-accent bg-accent/10 hover:bg-accent/20',
-                    state && state.text === 'Reddedildi' ? 'hover:bg-red-400/20 cursor-pointer' : ''
+                    state && state.declined ? 'hover:bg-red-400/20 cursor-pointer' : ''
                   )}
                 >
                   {state ? (
-                    state.text === 'Reddedildi' ? <><UserPlus size={11} />Tekrar Davet Et</> : <><Check size={11} />{state.text}</>
+                    state.declined ? <><UserPlus size={11} />{isEn ? 'Invite Again' : 'Tekrar Davet Et'}</> : <><Check size={11} />{state.text}</>
                   ) : isLoading ? (
-                    'Gönderiliyor...'
+                    (isEn ? 'Sending...' : 'Gönderiliyor...')
                   ) : (
-                    <><UserPlus size={11} />Davet Et</>
+                    <><UserPlus size={11} />{isEn ? 'Invite' : 'Davet Et'}</>
                   )}
                 </button>
               </div>
