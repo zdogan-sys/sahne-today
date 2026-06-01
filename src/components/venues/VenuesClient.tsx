@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations, useLocale } from 'next-intl'
 import { MapPin, Filter, Music, CalendarDays } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
-import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
+import { cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
@@ -19,10 +20,22 @@ type UpcomingEvent = {
   start_time: string
 }
 
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
-  const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
+const CITIES_TR = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
+const CITIES_EN = ['Istanbul', 'Ankara', 'Izmir', 'Bursa']
 
 export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }: { initialVenues: VenueFull[]; upcomingEvents?: UpcomingEvent[]; canSeeSlots: boolean }) {
+  const t = useTranslations('filters')
+  const locale = useLocale()
+  const CITIES = locale === 'en' ? CITIES_EN : CITIES_TR
+  const VENUE_TYPES = [
+    { key: 'pub', label: t('venueTypes.pub') },
+    { key: 'turku_bar', label: t('venueTypes.turku_bar') },
+    { key: 'live_music', label: t('venueTypes.live_music') },
+    { key: 'bookstore', label: t('venueTypes.bookstore') },
+    { key: 'theater', label: t('venueTypes.theater') },
+    { key: 'cafe', label: t('venueTypes.cafe') },
+    { key: 'other', label: t('venueTypes.other') },
+  ]
   const [city, setCity] = useState('')
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
@@ -45,7 +58,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
       {/* Desktop sidebar */}
       <aside className="hidden md:block w-56 flex-shrink-0">
         <div className="card p-4 sticky top-20 space-y-5">
-          <h3 className="text-sm font-semibold text-text-primary">Filtrele</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t('title')}</h3>
           <FilterContent
             city={city} setCity={setCity}
             venueType={venueType} setVenueType={setVenueType}
@@ -83,7 +96,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
         )}
       </div>
 
-      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Mekanları Filtrele">
+      <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={locale === 'en' ? 'Filter Venues' : 'Mekanları Filtrele'}>
         <FilterContent
           city={city} setCity={setCity}
           venueType={venueType} setVenueType={setVenueType}
@@ -122,9 +135,9 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
       </div>
 
       <div>
-        <label className="label">Mekan Türü</label>
+        <label className="label">{locale === 'en' ? 'Venue Type' : 'Mekan Türü'}</label>
         <div className="flex flex-col gap-2">
-          {VENUE_TYPES.map(([key, label]) => (
+          {VENUE_TYPES.map(({ key, label }) => (
             <label key={key} className="flex items-center gap-2 cursor-pointer group">
               <div className={cn('w-4 h-4 rounded-full border flex items-center justify-center transition-colors', venueType === key ? 'border-accent' : 'border-[rgba(228,224,216,0.2)] group-hover:border-[rgba(228,224,216,0.4)]')}>
                 {venueType === key && <div className="w-2 h-2 rounded-full bg-accent" />}
