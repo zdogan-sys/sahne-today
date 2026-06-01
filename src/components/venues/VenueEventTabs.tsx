@@ -40,6 +40,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
   onRemoved: (id: string) => void
 }) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const [editing, setEditing] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -82,7 +83,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
       onUpdated({ ...event, title: editTitle.trim(), event_date: editDate, start_time: editStart, end_time: editEnd || null, description: editDesc.trim() || null })
       setEditing(false)
     } else {
-      setEditError(res.error ?? 'Güncellenemedi.')
+      setEditError(res.error ?? (isEn ? 'Could not update.' : 'Güncellenemedi.'))
     }
     setEditLoading(false)
   }
@@ -111,7 +112,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
             <button
               onClick={() => { setEditing(e => !e); setConfirmCancel(false); setConfirmDelete(false) }}
               className="w-7 h-7 rounded flex items-center justify-center text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
-              title="Düzenle"
+              title={isEn ? 'Edit' : 'Düzenle'}
             >
               <Pencil size={13} />
             </button>
@@ -123,7 +124,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
                   disabled={!!actionLoading}
                   className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors"
                 >
-                  {actionLoading === 'cancel' ? <Loader2 size={11} className="animate-spin" /> : 'İptal Et'}
+                  {actionLoading === 'cancel' ? <Loader2 size={11} className="animate-spin" /> : (isEn ? 'Cancel' : 'İptal Et')}
                 </button>
                 <button onClick={() => setConfirmCancel(false)} className="w-6 h-6 rounded flex items-center justify-center text-text-muted hover:text-text-primary">
                   <X size={11} />
@@ -133,7 +134,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
               <button
                 onClick={() => { setConfirmCancel(true); setConfirmDelete(false) }}
                 className="w-7 h-7 rounded flex items-center justify-center text-text-muted hover:text-yellow-400 hover:bg-yellow-400/10 transition-colors"
-                title="İptal Et"
+                title={isEn ? 'Cancel' : 'İptal Et'}
               >
                 <Ban size={13} />
               </button>
@@ -146,7 +147,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
                   disabled={!!actionLoading}
                   className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                 >
-                  {actionLoading === 'delete' ? <Loader2 size={11} className="animate-spin" /> : 'Sil'}
+                  {actionLoading === 'delete' ? <Loader2 size={11} className="animate-spin" /> : (isEn ? 'Delete' : 'Sil')}
                 </button>
                 <button onClick={() => setConfirmDelete(false)} className="w-6 h-6 rounded flex items-center justify-center text-text-muted hover:text-text-primary">
                   <X size={11} />
@@ -156,7 +157,7 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
               <button
                 onClick={() => { setConfirmDelete(true); setConfirmCancel(false) }}
                 className="w-7 h-7 rounded flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                title="Sil"
+                title={isEn ? 'Delete' : 'Sil'}
               >
                 <Trash2 size={13} />
               </button>
@@ -169,26 +170,26 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
         <div className="border-t border-[rgba(228,224,216,0.08)] p-3 space-y-2 bg-[rgba(228,224,216,0.02)]">
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2">
-              <label className="label">Başlık</label>
+              <label className="label">{isEn ? 'Title' : 'Başlık'}</label>
               <input value={editTitle} onChange={e => setEditTitle(e.target.value)} className="input-field text-sm" />
             </div>
             <div>
-              <label className="label">Tarih</label>
+              <label className="label">{isEn ? 'Date' : 'Tarih'}</label>
               <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="input-field text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="label">Başlangıç</label>
+                <label className="label">{isEn ? 'Start' : 'Başlangıç'}</label>
                 <input type="time" value={editStart} onChange={e => setEditStart(e.target.value)} className="input-field text-sm" />
               </div>
               <div>
-                <label className="label">Bitiş</label>
+                <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
                 <input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="input-field text-sm" />
               </div>
             </div>
           </div>
           <div>
-            <label className="label">Açıklama</label>
+            <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
             <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={2} className="input-field text-sm resize-none w-full" />
           </div>
           {editError && <p className="text-red-400 text-xs">{editError}</p>}
@@ -199,13 +200,13 @@ function EventRow({ event, isOwner, onUpdated, onRemoved }: {
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/80 disabled:opacity-50 transition-colors"
             >
               <Check size={11} />
-              {editLoading ? 'Kaydediliyor…' : 'Kaydet'}
+              {editLoading ? (isEn ? 'Saving…' : 'Kaydediliyor…') : (isEn ? 'Save' : 'Kaydet')}
             </button>
             <button
               onClick={() => setEditing(false)}
               className="px-3 py-1.5 rounded-lg border border-[rgba(228,224,216,0.1)] text-text-muted text-xs hover:text-text-primary transition-colors"
             >
-              İptal
+              {isEn ? 'Cancel' : 'İptal'}
             </button>
           </div>
         </div>
@@ -403,11 +404,11 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="label">Etkinlik Adı *</label>
+              <label className="label">{isEn ? 'Event Name *' : 'Etkinlik Adı *'}</label>
               <input
                 value={addTitle}
                 onChange={e => setAddTitle(e.target.value)}
-                placeholder="Konser adı..."
+                placeholder={isEn ? 'Concert name...' : 'Konser adı...'}
                 className="input-field text-sm"
                 autoFocus
               />
@@ -415,21 +416,21 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="label">Tarih *</label>
+                <label className="label">{isEn ? 'Date *' : 'Tarih *'}</label>
                 <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)} className="input-field text-sm" />
               </div>
               <div>
-                <label className="label">Başlangıç *</label>
+                <label className="label">{isEn ? 'Start *' : 'Başlangıç *'}</label>
                 <input type="time" value={addStartTime} onChange={e => setAddStartTime(e.target.value)} className="input-field text-sm" />
               </div>
               <div>
-                <label className="label">Bitiş</label>
+                <label className="label">{isEn ? 'End' : 'Bitiş'}</label>
                 <input type="time" value={addEndTime} onChange={e => setAddEndTime(e.target.value)} className="input-field text-sm" />
               </div>
             </div>
 
             <div>
-              <label className="label">Sanatçı / Grup</label>
+              <label className="label">{isEn ? 'Artist / Band' : 'Sanatçı / Grup'}</label>
               {selectedPerformer ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 bg-accent/5">
                   {selectedPerformer.type === 'artist'
@@ -437,7 +438,7 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
                     : <Users size={13} className="text-accent flex-shrink-0" />
                   }
                   <span className="text-text-primary text-sm flex-1">{selectedPerformer.name}</span>
-                  <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                  <span className="text-text-muted text-xs">{selectedPerformer.type === 'artist' ? (isEn ? 'Artist' : 'Sanatçı') : (isEn ? 'Band' : 'Grup')}</span>
                   <button type="button" onClick={() => { setSelectedPerformer(null); setPerformerQuery('') }} className="text-text-muted hover:text-text-primary ml-1">
                     <X size={13} />
                   </button>
@@ -450,20 +451,20 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
                       className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors',
                         performerTab === 'artist' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
                     >
-                      <Music2 size={11} /> Sanatçı
+                      <Music2 size={11} /> {isEn ? 'Artist' : 'Sanatçı'}
                     </button>
                     <button type="button"
                       onClick={() => { setPerformerTab('band'); setPerformerQuery('') }}
                       className={cn('flex-1 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors border-l border-[rgba(228,224,216,0.15)]',
                         performerTab === 'band' ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}
                     >
-                      <Users size={11} /> Grup
+                      <Users size={11} /> {isEn ? 'Band' : 'Grup'}
                     </button>
                   </div>
                   <input
                     value={performerQuery}
                     onChange={e => setPerformerQuery(e.target.value)}
-                    placeholder={performerTab === 'artist' ? 'İsimle ara...' : 'Grup adıyla ara...'}
+                    placeholder={performerTab === 'artist' ? (isEn ? 'Search by name...' : 'İsimle ara...') : (isEn ? 'Search by band name...' : 'Grup adıyla ara...')}
                     className="input-field text-sm"
                     autoComplete="off"
                   />
@@ -477,14 +478,14 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
                           className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[rgba(228,224,216,0.06)] transition-colors border-b border-[rgba(228,224,216,0.06)] last:border-b-0"
                         >
                           <span className="text-text-primary text-sm flex-1 truncate">{p.name}</span>
-                          <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? 'Sanatçı' : 'Grup'}</span>
+                          <span className="text-text-muted text-xs flex-shrink-0">{p.type === 'artist' ? (isEn ? 'Artist' : 'Sanatçı') : (isEn ? 'Band' : 'Grup')}</span>
                         </button>
                       ))}
                     </div>
                   )}
                   {performerQuery.trim() && filteredPerformers.length === 0 && (
                     <p className="text-text-muted text-xs mt-1.5 px-1">
-                      {performerTab === 'artist' ? 'Kayıtlı sanatçı bulunamadı' : 'Kayıtlı grup bulunamadı'} — ad olarak kaydedilecek
+                      {performerTab === 'artist' ? (isEn ? 'No registered artist found' : 'Kayıtlı sanatçı bulunamadı') : (isEn ? 'No registered band found' : 'Kayıtlı grup bulunamadı')}{isEn ? ' — will be saved as name' : ' — ad olarak kaydedilecek'}
                     </p>
                   )}
                 </>
@@ -493,27 +494,27 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
 
             {selectedPerformer && (
               <div>
-                <label className="label">Teklif Geçerlilik Süresi</label>
+                <label className="label">{isEn ? 'Offer Validity Period' : 'Teklif Geçerlilik Süresi'}</label>
                 <div className="flex rounded-lg overflow-hidden border border-[rgba(228,224,216,0.15)]">
                   {([24, 48] as const).map(h => (
                     <button key={h} type="button" onClick={() => setOfferTtl(h)}
                       className={cn('flex-1 py-1.5 text-xs font-medium transition-colors border-l border-[rgba(228,224,216,0.15)] first:border-l-0',
                         offerTtl === h ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-primary')}>
-                      {h} saat
+                      {h} {isEn ? 'hours' : 'saat'}
                     </button>
                   ))}
                 </div>
-                <p className="text-text-muted text-xs mt-1">Sanatçı bu süre içinde yanıt vermezse teklif otomatik sona erer.</p>
+                <p className="text-text-muted text-xs mt-1">{isEn ? 'If the artist does not respond within this time, the offer expires automatically.' : 'Sanatçı bu süre içinde yanıt vermezse teklif otomatik sona erer.'}</p>
               </div>
             )}
 
             <div>
-              <label className="label">Açıklama</label>
+              <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
               <textarea
                 value={addDescription}
                 onChange={e => setAddDescription(e.target.value)}
                 rows={2}
-                placeholder="Etkinlik hakkında kısa bir not..."
+                placeholder={isEn ? 'A short note about the event...' : 'Etkinlik hakkında kısa bir not...'}
                 className="input-field text-sm resize-none w-full"
               />
             </div>
