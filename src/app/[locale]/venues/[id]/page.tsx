@@ -23,7 +23,7 @@ import type { SocialLinksData } from '@/components/ui/SocialLinks'
 import type { Venue, Slot, Event } from '@/lib/supabase/types'
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -44,7 +44,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function VenuePage({ params }: Props) {
-  const { id } = await params
+  const { id, locale } = await params
+  const isEn = locale === 'en'
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -179,7 +180,7 @@ export default async function VenuePage({ params }: Props) {
             className="pointer-events-auto flex items-center gap-1 text-text-muted text-sm mb-3 hover:text-text-primary w-fit"
           >
             <ArrowLeft size={14} />
-            Mekanlar
+            {isEn ? 'Venues' : 'Mekanlar'}
           </Link>
           <div className="flex items-end gap-3">
             <div className="pointer-events-auto">
@@ -269,7 +270,7 @@ export default async function VenuePage({ params }: Props) {
 
         {venue.genres && venue.genres.length > 0 && (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİK TÜRÜ</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'EVENT TYPE' : 'ETKİNLİK TÜRÜ'}</h2>
             <div className="flex flex-wrap gap-2">
               {venue.genres.map((g) => <GenreChip key={g} genre={g} />)}
             </div>
@@ -307,8 +308,8 @@ export default async function VenuePage({ params }: Props) {
           <div className="flex items-center gap-3">
             <CalendarDays size={18} className="text-accent" />
             <div>
-              <span className="text-text-primary text-sm font-medium">Sahne Takvimi</span>
-              <p className="text-text-muted text-xs mt-0.5">Etkinlikler ve açık sahneler</p>
+              <span className="text-text-primary text-sm font-medium">{isEn ? 'Stage Calendar' : 'Sahne Takvimi'}</span>
+              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Events and open stages' : 'Etkinlikler ve açık sahneler'}</p>
             </div>
           </div>
           <span className="text-text-muted text-xs">→</span>
@@ -321,9 +322,9 @@ export default async function VenuePage({ params }: Props) {
         >
           <div className="flex items-center gap-3">
             <Images size={18} className="text-text-muted" />
-            <span className="text-text-primary text-sm font-medium">Fotoğraf Albümü</span>
+            <span className="text-text-primary text-sm font-medium">{isEn ? 'Photo Album' : 'Fotoğraf Albümü'}</span>
           </div>
-          <span className="text-text-muted text-xs">{photos.length} fotoğraf →</span>
+          <span className="text-text-muted text-xs">{photos.length} {isEn ? 'photos →' : 'fotoğraf →'}</span>
         </Link>
 
         {canSeeSlots && (
@@ -337,7 +338,7 @@ export default async function VenuePage({ params }: Props) {
 
         {(upcomingEvents.length > 0 || pastEvents.length > 0 || isOwner) && (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİKLER</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'EVENTS' : 'ETKİNLİKLER'}</h2>
             <VenueEventTabs
               upcoming={upcomingEvents}
               past={pastEvents}

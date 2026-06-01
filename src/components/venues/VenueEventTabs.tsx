@@ -349,7 +349,7 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
           className={cn('flex-1 py-2 text-sm font-medium rounded-lg transition-colors',
             tab === 'upcoming' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
         >
-          Yaklaşan
+          {locale === 'en' ? 'Upcoming' : 'Yaklaşan'}
           {upcomingList.length > 0 && (
             <span className={cn('ml-1.5 text-xs', tab === 'upcoming' ? 'opacity-70' : 'text-text-muted')}>
               ({upcomingList.length})
@@ -361,7 +361,7 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
           className={cn('flex-1 py-2 text-sm font-medium rounded-lg transition-colors',
             tab === 'past' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}
         >
-          Geçmiş
+          {locale === 'en' ? 'Past' : 'Geçmiş'}
           {pastList.length > 0 && (
             <span className={cn('ml-1.5 text-xs', tab === 'past' ? 'opacity-70' : 'text-text-muted')}>
               ({pastList.length})
@@ -531,7 +531,9 @@ export function VenueEventTabs({ upcoming: initialUpcoming, past: initialPast, i
         )
       ) : events.length === 0 ? (
         <p className="text-center py-8 text-text-muted text-sm">
-          {tab === 'upcoming' ? 'Yaklaşan etkinlik yok.' : 'Geçmiş etkinlik yok.'}
+          {locale === 'en'
+            ? (tab === 'upcoming' ? 'No upcoming events.' : 'No past events.')
+            : (tab === 'upcoming' ? 'Yaklaşan etkinlik yok.' : 'Geçmiş etkinlik yok.')}
         </p>
       ) : (
         <div className="space-y-2">
