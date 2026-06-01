@@ -160,7 +160,10 @@
   "notifications": {
     "title": "Notifications",
     "noNotifications": "No notifications yet.",
-    "desc": "New offers and updates will appear here."
+    "desc": "New offers and updates will appear here.",
+    "newMessage": "New message — {context}",
+    "groupChat": "Group Chat",
+    "eventChat": "Event Chat"
   },
   "search": {
     "title": "Search",
@@ -267,6 +270,10 @@
     "offerWithdrawnBody": "A stage offer sent to you was withdrawn by the venue.",
     "competingOfferRejectedBody": "{performer} accepted another offer for {date}. Discover other artists to fill your schedule.",
     "newVenueOfferBody": "{venue} invited you to perform on {date}. Respond within {hours} hours.",
-    "followEmailDisclaimer": "You received this email because you follow this account."
+    "followEmailDisclaimer": "You received this email because you follow this account.",
+    "reminderPerformer": "You're on stage tomorrow: {title}",
+    "reminderBand": "You're on stage tomorrow: {title}",
+    "reminderAudience": "There's an event tomorrow: {title}",
+    "reminderEmailText": "You have an event tomorrow."
   }
 }
