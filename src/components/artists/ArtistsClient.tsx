@@ -159,7 +159,7 @@ function ArtistCard({ artist }: { artist: ArtistFull }) {
           {(artist as any).is_teaching && (artist as any).teaching_instruments?.length > 0 && (
             <span className="chip flex items-center gap-1 bg-[#d4a820]/10 text-[#d4a820] border border-[#d4a820]/30">
               <GraduationCap size={9} />
-              Ders Veriyor
+              Kurs Veriyor
             </span>
           )}
         </div>

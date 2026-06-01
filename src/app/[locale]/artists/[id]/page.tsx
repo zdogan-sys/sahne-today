@@ -176,7 +176,7 @@ export default async function ArtistPage({ params }: Props) {
             <div className="flex items-center gap-1.5 flex-wrap mt-1">
               <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 font-semibold uppercase tracking-wide">
                 <GraduationCap size={9} />
-                {isEn ? 'Teaches' : 'Ders Veriyor'}
+                {isEn ? 'Gives Courses' : 'Kurs Veriyor'}
               </span>
               {(artist as any).teaching_instruments.map((inst: string) => (
                 <span key={inst} className="text-[10px] px-2 py-0.5 rounded border text-[#d4a820]/80 border-[#d4a820]/20">
