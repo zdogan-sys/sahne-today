@@ -34,7 +34,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface Props {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ category?: string; level?: string; online?: string }>
+  searchParams: Promise<{ category?: string; level?: string; online?: string; instructor?: string; subcategory?: string }>
 }
 
 export default async function CoursesPage({ searchParams }: Props) {
@@ -51,6 +51,8 @@ export default async function CoursesPage({ searchParams }: Props) {
   if (sp.level) query = query.eq('level', sp.level)
   if (sp.online === '1') query = query.eq('is_online', true)
   if (sp.online === '0') query = query.eq('is_online', false)
+  if (sp.instructor) query = query.eq('instructor_id', sp.instructor)
+  if (sp.subcategory) query = query.ilike('subcategory', sp.subcategory)
 
   const { data: courses } = await query
 
@@ -61,7 +63,9 @@ export default async function CoursesPage({ searchParams }: Props) {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="font-bebas text-5xl text-text-primary">KURSLAR</h1>
-        <p className="text-text-muted text-sm mt-1">Müzik, dans ve tiyatro dersleri</p>
+        <p className="text-text-muted text-sm mt-1">
+          {sp.subcategory ? `${sp.subcategory} dersleri` : 'Müzik, dans ve tiyatro dersleri'}
+        </p>
       </div>
 
       {/* Filtreler */}

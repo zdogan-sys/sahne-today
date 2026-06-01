@@ -179,9 +179,13 @@ export default async function ArtistPage({ params }: Props) {
                 {isEn ? 'Gives Courses' : 'Kurs Veriyor'}
               </span>
               {(artist as any).teaching_instruments.map((inst: string) => (
-                <span key={inst} className="text-[10px] px-2 py-0.5 rounded border text-[#d4a820]/80 border-[#d4a820]/20">
+                <Link
+                  key={inst}
+                  href={`/courses?instructor=${artist.profile_id}&subcategory=${encodeURIComponent(inst)}`}
+                  className="text-[10px] px-2 py-0.5 rounded border text-[#d4a820]/80 border-[#d4a820]/20 hover:bg-[#d4a820]/10 hover:text-[#d4a820] transition-colors"
+                >
                   {inst}
-                </span>
+                </Link>
               ))}
             </div>
           )}
