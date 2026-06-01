@@ -106,6 +106,10 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
           venueType={venueType} setVenueType={setVenueType}
           onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
           canSeeSlots={canSeeSlots}
+          cities={CITIES}
+          venueTypes={VENUE_TYPES}
+          locale={locale}
+          t={t}
         />
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           Filtrele ({filtered.length})
