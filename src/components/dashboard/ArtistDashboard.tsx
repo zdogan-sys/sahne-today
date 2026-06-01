@@ -399,14 +399,25 @@ export function ArtistDashboard({ userId, calendarToken }: { userId: string; cal
           </h2>
         </div>
         {isProIndividual ? (
-          <div className="card p-4 flex items-center justify-between">
-            <div>
-              <p className="text-text-primary text-sm font-medium">{isEn ? 'Course Management' : 'Kurs Yönetimi'}</p>
-              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Create and manage your courses' : 'Kurslarınızı oluşturun ve yönetin'}</p>
+          <div className="space-y-2">
+            <div className="card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-text-primary text-sm font-medium">{isEn ? 'Lesson Schedule' : 'Ders Saatlerim'}</p>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Set your available teaching times' : 'Öğrencilerin rezervasyon yapabileceği saatleri belirle'}</p>
+              </div>
+              <Link href="/dashboard/teaching-slots" className="btn-accent py-1.5 px-3 text-xs">
+                {isEn ? 'Manage →' : 'Yönet →'}
+              </Link>
             </div>
-            <Link href="/dashboard/courses" className="btn-accent py-1.5 px-3 text-xs">
-              {isEn ? 'Manage →' : 'Yönet →'}
-            </Link>
+            <div className="card p-4 flex items-center justify-between">
+              <div>
+                <p className="text-text-primary text-sm font-medium">{isEn ? 'Courses' : 'Kurslarım'}</p>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Manage your courses and sessions' : 'Kurs ve seans yönetimi'}</p>
+              </div>
+              <Link href="/dashboard/courses" className="btn-accent py-1.5 px-3 text-xs">
+                {isEn ? 'Manage →' : 'Yönet →'}
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="card p-4 flex items-center gap-3">

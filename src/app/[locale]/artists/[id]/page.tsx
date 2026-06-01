@@ -56,9 +56,10 @@ export default async function ArtistPage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [artistRes, membershipsRes] = await Promise.all([
+  const [artistRes, membershipsRes, teachingSlotsRes] = await Promise.all([
     supabase.from('artists').select('*, profiles(*)').eq('id', id).single(),
     supabase.from('band_members').select('band_id, role, bands(id, name, photo_url, genres, city)').eq('artist_id', id).eq('status', 'accepted'),
+    supabase.from('teaching_slots').select('id, instrument, day_of_week, start_time, end_time, recurrence, price_per_session').eq('artist_id', id).eq('is_active', true).order('day_of_week').order('start_time'),
   ])
 
   if (!artistRes.data) notFound()
@@ -94,6 +95,7 @@ export default async function ArtistPage({ params }: Props) {
   const profile = artist.profiles
   const isOwner = user?.id === artist.profile_id || isAdminUser(user)
   const ownedVenue = venueRes.data as any
+  const teachingSlots = (teachingSlotsRes.data ?? []) as any[]
 
   const { data: followData } = user
     ? await supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'artist').eq('target_id', id).maybeSingle()
@@ -350,6 +352,37 @@ export default async function ArtistPage({ params }: Props) {
               </div>
               <span className="text-accent text-xs flex-shrink-0">→</span>
             </Link>
+          </div>
+        )}
+
+        {teachingSlots.length > 0 && (
+          <div>
+            <h3 className="label mb-3 flex items-center gap-2">
+              <GraduationCap size={13} />
+              {isEn ? 'Available Lesson Times' : 'Müsait Ders Saatleri'}
+            </h3>
+            <div className="space-y-2">
+              {teachingSlots.map((slot) => (
+                <div key={slot.id} className="card p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[#d4a820] text-sm font-semibold">{slot.instrument}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][slot.day_of_week]} · {slot.start_time?.slice(0,5)}–{slot.end_time?.slice(0,5)}
+                      {' · '}{slot.recurrence === 'weekly' ? 'Haftalık' : '2 Haftada Bir'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="font-bebas text-xl text-accent">₺{slot.price_per_session}</span>
+                    <Link
+                      href={`/artists/${id}/book/${slot.id}`}
+                      className="btn-accent py-1.5 px-3 text-xs"
+                    >
+                      {isEn ? 'Book' : 'Ders Al'}
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
