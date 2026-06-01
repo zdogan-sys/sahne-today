@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, Loader2, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
@@ -35,6 +35,7 @@ export default function BookTeachingSlotPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(hasError ? 'Ödeme başarısız. Lütfen tekrar deneyin.' : '')
   const [iframeToken, setIframeToken] = useState<string | null>(null)
+  const [booked, setBooked] = useState(false)
 
   const [form, setForm] = useState({ student_name: '', student_email: '', student_phone: '', lesson_date: '', notes: '' })
 
@@ -76,12 +77,17 @@ export default function BookTeachingSlotPage() {
     })
     const data = await res.json()
 
-    if (!res.ok || !data.token) {
+    if (!res.ok) {
       setError(data.error ?? 'Bir hata oluştu.')
       setSubmitting(false); return
     }
 
-    setIframeToken(data.token)
+    if (data.token) {
+      setIframeToken(data.token)
+    } else {
+      // Ödeme kapalı — sadece rezervasyon oluşturuldu
+      setBooked(true)
+    }
     setSubmitting(false)
   }
 
@@ -89,6 +95,17 @@ export default function BookTeachingSlotPage() {
   if (!slot) return <div className="max-w-lg mx-auto px-4 py-12 text-center"><p className="text-text-muted">Slot bulunamadı.</p><Link href={`/artists/${id}`} className="text-accent mt-2 block">Geri dön →</Link></div>
 
   const availableDates = getNextDates(slot.day_of_week, slot.recurrence)
+
+  if (booked) return (
+    <div className="max-w-lg mx-auto px-4 py-16 text-center">
+      <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
+        <Check size={24} className="text-success" />
+      </div>
+      <h1 className="font-bebas text-3xl text-text-primary mb-2">REZERVASYON ALINDI</h1>
+      <p className="text-text-muted text-sm">Öğretmen rezervasyonunuzu onayladığında bildirim alacaksınız.</p>
+      <Link href={`/artists/${id}`} className="text-accent mt-4 block hover:underline">Sanatçı profiline dön →</Link>
+    </div>
+  )
 
   if (iframeToken) {
     return (

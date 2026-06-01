@@ -21,6 +21,10 @@ export default function TeachingSlotsPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [actingBooking, setActingBooking] = useState<string | null>(null)
+  const [togglingPayment, setTogglingPayment] = useState<string | null>(null)
+  const [addBookingSlot, setAddBookingSlot] = useState<string | null>(null)
+  const [bookForm, setBookForm] = useState({ student_name: '', student_email: '', student_phone: '', lesson_date: '' })
+  const [bookingSlots, setBookingSlots] = useState<Record<string, string[]>>({})
 
   const [instrument, setInstrument] = useState('')
   const [dayOfWeek, setDayOfWeek] = useState(1)
@@ -87,6 +91,29 @@ export default function TeachingSlotsPage() {
     }
 
     setInstrument(''); setPrice(''); setShowForm(false)
+    setSaving(false)
+  }
+
+  async function togglePayment(slotId: string, current: boolean) {
+    setTogglingPayment(slotId)
+    await supabase.from('teaching_slots').update({ payment_enabled: !current } as any).eq('id', slotId)
+    setSlots(prev => prev.map(s => s.id === slotId ? { ...s, payment_enabled: !current } : s))
+    setTogglingPayment(null)
+  }
+
+  async function addBookingForStudent(slotId: string) {
+    if (!bookForm.student_name || !bookForm.student_email || !bookForm.student_phone || !bookForm.lesson_date) return
+    setSaving(true)
+    const res = await fetch('/api/teaching/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot_id: slotId, ...bookForm, booked_by: 'teacher' }),
+    })
+    if (res.ok) {
+      setAddBookingSlot(null)
+      setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' })
+      await load()
+    }
     setSaving(false)
   }
 
@@ -197,25 +224,78 @@ export default function TeachingSlotsPage() {
         {slots.length === 0 && !showForm ? (
           <div className="card p-6 text-center text-text-muted text-sm">Henüz müsait saat eklenmedi.</div>
         ) : (
-          <div className="space-y-2">
-            {slots.map(slot => (
-              <div key={slot.id} className="card p-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[#d4a820] text-xs font-semibold">{slot.instrument}</span>
-                    <span className="text-text-primary text-sm">
-                      {DAY_NAMES[slot.day_of_week]} · {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}
-                    </span>
+          <div className="space-y-3">
+            {slots.map(slot => {
+              const nextDates = getNextDates(slot.day_of_week, slot.recurrence)
+              return (
+                <div key={slot.id} className="card p-3 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[#d4a820] text-xs font-semibold">{slot.instrument}</span>
+                        <span className="text-text-primary text-sm">
+                          {DAY_NAMES[slot.day_of_week]} · {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}
+                        </span>
+                      </div>
+                      <p className="text-text-muted text-xs mt-0.5">
+                        {slot.recurrence === 'weekly' ? 'Haftalık' : '2 Haftada Bir'} · ₺{slot.price_per_session}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Payment toggle */}
+                      <button
+                        onClick={() => togglePayment(slot.id, slot.payment_enabled)}
+                        disabled={togglingPayment === slot.id}
+                        title={slot.payment_enabled ? 'Ödemeyi devre dışı bırak' : 'Ödemeyi aktif et'}
+                        className={cn(
+                          'text-[10px] px-2 py-1 rounded border transition-colors disabled:opacity-40',
+                          slot.payment_enabled
+                            ? 'bg-accent/10 text-accent border-accent/30'
+                            : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                        )}
+                      >
+                        {slot.payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
+                      </button>
+                      {/* Öğrenci ekle */}
+                      <button
+                        onClick={() => { setAddBookingSlot(addBookingSlot === slot.id ? null : slot.id); setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' }) }}
+                        className="text-[10px] px-2 py-1 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors"
+                      >
+                        + Öğrenci Ekle
+                      </button>
+                      <button onClick={() => deleteSlot(slot.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors">
+                        <X size={13} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-text-muted text-xs mt-0.5">
-                    {slot.recurrence === 'weekly' ? 'Haftalık' : '2 Haftada Bir'} · ₺{slot.price_per_session}
-                  </p>
+
+                  {/* Hoca adına rezervasyon formu */}
+                  {addBookingSlot === slot.id && (
+                    <div className="pt-3 border-t border-[rgba(228,224,216,0.08)] space-y-2">
+                      <p className="text-text-muted text-xs">Öğrenciye onay maili gönderilecek</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input value={bookForm.student_name} onChange={e => setBookForm(p => ({ ...p, student_name: e.target.value }))} placeholder="Ad Soyad *" className="input-field text-xs" />
+                        <input type="tel" value={bookForm.student_phone} onChange={e => setBookForm(p => ({ ...p, student_phone: e.target.value }))} placeholder="Telefon *" className="input-field text-xs" />
+                        <input type="email" value={bookForm.student_email} onChange={e => setBookForm(p => ({ ...p, student_email: e.target.value }))} placeholder="E-posta *" className="input-field text-xs col-span-2" />
+                        <select value={bookForm.lesson_date} onChange={e => setBookForm(p => ({ ...p, lesson_date: e.target.value }))} className="input-field text-xs col-span-2">
+                          <option value="">Tarih Seçin *</option>
+                          {nextDates.map(d => (
+                            <option key={d} value={d}>{new Date(d + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => addBookingForStudent(slot.id)}
+                        disabled={saving || !bookForm.student_name || !bookForm.student_email || !bookForm.student_phone || !bookForm.lesson_date}
+                        className="btn-accent w-full py-2 text-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        {saving ? <><Loader2 size={11} className="animate-spin" /> Gönderiliyor...</> : 'Rezervasyon Oluştur & Mail Gönder'}
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button onClick={() => deleteSlot(slot.id)} className="p-1.5 text-text-muted hover:text-red-400 transition-colors">
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -270,4 +350,19 @@ export default function TeachingSlotsPage() {
       )}
     </div>
   )
+}
+
+function getNextDates(dayOfWeek: number, recurrence: string, count = 8): string[] {
+  const dates: string[] = []
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const cur = new Date(today)
+  const step = recurrence === 'biweekly' ? 14 : 7
+  let daysUntil = (dayOfWeek - cur.getDay() + 7) % 7
+  if (daysUntil === 0) daysUntil = 7
+  cur.setDate(cur.getDate() + daysUntil)
+  for (let i = 0; i < count; i++) {
+    dates.push(cur.toISOString().split('T')[0])
+    cur.setDate(cur.getDate() + step)
+  }
+  return dates
 }
