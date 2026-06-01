@@ -132,7 +132,7 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
   return (
     <div className="space-y-5">
       <div>
-        <label className="label">Şehir</label>
+        <label className="label">{t('city')}</label>
         <div className="flex flex-wrap gap-1.5">
           {cities.map((c: string) => (
             <button key={c} onClick={() => setCity(city === c ? '' : c)}
