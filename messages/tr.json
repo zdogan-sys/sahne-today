@@ -243,7 +243,10 @@
       "free": "Ücretsiz",
       "paid": "Ücretli",
       "door": "Kapıda"
-    }
+    },
+    "dateRanges": ["Bugün", "Bu Hafta", "Bu Ay", "Tümü"],
+    "musicGenres": ["Akustik", "Metal", "Rock", "Blues", "Caz", "Pop", "Elektronik", "R&B", "Rap", "Klasik", "Etnik", "Fasıl", "Türkü", "Arabesk"],
+    "stageTypes": ["Stand-Up", "Doğaçlama", "Alternatif Sahne"]
   },
   "footer": {
     "allRightsReserved": "Tüm hakları saklıdır."

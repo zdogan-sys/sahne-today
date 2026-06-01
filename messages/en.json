@@ -244,7 +244,10 @@
       "free": "Free",
       "paid": "Paid",
       "door": "At the Door"
-    }
+    },
+    "dateRanges": ["Today", "This Week", "This Month", "All"],
+    "musicGenres": ["Acoustic", "Metal", "Rock", "Blues", "Jazz", "Pop", "Electronic", "R&B", "Rap", "Classical", "Ethnic", "Fasıl", "Folk", "Arabesk"],
+    "stageTypes": ["Stand-Up", "Improvisation", "Alternative Stage"]
   },
   "footer": {
     "allRightsReserved": "All rights reserved."
