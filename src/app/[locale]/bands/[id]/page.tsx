@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -24,7 +25,7 @@ import { OpenChatButton } from '@/components/messaging/OpenChatButton'
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -45,7 +46,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BandPage({ params }: Props) {
-  const { id } = await params
+  const { id, locale } = await params
+  const t = await getTranslations({ locale, namespace: 'bands' })
+  const tCommon = await getTranslations({ locale, namespace: 'common' })
+  const isEn = locale === 'en'
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -104,7 +108,7 @@ export default async function BandPage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6">
       <Link href="/bands" className="flex items-center gap-2 text-text-muted text-sm mb-6 hover:text-text-primary w-fit">
         <ArrowLeft size={16} />
-        Gruplar
+        {t('title')}
       </Link>
 
       <div className="flex items-start gap-5 mb-6">
@@ -147,7 +151,7 @@ export default async function BandPage({ params }: Props) {
       <div className="space-y-6">
         {b.bio && (
           <div>
-            <h3 className="label">Hakkında</h3>
+            <h3 className="label">{isEn ? 'About' : 'Hakkında'}</h3>
             <p className="text-text-primary text-sm leading-relaxed">{b.bio}</p>
           </div>
         )}
@@ -156,7 +160,7 @@ export default async function BandPage({ params }: Props) {
           <LookingForEditor bandId={b.id} initialValue={lookingFor} />
         ) : isArtist && lookingFor.length > 0 ? (
           <div>
-            <h3 className="label">Aranan Enstrümanlar</h3>
+            <h3 className="label">{isEn ? 'Looking for' : 'Aranan Enstrümanlar'}</h3>
             <div className="flex flex-wrap gap-1.5 mb-4">
               {lookingFor.map((item: string) => (
                 <span key={item} className="chip bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">{item}</span>
@@ -176,11 +180,11 @@ export default async function BandPage({ params }: Props) {
         <div>
           <h3 className="label flex items-center gap-2">
             <Users size={13} />
-            Üyeler
+            {t('members')}
             <span className="font-normal text-text-muted">({members.length})</span>
           </h3>
           {members.length === 0 ? (
-            <p className="text-text-muted text-sm">Henüz üye yok.</p>
+            <p className="text-text-muted text-sm">{isEn ? 'No members yet.' : 'Henüz üye yok.'}</p>
           ) : (
             <div className="space-y-2">
               {members.map((m: any) => {
@@ -234,12 +238,12 @@ export default async function BandPage({ params }: Props) {
         {/* Social links */}
         {isCreator ? (
           <div>
-            <h3 className="label">Sosyal Medya</h3>
+            <h3 className="label">{isEn ? 'Social Media' : 'Sosyal Medya'}</h3>
             <BandSocialEditor bandId={b.id} initialLinks={socialLinks} />
           </div>
         ) : Object.keys(socialLinks).length > 0 ? (
           <div>
-            <h3 className="label">Sosyal Medya</h3>
+            <h3 className="label">{isEn ? 'Social Media' : 'Sosyal Medya'}</h3>
             <SocialLinks links={socialLinks} />
           </div>
         ) : null}
@@ -267,9 +271,9 @@ export default async function BandPage({ params }: Props) {
         >
           <div className="flex items-center gap-3">
             <Images size={18} className="text-text-muted" />
-            <span className="text-text-primary text-sm font-medium">Fotoğraf Albümü</span>
+            <span className="text-text-primary text-sm font-medium">{isEn ? 'Photo Album' : 'Fotoğraf Albümü'}</span>
           </div>
-          <span className="text-text-muted text-xs">{(b.photos ?? []).length} fotoğraf →</span>
+          <span className="text-text-muted text-xs">{(b.photos ?? []).length} {isEn ? 'photos →' : 'fotoğraf →'}</span>
         </Link>
       </div>
     </div>

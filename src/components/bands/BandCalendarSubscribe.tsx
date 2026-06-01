@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useLocale } from 'next-intl'
 import { CalendarPlus, ChevronDown } from 'lucide-react'
 
 export function BandCalendarSubscribe({ bandId, bandName }: { bandId: string; bandName: string }) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -28,8 +31,8 @@ export function BandCalendarSubscribe({ bandId, bandName }: { bandId: string; ba
         <div className="flex items-center gap-3">
           <CalendarPlus size={18} className="text-accent" />
           <div className="text-left">
-            <span className="text-accent text-sm font-medium">Etkinlikleri Takvime Ekle</span>
-            <p className="text-text-muted text-xs mt-0.5">Google, Apple veya .ics olarak abone ol</p>
+            <span className="text-accent text-sm font-medium">{isEn ? 'Add Events to Calendar' : 'Etkinlikleri Takvime Ekle'}</span>
+            <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Subscribe via Google, Apple, or .ics' : 'Google, Apple veya .ics olarak abone ol'}</p>
           </div>
         </div>
         <ChevronDown size={14} className={`text-accent/60 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
@@ -44,8 +47,8 @@ export function BandCalendarSubscribe({ bandId, bandName }: { bandId: string; ba
           >
             <span className="text-xl leading-none">🍎</span>
             <div>
-              <p className="text-sm text-text-primary font-medium">Apple Takvim</p>
-              <p className="text-[10px] text-text-muted">Her 6 saatte otomatik güncellenir</p>
+              <p className="text-sm text-text-primary font-medium">{isEn ? 'Apple Calendar' : 'Apple Takvim'}</p>
+              <p className="text-[10px] text-text-muted">{isEn ? 'Auto-updates every 6 hours' : 'Her 6 saatte otomatik güncellenir'}</p>
             </div>
           </a>
           <a
@@ -57,8 +60,8 @@ export function BandCalendarSubscribe({ bandId, bandName }: { bandId: string; ba
           >
             <span className="text-xl leading-none">📅</span>
             <div>
-              <p className="text-sm text-text-primary font-medium">Google Takvim</p>
-              <p className="text-[10px] text-text-muted">Her 6 saatte otomatik güncellenir</p>
+              <p className="text-sm text-text-primary font-medium">{isEn ? 'Google Calendar' : 'Google Takvim'}</p>
+              <p className="text-[10px] text-text-muted">{isEn ? 'Auto-updates every 6 hours' : 'Her 6 saatte otomatik güncellenir'}</p>
             </div>
           </a>
           <a
@@ -69,8 +72,8 @@ export function BandCalendarSubscribe({ bandId, bandName }: { bandId: string; ba
           >
             <span className="text-xl leading-none">📥</span>
             <div>
-              <p className="text-sm text-text-primary font-medium">.ics İndir</p>
-              <p className="text-[10px] text-text-muted">Manuel ekleme için</p>
+              <p className="text-sm text-text-primary font-medium">{isEn ? 'Download .ics' : '.ics İndir'}</p>
+              <p className="text-[10px] text-text-muted">{isEn ? 'For manual import' : 'Manuel ekleme için'}</p>
             </div>
           </a>
         </div>

@@ -438,7 +438,7 @@ export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props)
       )}
 
       <div>
-        <h3 className="label mb-4">Etkinlik Takvimi</h3>
+        <h3 className="label mb-4">{locale === 'en' ? 'Event Calendar' : 'Etkinlik Takvimi'}</h3>
         <EventCalendar
           events={events}
           onDayClick={handleDayClick}
