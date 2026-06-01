@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Camera, Loader2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function VenueLogoEditor({ venueId, initialUrl, name, isOwner }: Props) {
+  const isEn = useLocale() === 'en'
   const [url, setUrl] = useState(initialUrl)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -77,7 +79,7 @@ export function VenueLogoEditor({ venueId, initialUrl, name, isOwner }: Props) {
         <button
           onClick={handleRemove}
           className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors z-10"
-          title="Logoyu kaldır"
+          title={isEn ? 'Remove logo' : 'Logoyu kaldır'}
         >
           <X size={10} />
         </button>

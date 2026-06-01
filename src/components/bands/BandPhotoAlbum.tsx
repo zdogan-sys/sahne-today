@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Plus, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function BandPhotoAlbum({ bandId, initialPhotos, isCreator }: Props) {
+  const isEn = useLocale() === 'en'
   const [photos, setPhotos] = useState<string[]>(initialPhotos)
   const [uploading, setUploading] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
@@ -51,7 +53,7 @@ export function BandPhotoAlbum({ bandId, initialPhotos, isCreator }: Props) {
   return (
     <div>
       {photos.length === 0 && !isCreator ? (
-        <p className="text-text-muted text-sm py-8 text-center">Henüz fotoğraf eklenmemiş.</p>
+        <p className="text-text-muted text-sm py-8 text-center">{isEn ? 'No photos added yet.' : 'Henüz fotoğraf eklenmemiş.'}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((url) => (
@@ -79,7 +81,7 @@ export function BandPhotoAlbum({ bandId, initialPhotos, isCreator }: Props) {
             >
               {uploading
                 ? <Loader2 size={20} className="animate-spin" />
-                : <><Plus size={20} /><span className="text-xs">Fotoğraf Ekle</span></>
+                : <><Plus size={20} /><span className="text-xs">{isEn ? 'Add Photo' : 'Fotoğraf Ekle'}</span></>
               }
             </button>
           )}

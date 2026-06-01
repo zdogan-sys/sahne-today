@@ -6,6 +6,7 @@ import { Edit2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { CITY_OPTIONS, ALL_GENRES, getGenreColor } from '@/lib/constants'
+import { translateGenre } from '@/lib/utils'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 
 interface Props {
@@ -50,7 +51,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
 
   async function handleSave() {
     if (!displayName.trim() || !email.trim()) {
-      setError('Ad ve E-posta alanları zorunludur.')
+      setError(isEn ? 'Name and Email fields are required.' : 'Ad ve E-posta alanları zorunludur.')
       return
     }
 
@@ -62,11 +63,11 @@ export function UserProfileEditor({ userId, initialData }: Props) {
     if (email !== initialData.email) {
       const { error: authErr } = await supabase.auth.updateUser({ email })
       if (authErr) {
-        setError('E-posta güncellenirken hata: ' + authErr.message)
+        setError((isEn ? 'Error updating email: ' : 'E-posta güncellenirken hata: ') + authErr.message)
         setLoading(false)
         return
       }
-      setSuccess('E-posta adresi değiştirildi. Lütfen gelen onay mailini kontrol edin.')
+      setSuccess(isEn ? 'Email address changed. Please check your inbox for the confirmation email.' : 'E-posta adresi değiştirildi. Lütfen gelen onay mailini kontrol edin.')
     }
 
     await supabase.auth.updateUser({ data: { display_name: displayName.trim() } })
@@ -83,7 +84,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
       .eq('id', userId)
 
     if (dbErr) {
-      setError('Profil güncellenirken hata: ' + dbErr.message)
+      setError((isEn ? 'Error updating profile: ' : 'Profil güncellenirken hata: ') + dbErr.message)
       setLoading(false)
     } else {
       if (!success) {
@@ -98,11 +99,11 @@ export function UserProfileEditor({ userId, initialData }: Props) {
     setPasswordError('')
     setPasswordSuccess('')
     if (password.length < 6) {
-      setPasswordError('Şifre en az 6 karakter olmalı.')
+      setPasswordError(isEn ? 'Password must be at least 6 characters.' : 'Şifre en az 6 karakter olmalı.')
       return
     }
     if (password !== confirmPassword) {
-      setPasswordError('Şifreler eşleşmiyor.')
+      setPasswordError(isEn ? 'Passwords do not match.' : 'Şifreler eşleşmiyor.')
       return
     }
     setPasswordLoading(true)
@@ -110,11 +111,11 @@ export function UserProfileEditor({ userId, initialData }: Props) {
     const { error: err } = await supabase.auth.updateUser({ password })
     setPasswordLoading(false)
     if (err) {
-      setPasswordError('Şifre güncellenemedi: ' + err.message)
+      setPasswordError((isEn ? 'Could not update password: ' : 'Şifre güncellenemedi: ') + err.message)
     } else {
       setPassword('')
       setConfirmPassword('')
-      setPasswordSuccess('Şifreniz güncellendi.')
+      setPasswordSuccess(isEn ? 'Your password has been updated.' : 'Şifreniz güncellendi.')
     }
   }
 
@@ -128,18 +129,18 @@ export function UserProfileEditor({ userId, initialData }: Props) {
         {isEn ? 'Edit Account' : 'Hesap Bilgilerini Düzenle'}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Hesap Bilgilerini Düzenle">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={isEn ? 'Edit Account' : 'Hesap Bilgilerini Düzenle'}>
         <div className="space-y-4 pb-4">
 
           <ImageUpload
             value={avatarUrl}
             onChange={setAvatarUrl}
             bucket="avatars"
-            label="Profil Fotoğrafı"
+            label={isEn ? 'Profile Photo' : 'Profil Fotoğrafı'}
           />
 
           <div>
-            <label className="label">Ad Soyad *</label>
+            <label className="label">{isEn ? 'Full Name *' : 'Ad Soyad *'}</label>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -148,7 +149,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">E-posta Adresi *</label>
+            <label className="label">{isEn ? 'Email Address *' : 'E-posta Adresi *'}</label>
             <input
               type="email"
               value={email}
@@ -156,18 +157,18 @@ export function UserProfileEditor({ userId, initialData }: Props) {
               className="input-field text-sm"
             />
             <p className="text-[10px] text-text-muted mt-1">
-              Değiştirirseniz yeni adresinize doğrulama maili gönderilir.
+              {isEn ? 'If you change it, a verification email will be sent to your new address.' : 'Değiştirirseniz yeni adresinize doğrulama maili gönderilir.'}
             </p>
           </div>
 
           <div>
-            <label className="label">Şehir</label>
+            <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="input-field text-sm"
             >
-              <option value="">Seçin</option>
+              <option value="">{isEn ? 'Select' : 'Seçin'}</option>
               {CITY_OPTIONS.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -175,8 +176,8 @@ export function UserProfileEditor({ userId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">İlgilendiğiniz Etkinlik Türleri</label>
-            <p className="text-[10px] text-text-muted mb-2">Haftalık etkinlik özetinizi bu tercihlere göre kişiselleştiririz.</p>
+            <label className="label">{isEn ? 'Event Types You Are Interested In' : 'İlgilendiğiniz Etkinlik Türleri'}</label>
+            <p className="text-[10px] text-text-muted mb-2">{isEn ? 'We personalize your weekly event digest based on these preferences.' : 'Haftalık etkinlik özetinizi bu tercihlere göre kişiselleştiririz.'}</p>
             <div className="flex flex-wrap gap-2">
               {ALL_GENRES.map((genre) => {
                 const selected = preferredGenres.includes(genre)
@@ -197,7 +198,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
                       borderColor: 'rgba(228,224,216,0.12)',
                     }}
                   >
-                    {genre}
+                    {translateGenre(genre, isEn ? 'en' : 'tr')}
                   </button>
                 )
               })}
@@ -205,13 +206,13 @@ export function UserProfileEditor({ userId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">Hakkında (Opsiyonel)</label>
+            <label className="label">{isEn ? 'About (Optional)' : 'Hakkında (Opsiyonel)'}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}
               className="input-field text-sm resize-none"
-              placeholder="Kısaca kendinizden bahsedin..."
+              placeholder={isEn ? 'Briefly introduce yourself...' : 'Kısaca kendinizden bahsedin...'}
             />
           </div>
 
@@ -223,25 +224,25 @@ export function UserProfileEditor({ userId, initialData }: Props) {
             disabled={loading || !displayName.trim() || !email.trim()}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-4"
           >
-            {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+            {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save Changes' : 'Değişiklikleri Kaydet')}
           </button>
 
-          {/* Şifre Değiştir */}
+          {/* Change Password */}
           <div className="border-t border-[rgba(228,224,216,0.1)] pt-4 space-y-3">
             <div className="flex items-center gap-2 text-sm text-text-muted mb-1">
               <KeyRound size={13} />
-              <span>Şifre Değiştir</span>
+              <span>{isEn ? 'Change Password' : 'Şifre Değiştir'}</span>
             </div>
 
             <div>
-              <label className="label">Yeni Şifre</label>
+              <label className="label">{isEn ? 'New Password' : 'Yeni Şifre'}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field text-sm pr-10"
-                  placeholder="En az 6 karakter"
+                  placeholder={isEn ? 'At least 6 characters' : 'En az 6 karakter'}
                   autoComplete="new-password"
                 />
                 <button
@@ -256,13 +257,13 @@ export function UserProfileEditor({ userId, initialData }: Props) {
 
             {password.length > 0 && (
               <div>
-                <label className="label">Şifre Tekrar</label>
+                <label className="label">{isEn ? 'Confirm Password' : 'Şifre Tekrar'}</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input-field text-sm"
-                  placeholder="Şifreyi tekrar girin"
+                  placeholder={isEn ? 'Re-enter password' : 'Şifreyi tekrar girin'}
                   autoComplete="new-password"
                 />
               </div>
@@ -277,7 +278,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
               disabled={passwordLoading || !password}
               className="btn-outline w-full py-2.5 text-sm disabled:opacity-50"
             >
-              {passwordLoading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+              {passwordLoading ? (isEn ? 'Updating...' : 'Güncelleniyor...') : (isEn ? 'Update Password' : 'Şifreyi Güncelle')}
             </button>
           </div>
 

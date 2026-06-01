@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Camera, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { saveArtistAvatar } from '@/app/actions/artist'
@@ -15,14 +16,15 @@ interface Props {
 
 export function ArtistAvatarEditor({ artistId, avatarUrl, initials }: Props) {
   const router = useRouter()
+  const isEn = useLocale() === 'en'
   const inputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState(avatarUrl)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith('image/')) { setError('Sadece resim dosyası yüklenebilir.'); return }
-    if (file.size > 10 * 1024 * 1024) { setError('Dosya 10MB\'dan küçük olmalı.'); return }
+    if (!file.type.startsWith('image/')) { setError(isEn ? 'Only image files can be uploaded.' : 'Sadece resim dosyası yüklenebilir.'); return }
+    if (file.size > 10 * 1024 * 1024) { setError(isEn ? 'File must be smaller than 10MB.' : 'Dosya 10MB\'dan küçük olmalı.'); return }
 
     setUploading(true)
     setError('')
@@ -44,7 +46,7 @@ export function ArtistAvatarEditor({ artistId, avatarUrl, initials }: Props) {
       const json = await res.json()
 
       if (!res.ok) {
-        setError(json.error ?? 'Yükleme başarısız.')
+        setError(json.error ?? (isEn ? 'Upload failed.' : 'Yükleme başarısız.'))
         return
       }
 
@@ -52,14 +54,14 @@ export function ArtistAvatarEditor({ artistId, avatarUrl, initials }: Props) {
       const result = await saveArtistAvatar(artistId, url)
 
       if (!result.success) {
-        setError(result.error ?? 'Kayıt başarısız.')
+        setError(result.error ?? (isEn ? 'Save failed.' : 'Kayıt başarısız.'))
         return
       }
 
       setPreview(url)
       router.refresh()
     } catch {
-      setError('Bir hata oluştu.')
+      setError(isEn ? 'An error occurred.' : 'Bir hata oluştu.')
     } finally {
       setUploading(false)
     }
@@ -71,7 +73,7 @@ export function ArtistAvatarEditor({ artistId, avatarUrl, initials }: Props) {
         type="button"
         onClick={() => !uploading && inputRef.current?.click()}
         className="group relative w-20 h-20 rounded-full overflow-hidden bg-accent/10 flex items-center justify-center text-accent font-bold text-2xl focus:outline-none"
-        title="Profil fotoğrafını değiştir"
+        title={isEn ? 'Change profile photo' : 'Profil fotoğrafını değiştir'}
       >
         {preview ? (
           <Image src={preview} alt="Profil fotoğrafı" fill className="object-cover" sizes="80px" />

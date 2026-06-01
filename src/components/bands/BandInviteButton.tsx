@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { UserPlus } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { BandInviteSearch } from './BandInviteSearch'
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function BandInviteButton({ bandId, existingMembers }: Props) {
+  const isEn = useLocale() === 'en'
   const [open, setOpen] = useState(false)
 
   return (
@@ -20,10 +22,10 @@ export function BandInviteButton({ bandId, existingMembers }: Props) {
         className="btn-outline w-full py-3 flex items-center justify-center gap-2"
       >
         <UserPlus size={16} />
-        Yeni Üye Davet Et
+        {isEn ? 'Invite New Member' : 'Yeni Üye Davet Et'}
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Yeni Üye Davet Et">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={isEn ? 'Invite New Member' : 'Yeni Üye Davet Et'}>
         <BandInviteSearch
           bandId={bandId}
           existingMembers={existingMembers}

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Plus, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function VenuePhotoAlbum({ venueId, initialPhotos, isOwner }: Props) {
+  const isEn = useLocale() === 'en'
   const [photos, setPhotos] = useState<string[]>(initialPhotos)
   const [uploading, setUploading] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export function VenuePhotoAlbum({ venueId, initialPhotos, isOwner }: Props) {
   return (
     <div>
       {photos.length === 0 && !isOwner ? (
-        <p className="text-text-muted text-sm py-8 text-center">Henüz fotoğraf eklenmemiş.</p>
+        <p className="text-text-muted text-sm py-8 text-center">{isEn ? 'No photos added yet.' : 'Henüz fotoğraf eklenmemiş.'}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((url) => (
@@ -67,7 +69,7 @@ export function VenuePhotoAlbum({ venueId, initialPhotos, isOwner }: Props) {
           {isOwner && (
             <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading}
               className="aspect-square rounded-lg border-2 border-dashed border-[rgba(228,224,216,0.15)] flex flex-col items-center justify-center gap-1.5 text-text-muted hover:border-accent/40 hover:text-accent transition-colors disabled:opacity-50">
-              {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={20} /><span className="text-xs">Fotoğraf Ekle</span></>}
+              {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={20} /><span className="text-xs">{isEn ? 'Add Photo' : 'Fotoğraf Ekle'}</span></>}
             </button>
           )}
         </div>

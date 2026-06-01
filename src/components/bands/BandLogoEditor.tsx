@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useLocale } from 'next-intl'
 import { Camera, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function BandLogoEditor({ bandId, initialUrl, name, isCreator }: Props) {
+  const isEn = useLocale() === 'en'
   const [url, setUrl] = useState(initialUrl)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -58,7 +60,7 @@ export function BandLogoEditor({ bandId, initialUrl, name, isCreator }: Props) {
             ? <Loader2 size={20} className="text-white animate-spin" />
             : <Camera size={20} className="text-white" />
           }
-          {!uploading && <span className="text-white text-[10px] mt-1">Değiştir</span>}
+          {!uploading && <span className="text-white text-[10px] mt-1">{isEn ? 'Change' : 'Değiştir'}</span>}
         </div>
       )}
 

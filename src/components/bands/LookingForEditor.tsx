@@ -1,12 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from 'next-intl'
 import { Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { translateInstrument } from '@/lib/utils'
 
 const INSTRUMENT_OPTIONS = ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
 
 export function LookingForEditor({ bandId, initialValue }: { bandId: string; initialValue: string[] }) {
+  const locale = useLocale()
+  const isEn = locale === 'en'
   const [items, setItems] = useState<string[]>(initialValue)
   const [selected, setSelected] = useState('')
   const [saving, setSaving] = useState(false)
@@ -36,13 +40,13 @@ export function LookingForEditor({ bandId, initialValue }: { bandId: string; ini
 
   return (
     <div>
-      <h3 className="label">Aradığımız Enstrümanlar</h3>
+      <h3 className="label">{isEn ? 'Instruments We Need' : 'Aradığımız Enstrümanlar'}</h3>
 
       {items.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {items.map((item) => (
             <span key={item} className="flex items-center gap-1 chip bg-accent/10 text-accent border border-accent/20">
-              {item}
+              {translateInstrument(item, locale)}
               <button
                 type="button"
                 onClick={() => remove(item)}
@@ -62,8 +66,8 @@ export function LookingForEditor({ bandId, initialValue }: { bandId: string; ini
             onChange={(e) => setSelected(e.target.value)}
             className="input-field text-sm flex-1"
           >
-            <option value="">Enstrüman seç...</option>
-            {available.map((o) => <option key={o} value={o}>{o}</option>)}
+            <option value="">{isEn ? 'Select instrument...' : 'Enstrüman seç...'}</option>
+            {available.map((o) => <option key={o} value={o}>{translateInstrument(o, locale)}</option>)}
           </select>
           <button
             type="button"
@@ -72,12 +76,12 @@ export function LookingForEditor({ bandId, initialValue }: { bandId: string; ini
             className="btn-outline px-3 disabled:opacity-40 flex items-center gap-1"
           >
             <Plus size={14} />
-            Ekle
+            {isEn ? 'Add' : 'Ekle'}
           </button>
         </div>
       )}
 
-      {saving && <p className="text-text-muted text-xs mt-1">Kaydediliyor...</p>}
+      {saving && <p className="text-text-muted text-xs mt-1">{isEn ? 'Saving...' : 'Kaydediliyor...'}</p>}
     </div>
   )
 }
