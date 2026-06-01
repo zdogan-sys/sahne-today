@@ -13,6 +13,7 @@ import { CalendarSubscribe } from '@/components/ui/CalendarSubscribe'
 
 export function VenueDashboard({ userId, calendarToken }: { userId: string; calendarToken: string | null }) {
   const locale = useLocale()
+  const isEn = locale === 'en'
   const dayNames = getDayNames(locale)
   const [venues, setVenues] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
@@ -121,14 +122,14 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     setCancelConfirm(null)
   }
 
-  if (loading) return <div className="text-text-muted text-sm">Yükleniyor...</div>
+  if (loading) return <div className="text-text-muted text-sm">{isEn ? 'Loading...' : 'Yükleniyor...'}</div>
 
   return (
     <div className="space-y-8">
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bebas text-2xl text-text-primary">MEKANLARIM</h2>
-          <Link href="/venues/register" className="btn-accent text-sm py-1.5">+ Mekan Ekle</Link>
+          <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'MY VENUES' : 'MEKANLARIM'}</h2>
+          <Link href="/venues/register" className="btn-accent text-sm py-1.5">{isEn ? '+ Add Venue' : '+ Mekan Ekle'}</Link>
         </div>
         {calendarToken && (
           <div className="mb-4">
@@ -137,8 +138,8 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         )}
         {venues.length === 0 ? (
           <div className="card p-6 text-center text-text-muted text-sm">
-            <p>Henüz mekanınız yok.</p>
-            <Link href="/venues/register" className="text-accent mt-2 block hover:underline">Mekan ekle →</Link>
+            <p>{isEn ? "You don't have a venue yet." : 'Henüz mekanınız yok.'}</p>
+            <Link href="/venues/register" className="text-accent mt-2 block hover:underline">{isEn ? 'Add venue →' : 'Mekan ekle →'}</Link>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -161,7 +162,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     {occupancyRate !== null && (
                       <div className="text-right flex-shrink-0">
                         <p className="font-bebas text-2xl text-accent leading-none">%{occupancyRate}</p>
-                        <p className="text-[9px] text-text-muted uppercase tracking-wide">Dolu</p>
+                        <p className="text-[9px] text-text-muted uppercase tracking-wide">{isEn ? 'Full' : 'Dolu'}</p>
                       </div>
                     )}
                   </div>
@@ -176,7 +177,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   <div className="flex gap-3 mt-3 flex-wrap">
                     {openSlots > 0 && (
                       <span style={{ backgroundColor: 'rgba(29,158,117,0.15)', color: '#1D9E75', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
-                        {openSlots} Açık
+                        {openSlots} {isEn ? 'Open' : 'Açık'}
                       </span>
                     )}
                     {pendingSlots > 0 && (
@@ -190,7 +191,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                       </span>
                     )}
                     {openSlots === 0 && pendingSlots === 0 && bookedSlots === 0 && (
-                      <span className="text-text-muted text-xs">Slot yok</span>
+                      <span className="text-text-muted text-xs">{isEn ? 'No slots' : 'Slot yok'}</span>
                     )}
                   </div>
                 </Link>
@@ -202,8 +203,8 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
 
       {offeredEvents.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-1">GÖNDERİLEN TEKLİFLER</h2>
-          <p className="text-text-muted text-xs mb-3 -mt-2">Sanatçının yanıtını bekliyorsunuz.</p>
+          <h2 className="font-bebas text-2xl text-text-primary mb-1">{isEn ? 'SENT OFFERS' : 'GÖNDERİLEN TEKLİFLER'}</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">{isEn ? "Waiting for the artist's response." : 'Sanatçının yanıtını bekliyorsunuz.'}</p>
           <div className="space-y-3">
             {offeredEvents.map((ev: any) => (
               <div key={ev.id} className="card p-4 border-accent/20">
@@ -215,7 +216,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     </p>
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20 flex items-center gap-1">
-                        <SendHorizonal size={9} /> Yanıt Bekleniyor
+                        <SendHorizonal size={9} /> {isEn ? 'Awaiting Response' : 'Yanıt Bekleniyor'}
                       </span>
                       {ev.expires_at && <OfferCountdown expiresAt={ev.expires_at} />}
                     </div>
@@ -223,16 +224,16 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   <div className="flex-shrink-0">
                     {withdrawConfirm === ev.id ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-text-muted">Geri çekilsin mi?</span>
+                        <span className="text-xs text-text-muted">{isEn ? 'Withdraw?' : 'Geri çekilsin mi?'}</span>
                         <button onClick={() => handleWithdraw(ev.id)} className="text-xs text-red-400 hover:text-red-300 font-medium">Evet</button>
-                        <button onClick={() => setWithdrawConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">Vazgeç</button>
+                        <button onClick={() => setWithdrawConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">{isEn ? 'Never mind' : 'Vazgeç'}</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setWithdrawConfirm(ev.id)}
                         className="text-xs text-text-muted hover:text-red-400 transition-colors flex items-center gap-1"
                       >
-                        <X size={12} /> Geri Çek
+                        <X size={12} /> {isEn ? 'Withdraw' : 'Geri Çek'}
                       </button>
                     )}
                   </div>
@@ -245,8 +246,8 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
 
       {eventRequests.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">ETKİNLİK TALEPLERİ</h2>
-          <p className="text-text-muted text-xs mb-3 -mt-2">Sanatçıların manuel olarak eklediği etkinlikler — mekanınızı seçmişler, onayınızı bekliyorlar.</p>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'EVENT REQUESTS' : 'ETKİNLİK TALEPLERİ'}</h2>
+          <p className="text-text-muted text-xs mb-3 -mt-2">{isEn ? 'Events manually added by artists — they selected your venue and are awaiting your approval.' : 'Sanatçıların manuel olarak eklediği etkinlikler — mekanınızı seçmişler, onayınızı bekliyorlar.'}</p>
           <div className="space-y-3">
             {eventRequests.map((ev: any) => (
               <div key={ev.id} className="card p-4 border-yellow-400/20">
@@ -266,14 +267,14 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     <button
                       onClick={() => handleEventRequest(ev.id, true)}
                       className="w-8 h-8 rounded-lg bg-success/10 text-success hover:bg-success/20 flex items-center justify-center transition-colors"
-                      title="Onayla"
+                      title={isEn ? 'Approve' : 'Onayla'}
                     >
                       <Check size={14} />
                     </button>
                     <button
                       onClick={() => handleEventRequest(ev.id, false)}
                       className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-colors"
-                      title="Reddet"
+                      title={isEn ? 'Reject' : 'Reddet'}
                     >
                       <X size={14} />
                     </button>
@@ -287,7 +288,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
 
       {confirmedEvents.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">ONAYLANAN ETKİNLİKLER</h2>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'CONFIRMED EVENTS' : 'ONAYLANAN ETKİNLİKLER'}</h2>
           <div className="space-y-3">
             {confirmedEvents.map((ev: any) => (
               <div key={ev.id} className={`card p-4 ${ev.cancel_requested ? 'border-yellow-400/30' : ''}`}>
@@ -299,16 +300,16 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     </p>
                     {ev.cancel_requested && (
                       <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
-                        İptal onayı bekleniyor
+                        {isEn ? 'Awaiting cancellation approval' : 'İptal onayı bekleniyor'}
                       </span>
                     )}
                   </div>
                   {!ev.cancel_requested && (
                     cancelConfirm === ev.id ? (
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-text-muted">İptal talebi gönderilsin mi?</span>
-                        <button onClick={() => requestCancel(ev.id)} className="text-xs text-red-400 hover:text-red-300 font-medium">Evet</button>
-                        <button onClick={() => setCancelConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">Vazgeç</button>
+                        <span className="text-xs text-text-muted">{isEn ? 'Send cancellation request?' : 'İptal talebi gönderilsin mi?'}</span>
+                        <button onClick={() => requestCancel(ev.id)} className="text-xs text-red-400 hover:text-red-300 font-medium">{isEn ? 'Yes' : 'Evet'}</button>
+                        <button onClick={() => setCancelConfirm(null)} className="text-xs text-text-muted hover:text-text-primary">{isEn ? 'Never mind' : 'Vazgeç'}</button>
                       </div>
                     ) : (
                       <button
@@ -316,7 +317,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                         className="flex-shrink-0 flex items-center gap-1.5 text-xs text-text-muted hover:text-red-400 transition-colors"
                       >
                         <CalendarX size={13} />
-                        İptal Talebi
+                        {isEn ? 'Cancel Request' : 'İptal Talebi'}
                       </button>
                     )
                   )}
@@ -329,7 +330,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
 
       {applications.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">BEKLEYEN BAŞVURULAR</h2>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'PENDING APPLICATIONS' : 'BEKLEYEN BAŞVURULAR'}</h2>
           <div className="space-y-3">
             {applications.map((app: any) => (
               <div key={app.id} className="card p-4">
