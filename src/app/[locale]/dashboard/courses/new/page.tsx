@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -38,6 +38,17 @@ export default function NewCoursePage() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [venues, setVenues] = useState<any[]>([])
+  const [venueId, setVenueId] = useState('')
+
+  useEffect(() => {
+    supabase.from('venues')
+      .select('id, name, city, district, venue_type')
+      .eq('is_hidden', false)
+      .order('name')
+      .then(({ data }) => setVenues(data ?? []))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Temel bilgiler
   const [title, setTitle] = useState('')
@@ -104,6 +115,7 @@ export default function NewCoursePage() {
         min_female: minFemale,
         min_male: minMale,
         is_online: isOnline,
+        venue_id: venueId || null,
         location: !isOnline ? location || null : null,
         description: description || null,
         status: 'active',
@@ -286,6 +298,20 @@ export default function NewCoursePage() {
         {/* Yer & Fiyat */}
         <div className="card p-4 space-y-4">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Yer & Fiyat</p>
+          {!isOnline && (
+            <div>
+              <label className="label">Mekan (opsiyonel)</label>
+              <select value={venueId} onChange={e => setVenueId(e.target.value)} className="input-field text-sm">
+                <option value="">Mekan seçin veya adres yazın</option>
+                {venues.map(v => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} — {v.district ? `${v.district}, ` : ''}{v.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-primary">Online</p>
