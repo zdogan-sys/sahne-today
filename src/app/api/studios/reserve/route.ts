@@ -26,14 +26,15 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient()
 
-    // Çakışma kontrolü
+    // Çakışma kontrolü — iki zaman aralığı çakışır: s1 < e2 AND e1 > s2
     const { data: conflicts } = await admin
       .from('studio_reservations')
       .select('id')
       .eq('venue_id', venue_id)
       .eq('reservation_date', reservation_date)
       .in('status', ['confirmed', 'pending'])
-      .or(`start_time.lt.${end_time},end_time.gt.${start_time}`)
+      .lt('start_time', end_time)
+      .gt('end_time', start_time)
 
     if (conflicts && conflicts.length > 0) {
       return NextResponse.json({ error: 'Seçilen saatte başka bir rezervasyon var' }, { status: 409 })
