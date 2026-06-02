@@ -13,6 +13,14 @@ import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 const EQUIPMENT_OPTIONS_TR = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
 const EQUIPMENT_OPTIONS_EN = ['Sound System', 'Microphone', 'Keyboard', 'Drum Kit', 'Lighting', 'Projector', 'Stage']
 
+const DANCE_EQUIPMENT_TR = ['Müzik Sistemi', 'Ayna', 'Barre', 'Projeksiyon', 'Klima', 'Soyunma Odası', 'Duş', 'Parke Zemin', 'Marley Zemin', 'Islak Zemin Koruma']
+const DANCE_EQUIPMENT_EN = ['Sound System', 'Mirror', 'Barre', 'Projector', 'Air Conditioning', 'Changing Room', 'Shower', 'Parquet Floor', 'Marley Floor', 'Floor Protection']
+
+const STUDIO_EQUIPMENT_TR = ['Kayıt Kabini', 'Analog Mikser', 'Dijital Mikser', 'Davul Kiti', 'Klavye', 'Gitar Ampli', 'Bass Ampli', 'Klima', 'Akustik İzolasyon', 'Ön Oda (Lounge)', 'Kulaklık Sistemi']
+const STUDIO_EQUIPMENT_EN = ['Recording Booth', 'Analog Mixer', 'Digital Mixer', 'Drum Kit', 'Keyboard', 'Guitar Amp', 'Bass Amp', 'Air Conditioning', 'Acoustic Isolation', 'Lounge', 'Headphone System']
+
+const DANCE_STYLES = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Latin', 'Swing', 'Bachata', 'Kizomba', 'Breakdance']
+
 const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
   { key: 'pub', tr: 'Pub', en: 'Pub' },
   { key: 'turku_bar', tr: 'Türkü Bar', en: 'Turkish Folk Bar' },
@@ -233,48 +241,98 @@ export function VenueRegisterForm() {
 
       {step === 2 && (
         <div className="card p-6 space-y-5">
-          <h2 className="font-semibold text-text-primary">{isEn ? 'Stage & Capacity' : 'Sahne & Kapasite'}</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="label">{isEn ? 'Seated Capacity' : 'Oturma Kapasitesi'}</label>
-              <input value={capacitySeated} onChange={(e) => setCapacitySeated(e.target.value)} type="number" placeholder="80" className="input-field" />
-            </div>
-            <div>
-              <label className="label">{isEn ? 'Standing Capacity' : 'Ayakta Kapasite'}</label>
-              <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" placeholder="150" className="input-field" />
-            </div>
-            <div>
-              <label className="label">{isEn ? 'Stage Area (m²)' : 'Sahne Alanı (m²)'}</label>
-              <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" placeholder="20" className="input-field" />
-            </div>
-          </div>
-          <ChipSelector options={EQUIPMENT_OPTIONS} selected={equipment}
-            onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
-            label={isEn ? 'Available Equipment' : 'Mevcut Ekipman'} />
-          <TabbedGenreSelector selected={genres}
-            onToggle={(v) => setGenres((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
-            label={isEn ? 'Primary Genres' : 'Ağırlıklı Türler'} />
+          {venueType === 'dance_studio' ? (
+            <>
+              <h2 className="font-semibold text-text-primary">{isEn ? 'Dance Studio Details' : 'Dans Stüdyosu Detayları'}</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">{isEn ? 'Max Participants' : 'Maks. Katılımcı'}</label>
+                  <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" placeholder="20" className="input-field" />
+                </div>
+                <div>
+                  <label className="label">{isEn ? 'Dance Floor (m²)' : 'Dans Alanı (m²)'}</label>
+                  <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" placeholder="60" className="input-field" />
+                </div>
+              </div>
+              <ChipSelector
+                options={isEn ? DANCE_EQUIPMENT_EN : DANCE_EQUIPMENT_TR}
+                selected={equipment}
+                onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
+                label={isEn ? 'Equipment & Facilities' : 'Ekipman & Olanaklar'}
+              />
+              <div>
+                <label className="label">{isEn ? 'Dance Styles' : 'Dans Türleri'}</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {DANCE_STYLES.map(style => (
+                    <button key={style} type="button"
+                      onClick={() => setGenres(p => p.includes(style) ? p.filter(x => x !== style) : [...p, style])}
+                      className={cn('chip border transition-colors', genres.includes(style)
+                        ? 'bg-accent/10 text-accent border-accent/30'
+                        : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
+                      )}>
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Kira (₺)'}</label>
+                <input type="number" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="500" min="0" className="input-field" />
+                <p className="text-text-muted text-xs mt-1">{isEn ? 'Hourly rate for studio rental.' : 'Stüdyo kiralama saatlik ücreti.'}</p>
+              </div>
+            </>
+          ) : venueType === 'studio' ? (
+            <>
+              <h2 className="font-semibold text-text-primary">{isEn ? 'Studio Details' : 'Stüdyo Detayları'}</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">{isEn ? 'Studio Area (m²)' : 'Stüdyo Alanı (m²)'}</label>
+                  <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" placeholder="30" className="input-field" />
+                </div>
+                <div>
+                  <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Ücret (₺)'}</label>
+                  <input type="number" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="500" min="0" className="input-field" />
+                </div>
+              </div>
+              <ChipSelector
+                options={isEn ? STUDIO_EQUIPMENT_EN : STUDIO_EQUIPMENT_TR}
+                selected={equipment}
+                onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
+                label={isEn ? 'Available Equipment' : 'Mevcut Ekipman'}
+              />
+            </>
+          ) : (
+            <>
+              <h2 className="font-semibold text-text-primary">{isEn ? 'Stage & Capacity' : 'Sahne & Kapasite'}</h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="label">{isEn ? 'Seated Capacity' : 'Oturma Kapasitesi'}</label>
+                  <input value={capacitySeated} onChange={(e) => setCapacitySeated(e.target.value)} type="number" placeholder="80" className="input-field" />
+                </div>
+                <div>
+                  <label className="label">{isEn ? 'Standing Capacity' : 'Ayakta Kapasite'}</label>
+                  <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" placeholder="150" className="input-field" />
+                </div>
+                <div>
+                  <label className="label">{isEn ? 'Stage Area (m²)' : 'Sahne Alanı (m²)'}</label>
+                  <input value={stageArea} onChange={(e) => setStageArea(e.target.value)} type="number" placeholder="20" className="input-field" />
+                </div>
+              </div>
+              <ChipSelector options={EQUIPMENT_OPTIONS} selected={equipment}
+                onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
+                label={isEn ? 'Available Equipment' : 'Mevcut Ekipman'} />
+              <TabbedGenreSelector selected={genres}
+                onToggle={(v) => setGenres((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
+                label={isEn ? 'Primary Genres' : 'Ağırlıklı Türler'} />
+            </>
+          )}
+
+          {/* Ortak alanlar */}
           <div>
             <label className="label">{isEn ? 'Description' : 'Açıklama'}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
               placeholder={isEn ? 'A short text about your venue...' : 'Mekanınızı anlatan kısa bir metin...'} className="input-field resize-none" />
           </div>
-          {STUDIO_TYPES.includes(venueType as VenueType) && (
-            <div>
-              <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Ücret (₺)'}</label>
-              <input
-                type="number"
-                value={pricePerHour}
-                onChange={(e) => setPricePerHour(e.target.value)}
-                placeholder="500"
-                min="0"
-                className="input-field"
-              />
-              <p className="text-text-muted text-xs mt-1">
-                {isEn ? 'Hourly rental rate for studio reservations.' : 'Stüdyo rezervasyonlarında uygulanacak saat başı ücret.'}
-              </p>
-            </div>
-          )}
           <ImageUpload value={photoUrl} onChange={setPhotoUrl} bucket="venues" label={isEn ? 'Venue Photo' : 'Mekan Fotoğrafı'} />
           <SocialLinksEditor value={socialLinks} onChange={setSocialLinks} />
           <div className="flex gap-3">
