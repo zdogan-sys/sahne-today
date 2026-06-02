@@ -396,49 +396,66 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         </div>
       )}
 
-      {/* Stüdyo rezervasyonları */}
-      {studioReservations.length > 0 && (
+      {/* Stüdyo yönetimi — stüdyo türündeki tüm mekanlarda göster */}
+      {venues.some(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)) && (
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'STUDIO RESERVATIONS' : 'STÜDYO REZERVASYONLARI'}</h2>
-          </div>
-          <p className="text-text-muted text-xs mb-3">
-            {isEn ? 'Manage incoming studio booking requests.' : 'Gelen stüdyo rezervasyon taleplerini yönetin.'}
-          </p>
-          {/* Ödeme toggle + oda yönetimi - her stüdyo mekanı için */}
+          <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'STUDIO MANAGEMENT' : 'STÜDYO YÖNETİMİ'}</h2>
+
           {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => (
-            <div key={v.id} className="p-3 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)] mb-3 space-y-2">
+            <div key={v.id} className="card p-4 mb-3 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-text-primary text-sm font-medium">{v.name}</p>
-                <div className="flex items-center gap-2">
-                  <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-2.5 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                    Odalar
+                <p className="text-text-primary text-sm font-semibold">{v.name}</p>
+                <button
+                  onClick={async () => {
+                    const newVal = !v.studio_payment_enabled
+                    await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
+                    setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
+                  }}
+                  className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
+                    ? 'bg-accent/10 text-accent border-accent/30'
+                    : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                  )}
+                >
+                  {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                  🚪 Odalar
+                </Link>
+                <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                  🕐 Ders Saatleri
+                </Link>
+                <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                  📚 Kurslar
+                </Link>
+                {v.venue_type === 'dance_studio' && (
+                  <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                    👤 Eğitmenler
                   </Link>
-                  <button
-                    onClick={async () => {
-                      const newVal = !v.studio_payment_enabled
-                      await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
-                      setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
-                    }}
-                    className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
-                      ? 'bg-accent/10 text-accent border-accent/30'
-                      : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                    )}
-                  >
-                    {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
-                  </button>
-                </div>
+                )}
+                {v.venue_type === 'music_school' && (
+                  <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                    👤 Eğitmenler
+                  </Link>
+                )}
               </div>
             </div>
           ))}
-          <div className="space-y-3">
-            {studioReservations.map((res: any) => (
-              <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
-                setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-                supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
-              }} />
-            ))}
-          </div>
+
+          {studioReservations.length > 0 && (
+            <>
+              <p className="text-text-muted text-xs mb-3">{isEn ? 'Incoming reservation requests' : 'Gelen rezervasyon talepleri'}</p>
+              <div className="space-y-3">
+                {studioReservations.map((res: any) => (
+                  <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
+                    setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+                    supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
+                  }} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
