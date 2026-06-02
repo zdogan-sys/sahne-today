@@ -64,7 +64,7 @@ export default async function VenuePage({ params }: Props) {
   }
   const ownerCheck = await isOwnerCheck()
 
-  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData] = await Promise.all([
+  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData, coursesRes, teachingSlotsRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     ownerCheck
       ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
@@ -102,6 +102,8 @@ export default async function VenuePage({ params }: Props) {
     user
       ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'venue').eq('target_id', id).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase.from('courses').select('id, title, category, level, price_per_session').eq('venue_id', id).eq('status', 'active'),
+    supabase.from('teaching_slots').select('id, instrument, day_of_week, slot_date, start_time, end_time, price_per_session, lesson_type, is_online').eq('venue_id', id).eq('is_active', true),
   ])
 
   if (!venueRes.data) notFound()
@@ -109,6 +111,8 @@ export default async function VenuePage({ params }: Props) {
   const slots = (slotsRes.data ?? []) as unknown as Slot[]
   const upcomingEvents = (upcomingEventsRes.data ?? []) as any[]
   const pastEvents = (pastEventsRes.data ?? []) as any[]
+  const coursesAtVenue = (coursesRes.data ?? []) as any[]
+  const teachingSlotsAtVenue = (teachingSlotsRes.data ?? []) as any[]
   const isOwner = user?.id === venue.owner_id || isAdminUser(user)
   const canSeeSlots = isOwner || isArtist
   const isFollowing = !!(followData as any)?.data?.id
@@ -337,6 +341,72 @@ export default async function VenuePage({ params }: Props) {
           </div>
           <span className="text-text-muted text-xs">→</span>
         </Link>
+
+        {/* Kurslar */}
+        {coursesAtVenue.length > 0 && (
+          <div>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'COURSES' : 'KURSLAR'}</h2>
+            <div className="space-y-2">
+              {coursesAtVenue.map((course) => (
+                <Link
+                  key={course.id}
+                  href={`/courses/${course.id}`}
+                  className="card p-3 hover:border-accent/30 transition-colors block"
+                >
+                  <p className="font-medium text-text-primary text-sm">{course.title}</p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-[10px] px-2 py-0.5 rounded border border-[rgba(228,224,216,0.15)] text-text-muted">
+                      {course.category}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded border border-accent/20 text-accent bg-accent/5">
+                      {course.level}
+                    </span>
+                    <span className="ml-auto font-bebas text-accent">₺{course.price_per_session}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Özel Ders Saatleri */}
+        {teachingSlotsAtVenue.length > 0 && (
+          <div>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'LESSONS' : 'ÖZEL DERSLER'}</h2>
+            <div className="space-y-2">
+              {teachingSlotsAtVenue.map((slot) => {
+                const dayLabel = slot.slot_date
+                  ? new Date(slot.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
+                  : ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'][slot.day_of_week]
+                return (
+                  <Link
+                    key={slot.id}
+                    href={`/venues/${venue.id}/book/${slot.id}`}
+                    className="card p-3 hover:border-accent/30 transition-colors block"
+                  >
+                    <p className="font-medium text-text-primary text-sm">
+                      {slot.instrument}
+                      {slot.lesson_type === 'group' && (
+                        <span className="text-[9px] ml-2 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
+                          {isEn ? 'Group' : 'Grup'}
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-text-muted text-xs">
+                      <span>{dayLabel} · {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}</span>
+                      {slot.is_online && (
+                        <span className="ml-auto px-1.5 py-0.5 rounded bg-[rgba(212,168,32,0.1)] text-yellow-400 text-[9px]">
+                          Online
+                        </span>
+                      )}
+                      <span className="ml-auto font-bebas text-accent">₺{slot.price_per_session}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Photo album link */}
         <Link
