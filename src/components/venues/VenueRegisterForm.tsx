@@ -154,7 +154,7 @@ export function VenueRegisterForm() {
       .single()
 
     if (venueErr || !venueData) {
-      setError(isEn ? 'Could not save venue.' : 'Mekan kaydedilemedi.')
+      setError((isEn ? 'Could not save venue: ' : 'Mekan kaydedilemedi: ') + (venueErr?.message ?? 'Bilinmeyen hata'))
       setLoading(false)
       return
     }
