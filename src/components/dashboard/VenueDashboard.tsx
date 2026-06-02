@@ -375,16 +375,16 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
               const venueSlots = teachingSlotsAtVenues.filter(s => s.venues?.name === v.name)
               if (venueCourses.length === 0 && venueSlots.length === 0) return null
               return (
-                <Link key={v.id} href={`/dashboard`} className="card p-4 hover:border-accent/30 transition-colors block">
+                <Link key={v.id} href={`/dashboard/venue/${v.id}/courses`} className="card p-4 hover:border-accent/30 transition-colors block">
                   <p className="font-semibold text-text-primary text-sm">{v.name}</p>
                   <div className="flex gap-3 mt-2.5">
                     {venueCourses.length > 0 && (
-                      <Link href={`/dashboard`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                      <Link href={`/dashboard/venue/${v.id}/courses`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
                         {venueCourses.length} {isEn ? 'Courses' : 'Kurs'}
                       </Link>
                     )}
                     {venueSlots.length > 0 && (
-                      <Link href={`/dashboard`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                      <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
                         {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
                       </Link>
                     )}
