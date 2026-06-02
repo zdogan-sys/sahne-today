@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import Image from 'next/image'
 import { ArrowLeft, MapPin, Clock, Loader2, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
