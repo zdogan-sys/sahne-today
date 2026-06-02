@@ -342,7 +342,7 @@ export default async function VenuePage({ params }: Props) {
           <div className="flex items-center gap-3">
             <CalendarDays size={18} className="text-accent" />
             <div>
-              <span className="text-text-primary text-sm font-medium">{isEn ? 'Stage Calendar' : 'Sahne Takvimi'}</span>
+              <span className="text-text-primary text-sm font-medium">{isEn ? 'Calendar' : 'Takvim'}</span>
               <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Events and open stages' : 'Etkinlikler ve açık sahneler'}</p>
             </div>
           </div>

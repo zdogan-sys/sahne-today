@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('venues').select('name').eq('id', id).single()
-  return { title: data ? `${(data as any).name} · Sahne Takvimi` : 'Takvim' }
+  return { title: data ? `${(data as any).name} · Takvim` : 'Takvim' }
 }
 
 export default async function VenueCalendarPage({ params }: Props) {
