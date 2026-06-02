@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Loader2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Loader2, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const HOURS = Array.from({ length: 14 }, (_, i) => {
@@ -34,6 +34,7 @@ export default function StudioDetailPage() {
     notes: '',
   })
 
+  const dateRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -208,14 +209,22 @@ export default function StudioDetailPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Tarih *</label>
-              <input
-                type="date"
-                min={new Date().toISOString().split('T')[0]}
-                value={form.reservation_date}
-                onChange={(e) => setForm({ ...form, reservation_date: e.target.value })}
-                className="input-field text-sm"
-                required
-              />
+              <div className="relative">
+                <input
+                  ref={dateRef}
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={form.reservation_date}
+                  onChange={(e) => setForm({ ...form, reservation_date: e.target.value })}
+                  className="input-field text-sm pr-9 cursor-pointer"
+                  required
+                  onClick={() => dateRef.current?.showPicker?.()}
+                />
+                <CalendarDays
+                  size={15}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                />
+              </div>
             </div>
             <div>
               <label className="label">Başlangıç Saati</label>
