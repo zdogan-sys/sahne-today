@@ -22,6 +22,8 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
   const [eventRequests, setEventRequests] = useState<any[]>([])
   const [confirmedEvents, setConfirmedEvents] = useState<any[]>([])
   const [offeredEvents, setOfferedEvents] = useState<any[]>([])
+  const [coursesAtVenues, setCoursesAtVenues] = useState<any[]>([])
+  const [teachingSlotsAtVenues, setTeachingSlotsAtVenues] = useState<any[]>([])
   const [withdrawConfirm, setWithdrawConfirm] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,7 +53,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
 
-    const [appRes, eventReqRes, confirmedRes, offeredRes] = await Promise.all([
+    const [appRes, eventReqRes, confirmedRes, offeredRes, coursesRes, slotsRes] = await Promise.all([
       slotIds.length > 0
         ? supabase
             .from('applications')
@@ -85,6 +87,21 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
             .in('venue_id', venueIds)
             .order('expires_at', { ascending: true })
         : Promise.resolve({ data: [] }),
+      venueIds.length > 0
+        ? supabase
+            .from('courses')
+            .select('id, title, category, level, venues(name)')
+            .in('venue_id', venueIds)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      venueIds.length > 0
+        ? supabase
+            .from('teaching_slots')
+            .select('id, instrument, day_of_week, start_time, end_time, venues(name)')
+            .in('venue_id', venueIds)
+            .eq('is_active', true)
+        : Promise.resolve({ data: [] }),
     ])
 
     setVenues(venueData ?? [])
@@ -92,6 +109,8 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     setEventRequests(eventReqRes.data ?? [])
     setConfirmedEvents(confirmedRes.data ?? [])
     setOfferedEvents(offeredRes.data ?? [])
+    setCoursesAtVenues(coursesRes.data ?? [])
+    setTeachingSlotsAtVenues(slotsRes.data ?? [])
 
     const studioVenueIds = (venueData ?? [])
       .filter((v: any) => v.venue_subtype === 'studio' || v.venue_subtype === 'dance_studio')
@@ -342,6 +361,37 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kurslar & Dersler */}
+      {(coursesAtVenues.length > 0 || teachingSlotsAtVenues.length > 0) && (
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'COURSES & LESSONS' : 'KURSLAR & DERSLER'}</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {venues.map(v => {
+              const venueCourses = coursesAtVenues.filter(c => c.venues?.name === v.name)
+              const venueSlots = teachingSlotsAtVenues.filter(s => s.venues?.name === v.name)
+              if (venueCourses.length === 0 && venueSlots.length === 0) return null
+              return (
+                <Link key={v.id} href={`/dashboard`} className="card p-4 hover:border-accent/30 transition-colors block">
+                  <p className="font-semibold text-text-primary text-sm">{v.name}</p>
+                  <div className="flex gap-3 mt-2.5">
+                    {venueCourses.length > 0 && (
+                      <Link href={`/dashboard`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                        {venueCourses.length} {isEn ? 'Courses' : 'Kurs'}
+                      </Link>
+                    )}
+                    {venueSlots.length > 0 && (
+                      <Link href={`/dashboard`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                        {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
+                      </Link>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
