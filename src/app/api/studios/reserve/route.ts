@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      venue_id, reserver_name, reserver_email, reserver_phone,
+      venue_id, room_id, room_name, reserver_name, reserver_email, reserver_phone,
       reservation_date, start_time, end_time, duration_hours,
       price_per_hour, notes,
     } = body
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient()
 
-    // Çakışma kontrolü — iki zaman aralığı çakışır: s1 < e2 AND e1 > s2
-    const { data: conflicts } = await admin
+    // Çakışma kontrolü — oda seçildiyse oda bazlı, yoksa venue bazlı
+    let conflictQuery = admin
       .from('studio_reservations')
       .select('id')
       .eq('venue_id', venue_id)
@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
       .in('status', ['confirmed', 'pending'])
       .lt('start_time', end_time)
       .gt('end_time', start_time)
+
+    if (room_id) conflictQuery = conflictQuery.eq('room_id', room_id)
+
+    const { data: conflicts } = await conflictQuery
 
     if (conflicts && conflicts.length > 0) {
       return NextResponse.json({ error: 'Seçilen saatte başka bir rezervasyon var' }, { status: 409 })
@@ -55,6 +59,8 @@ export async function POST(req: NextRequest) {
 
     const { error: resError } = await admin.from('studio_reservations').insert({
       venue_id,
+      room_id: room_id || null,
+      room_name: room_name || null,
       reserver_id: user?.id ?? null,
       reserver_name,
       reserver_email,

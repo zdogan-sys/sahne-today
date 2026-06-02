@@ -19,6 +19,7 @@ export default function StudioDetailPage() {
   const router = useRouter()
 
   const [studio, setStudio] = useState<any>(null)
+  const [rooms, setRooms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(hasError ? 'Ödeme başarısız. Lütfen tekrar deneyin.' : '')
@@ -33,6 +34,7 @@ export default function StudioDetailPage() {
     start_time: '10:00',
     duration: 2,
     notes: '',
+    room_id: '',
   })
 
   const dateRef = useRef<HTMLInputElement>(null)
@@ -40,12 +42,12 @@ export default function StudioDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('venues')
-        .select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type, studio_payment_enabled')
-        .eq('id', id)
-        .single()
-      setStudio(data)
+      const [venueRes, roomsRes] = await Promise.all([
+        supabase.from('venues').select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type, studio_payment_enabled').eq('id', id).single(),
+        supabase.from('studio_rooms').select('*').eq('venue_id', id).eq('is_active', true).order('created_at'),
+      ])
+      setStudio(venueRes.data)
+      setRooms(roomsRes.data ?? [])
 
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -70,7 +72,9 @@ export default function StudioDetailPage() {
   const endTime = startHourIndex >= 0 && startHourIndex + form.duration < HOURS.length
     ? HOURS[startHourIndex + form.duration]
     : null
-  const totalPrice = studio ? Number(studio.price_per_hour ?? 0) * form.duration : 0
+  const selectedRoom = rooms.find(r => r.id === form.room_id)
+  const effectivePricePerHour = selectedRoom?.price_per_hour ?? studio?.price_per_hour ?? 0
+  const totalPrice = Number(effectivePricePerHour) * form.duration
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -91,6 +95,8 @@ export default function StudioDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         venue_id: id,
+        room_id: form.room_id || null,
+        room_name: selectedRoom?.name || null,
         reserver_name: form.reserver_name,
         reserver_email: form.reserver_email,
         reserver_phone: form.reserver_phone,
@@ -98,7 +104,7 @@ export default function StudioDetailPage() {
         start_time: form.start_time + ':00',
         end_time: endTime + ':00',
         duration_hours: form.duration,
-        price_per_hour: studio.price_per_hour ?? 0,
+        price_per_hour: effectivePricePerHour,
         notes: form.notes,
       }),
     })
@@ -209,6 +215,24 @@ export default function StudioDetailPage() {
       <div className="card p-5">
         <h2 className="font-bebas text-2xl text-text-primary mb-4">REZERVASYON YAP</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {rooms.length > 0 && (
+            <div>
+              <label className="label">Oda / Salon</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <button type="button" onClick={() => setForm(p => ({ ...p, room_id: '' }))}
+                  className={`text-xs px-3 py-2 rounded-lg border transition-colors ${!form.room_id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'}`}>
+                  Fark etmez
+                </button>
+                {rooms.map(room => (
+                  <button key={room.id} type="button" onClick={() => setForm(p => ({ ...p, room_id: room.id }))}
+                    className={`text-xs px-3 py-2 rounded-lg border transition-colors ${form.room_id === room.id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'}`}>
+                    {room.name}
+                    {room.price_per_hour && <span className="ml-1 opacity-70">₺{room.price_per_hour}/sa</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Tarih *</label>
@@ -300,9 +324,12 @@ export default function StudioDetailPage() {
             />
           </div>
 
-          {studio.price_per_hour && (
+          {effectivePricePerHour > 0 && (
             <div className="card p-3 flex items-center justify-between">
-              <span className="text-text-muted text-sm">{form.duration} saat × ₺{studio.price_per_hour}</span>
+              <span className="text-text-muted text-sm">
+                {form.duration} saat × ₺{effectivePricePerHour}
+                {selectedRoom && <span className="ml-1 text-xs opacity-60">({selectedRoom.name})</span>}
+              </span>
               <span className="font-bebas text-2xl text-accent">₺{totalPrice}</span>
             </div>
           )}

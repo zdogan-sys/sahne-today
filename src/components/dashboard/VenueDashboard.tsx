@@ -119,7 +119,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     if (studioVenueIds.length > 0) {
       const { data: reservations } = await supabase
         .from('studio_reservations')
-        .select('id, venue_id, reserver_name, reserver_email, reserver_phone, reservation_date, start_time, end_time, total_price, status, created_at, venues(name)')
+        .select('id, venue_id, room_name, reserver_name, reserver_email, reserver_phone, reservation_date, start_time, end_time, total_price, status, created_at, venues(name)')
         .in('venue_id', studioVenueIds)
         .in('status', ['pending', 'confirmed'])
         .order('reservation_date', { ascending: true })
@@ -405,26 +405,30 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
           <p className="text-text-muted text-xs mb-3">
             {isEn ? 'Manage incoming studio booking requests.' : 'Gelen stüdyo rezervasyon taleplerini yönetin.'}
           </p>
-          {/* Ödeme toggle - her stüdyo mekanı için */}
+          {/* Ödeme toggle + oda yönetimi - her stüdyo mekanı için */}
           {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => (
-            <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)] mb-3">
-              <div>
+            <div key={v.id} className="p-3 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)] mb-3 space-y-2">
+              <div className="flex items-center justify-between">
                 <p className="text-text-primary text-sm font-medium">{v.name}</p>
-                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Require upfront payment' : 'Ön ödeme zorunlu'}</p>
+                <div className="flex items-center gap-2">
+                  <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-2.5 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                    Odalar
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      const newVal = !v.studio_payment_enabled
+                      await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
+                      setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
+                    }}
+                    className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
+                      ? 'bg-accent/10 text-accent border-accent/30'
+                      : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                    )}
+                  >
+                    {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={async () => {
-                  const newVal = !v.studio_payment_enabled
-                  await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
-                  setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
-                }}
-                className={cn('text-xs px-3 py-1.5 rounded border transition-colors', v.studio_payment_enabled
-                  ? 'bg-accent/10 text-accent border-accent/30'
-                  : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                )}
-              >
-                {v.studio_payment_enabled ? (isEn ? '₺ Payment On' : '₺ Ödeme Açık') : (isEn ? '₺ Payment Off' : '₺ Ödeme Kapalı')}
-              </button>
             </div>
           ))}
           <div className="space-y-3">
@@ -515,6 +519,7 @@ function StudioReservationCard({
           <p className="font-medium text-text-primary text-sm">{reservation.reserver_name}</p>
           <p className="text-text-muted text-xs mt-0.5">
             {reservation.reservation_date} · {reservation.start_time?.slice(0, 5)}–{reservation.end_time?.slice(0, 5)}
+            {reservation.room_name && <span className="ml-1 text-accent">· {reservation.room_name}</span>}
           </p>
           <p className="text-text-muted text-xs mt-0.5">
             {reservation.reserver_email} · {reservation.reserver_phone}
