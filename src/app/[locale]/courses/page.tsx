@@ -34,8 +34,16 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface Props {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ category?: string; level?: string; online?: string; instructor?: string; subcategory?: string }>
+  searchParams: Promise<{ category?: string; level?: string; online?: string; instructor?: string; subcategory?: string; city?: string; max_price?: string }>
 }
+
+const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir']
+const PRICE_RANGES = [
+  { label: '0–200₺', max: 200 },
+  { label: '200–500₺', max: 500 },
+  { label: '500–1000₺', max: 1000 },
+  { label: '1000₺+', max: 99999 },
+]
 
 export default async function CoursesPage({ searchParams }: Props) {
   const sp = await searchParams
@@ -43,7 +51,7 @@ export default async function CoursesPage({ searchParams }: Props) {
 
   let query = supabase
     .from('courses')
-    .select('id, title, category, subcategory, course_type, level, price_per_session, currency, is_online, location, max_participants, min_female, min_male, instructor_id, status, profiles(display_name, avatar_url), course_sessions(id)')
+    .select('id, title, category, subcategory, course_type, level, price_per_session, currency, is_online, location, max_participants, min_female, min_male, instructor_id, status, venues(city), profiles(display_name, avatar_url), course_sessions(id)')
     .in('status', ['active', 'full'])
     .order('created_at', { ascending: false })
 
@@ -53,8 +61,16 @@ export default async function CoursesPage({ searchParams }: Props) {
   if (sp.online === '0') query = query.eq('is_online', false)
   if (sp.instructor) query = query.eq('instructor_id', sp.instructor)
   if (sp.subcategory) query = query.ilike('subcategory', sp.subcategory)
+  if (sp.max_price) query = query.lte('price_per_session', Number(sp.max_price))
 
-  const { data: courses } = await query
+  const { data: allCourses } = await query
+
+  // Şehir filtresi — venues.city üzerinden client-side ya da location'dan
+  const courses = sp.city
+    ? (allCourses ?? []).filter((c: any) =>
+        c.venues?.city === sp.city || (c.location ?? '').includes(sp.city!)
+      )
+    : (allCourses ?? [])
 
   const categories = ['music', 'dance', 'theater', 'other']
   const levels = ['beginner', 'intermediate', 'advanced', 'all']
@@ -69,13 +85,10 @@ export default async function CoursesPage({ searchParams }: Props) {
       </div>
 
       {/* Filtreler */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Link
-          href="/courses"
-          className={`chip border text-xs transition-colors ${!sp.category && !sp.level && !sp.online ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}
-        >
-          Tümü
-        </Link>
+      <div className="space-y-3 mb-6">
+        {/* Kategori + seviye + online */}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/courses" className={`chip border text-xs transition-colors ${!sp.category && !sp.level && !sp.online && !sp.city && !sp.max_price ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>Tümü</Link>
         {categories.map((cat) => (
           <Link
             key={cat}
@@ -102,12 +115,32 @@ export default async function CoursesPage({ searchParams }: Props) {
         >
           Online
         </Link>
-        <Link
-          href={`/courses?${sp.category ? `category=${sp.category}&` : ''}online=0`}
-          className={`chip border text-xs transition-colors ${sp.online === '0' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}
-        >
-          Yüz Yüze
-        </Link>
+          <Link href={`/courses?${sp.category ? `category=${sp.category}&` : ''}online=0`} className={`chip border text-xs transition-colors ${sp.online === '0' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>Yüz Yüze</Link>
+        </div>
+
+        {/* Şehir */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-text-muted text-xs self-center mr-1">Şehir:</span>
+          {CITIES.map(c => {
+            const params = new URLSearchParams(sp as Record<string, string>)
+            if (sp.city === c) params.delete('city'); else params.set('city', c)
+            return (
+              <Link key={c} href={`/courses?${params}`} className={`chip border text-xs transition-colors ${sp.city === c ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>{c}</Link>
+            )
+          })}
+        </div>
+
+        {/* Fiyat */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-text-muted text-xs self-center mr-1">Fiyat:</span>
+          {PRICE_RANGES.map(({ label, max }) => {
+            const params = new URLSearchParams(sp as Record<string, string>)
+            if (sp.max_price === String(max)) params.delete('max_price'); else params.set('max_price', String(max))
+            return (
+              <Link key={max} href={`/courses?${params}`} className={`chip border text-xs transition-colors ${sp.max_price === String(max) ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>{label}</Link>
+            )
+          })}
+        </div>
       </div>
 
       {/* Kurs listesi */}

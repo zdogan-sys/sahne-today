@@ -259,6 +259,7 @@
       "cafe": "Cafe",
       "studio": "Rehearsal / Recording Studio",
       "dance_studio": "Dance Studio",
+      "music_school": "Music School",
       "other": "Other"
     },
     "feeModels": {
