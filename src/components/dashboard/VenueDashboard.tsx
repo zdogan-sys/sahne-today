@@ -48,7 +48,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
       .from('venues')
       .select('*, slots(*, applications(*))')
       .eq('owner_id', userId)
-      .select('id, name, city, district, venue_type, venue_subtype, is_pro_venue, photo_url, slots(*, applications(*))')
+      .select('id, name, city, district, venue_type, is_pro_venue, photo_url, slots(*, applications(*))')
 
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
@@ -113,7 +113,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     setTeachingSlotsAtVenues(slotsRes.data ?? [])
 
     const studioVenueIds = (venueData ?? [])
-      .filter((v: any) => ['studio', 'dance_studio', 'music_school'].includes(v.venue_subtype))
+      .filter((v: any) => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type))
       .map((v: any) => v.id)
 
     if (studioVenueIds.length > 0) {

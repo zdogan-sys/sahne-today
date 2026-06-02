@@ -39,7 +39,7 @@ export default function StudioDetailPage() {
     async function load() {
       const { data } = await supabase
         .from('venues')
-        .select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_subtype')
+        .select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type')
         .eq('id', id)
         .single()
       setStudio(data)
