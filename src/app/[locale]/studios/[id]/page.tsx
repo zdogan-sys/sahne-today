@@ -22,6 +22,7 @@ export default function StudioDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(hasError ? 'Ödeme başarısız. Lütfen tekrar deneyin.' : '')
   const [iframeToken, setIframeToken] = useState<string | null>(null)
+  const [booked, setBooked] = useState(false)
 
   const [form, setForm] = useState({
     reserver_name: '',
@@ -39,7 +40,7 @@ export default function StudioDetailPage() {
     async function load() {
       const { data } = await supabase
         .from('venues')
-        .select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type')
+        .select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type, studio_payment_enabled')
         .eq('id', id)
         .single()
       setStudio(data)
@@ -101,13 +102,17 @@ export default function StudioDetailPage() {
     })
 
     const data = await res.json()
-    if (!res.ok || !data.token) {
+    if (!res.ok) {
       setError(data.error ?? 'Bir hata oluştu.')
       setSubmitting(false)
       return
     }
 
-    setIframeToken(data.token)
+    if (!data.payment_required) {
+      setBooked(true)
+    } else {
+      setIframeToken(data.token)
+    }
     setSubmitting(false)
   }
 
@@ -128,19 +133,28 @@ export default function StudioDetailPage() {
     )
   }
 
-  if (iframeToken) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <h2 className="font-bebas text-3xl text-text-primary mb-4">ÖDEME</h2>
-        <iframe
-          src={`https://www.paytr.com/odeme/guvenli/${iframeToken}`}
-          style={{ width: '100%', height: '600px', border: 'none' }}
-          allow="payment"
-          title="PayTR Ödeme"
-        />
+  if (booked) return (
+    <div className="max-w-lg mx-auto px-4 py-20 text-center">
+      <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
+        <span className="text-success text-2xl">✓</span>
       </div>
-    )
-  }
+      <h1 className="font-bebas text-3xl text-text-primary mb-2">REZERVASYON ALINDI</h1>
+      <p className="text-text-muted text-sm">Mekan onayladığında bildirim alacaksınız. Ödeme çalışma sonunda yapılır.</p>
+      <Link href={`/studios/${id}`} className="text-accent mt-4 block hover:underline">Stüdyoya dön →</Link>
+    </div>
+  )
+
+  if (iframeToken) return (
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <h2 className="font-bebas text-3xl text-text-primary mb-4">ÖDEME</h2>
+      <iframe
+        src={`https://www.paytr.com/odeme/guvenli/${iframeToken}`}
+        style={{ width: '100%', height: '600px', border: 'none' }}
+        allow="payment"
+        title="PayTR Ödeme"
+      />
+    </div>
+  )
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -288,7 +302,7 @@ export default function StudioDetailPage() {
             disabled={submitting}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {submitting ? <><Loader2 size={15} className="animate-spin" /> İşleniyor...</> : 'Ödemeye Geç'}
+            {submitting ? <><Loader2 size={15} className="animate-spin" /> İşleniyor...</> : studio?.studio_payment_enabled ? 'Ödemeye Geç' : 'Rezervasyon Yap'}
           </button>
         </form>
       </div>

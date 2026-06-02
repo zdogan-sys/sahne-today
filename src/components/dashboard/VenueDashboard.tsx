@@ -48,7 +48,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
       .from('venues')
       .select('*, slots(*, applications(*))')
       .eq('owner_id', userId)
-      .select('id, name, city, district, venue_type, is_pro_venue, photo_url, slots(*, applications(*))')
+      .select('id, name, city, district, venue_type, is_pro_venue, studio_payment_enabled, photo_url, slots(*, applications(*))')
 
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []
@@ -399,10 +399,34 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
       {/* Stüdyo rezervasyonları */}
       {studioReservations.length > 0 && (
         <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-1">{isEn ? 'STUDIO RESERVATIONS' : 'STÜDYO REZERVASYONLARI'}</h2>
-          <p className="text-text-muted text-xs mb-3 -mt-2">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'STUDIO RESERVATIONS' : 'STÜDYO REZERVASYONLARI'}</h2>
+          </div>
+          <p className="text-text-muted text-xs mb-3">
             {isEn ? 'Manage incoming studio booking requests.' : 'Gelen stüdyo rezervasyon taleplerini yönetin.'}
           </p>
+          {/* Ödeme toggle - her stüdyo mekanı için */}
+          {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => (
+            <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-[rgba(228,224,216,0.04)] border border-[rgba(228,224,216,0.08)] mb-3">
+              <div>
+                <p className="text-text-primary text-sm font-medium">{v.name}</p>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Require upfront payment' : 'Ön ödeme zorunlu'}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  const newVal = !v.studio_payment_enabled
+                  await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
+                  setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
+                }}
+                className={cn('text-xs px-3 py-1.5 rounded border transition-colors', v.studio_payment_enabled
+                  ? 'bg-accent/10 text-accent border-accent/30'
+                  : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                )}
+              >
+                {v.studio_payment_enabled ? (isEn ? '₺ Payment On' : '₺ Ödeme Açık') : (isEn ? '₺ Payment Off' : '₺ Ödeme Kapalı')}
+              </button>
+            </div>
+          ))}
           <div className="space-y-3">
             {studioReservations.map((res: any) => (
               <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
