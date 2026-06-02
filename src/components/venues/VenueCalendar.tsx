@@ -53,6 +53,9 @@ interface Props {
   isOwner?: boolean
   initialArtists?: { id: string; stage_name: string; city: string | null }[]
   initialBands?: { id: string; name: string; city: string | null }[]
+  isStudioType?: boolean
+  studioRooms?: { id: string; name: string; price_per_hour: number | null }[]
+  pricePerHour?: number | null
 }
 
 const MONTH_NAMES_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
@@ -68,7 +71,9 @@ function toISO(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner, initialArtists = [], initialBands = [] }: Props) {
+const HOURS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`)
+
+export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner, initialArtists = [], initialBands = [], isStudioType = false, studioRooms = [], pricePerHour }: Props) {
   const locale = useLocale()
   const isEn = locale === 'en'
   const MONTH_NAMES = isEn ? MONTH_NAMES_EN : MONTH_NAMES_TR
@@ -119,6 +124,12 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
   const [allArtists, setAllArtists] = useState<{ id: string; stage_name: string; city: string | null }[]>(initialArtists)
   const [allBands, setAllBands] = useState<{ id: string; name: string; city: string | null }[]>(initialBands)
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null)
+
+  // Studio reservation state
+  const [studioForm, setStudioForm] = useState({ name: '', email: '', phone: '', start_time: '10:00', duration: 2, room_id: '', notes: '' })
+  const [studioSubmitting, setStudioSubmitting] = useState(false)
+  const [studioBooked, setStudioBooked] = useState(false)
+  const [studioError, setStudioError] = useState('')
 
   const supabase = createClient()
   const router = useRouter()
@@ -202,6 +213,16 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
     const dayEvents = eventsByDate.get(dateStr) ?? []
     const daySlots = getSlotsForDate(date)
     const hasClickableSlot = daySlots.length > 0 && date >= today && artistId
+
+    // Stüdyo modunda geçmiş olmayan günlere tıklanabilir
+    if (isStudioType) {
+      if (date < today) return
+      setSelectedDate(date)
+      setStudioBooked(false)
+      setStudioError('')
+      setStudioForm(p => ({ ...p, start_time: '10:00', duration: 2, room_id: '', notes: '' }))
+      return
+    }
 
     if (!isOwner && dayEvents.length === 1 && !hasClickableSlot) {
       router.push(`/events/${dayEvents[0].id}`)
@@ -435,6 +456,144 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
             </div>
           )}
         </div>
+      </div>
+    </div>,
+    document.body
+  ) : null
+
+  async function handleStudioReserve() {
+    if (!selectedDate || !studioForm.name || !studioForm.email || !studioForm.phone) return
+    const startIdx = HOURS.indexOf(studioForm.start_time)
+    const endTime = HOURS[startIdx + studioForm.duration]
+    if (!endTime) { setStudioError('Geçersiz saat seçimi.'); return }
+
+    setStudioSubmitting(true)
+    setStudioError('')
+
+    const selectedRoom = studioRooms.find(r => r.id === studioForm.room_id)
+    const effectivePrice = selectedRoom?.price_per_hour ?? pricePerHour ?? 0
+
+    const res = await fetch('/api/studios/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        venue_id: venueId,
+        room_id: studioForm.room_id || null,
+        room_name: selectedRoom?.name || null,
+        reserver_name: studioForm.name,
+        reserver_email: studioForm.email,
+        reserver_phone: studioForm.phone,
+        reservation_date: toISO(selectedDate),
+        start_time: studioForm.start_time + ':00',
+        end_time: endTime + ':00',
+        duration_hours: studioForm.duration,
+        price_per_hour: effectivePrice,
+        notes: studioForm.notes || null,
+      }),
+    })
+    const data = await res.json()
+
+    if (!res.ok) { setStudioError(data.error ?? 'Hata oluştu.'); setStudioSubmitting(false); return }
+
+    if (data.payment_required && data.token) {
+      window.location.href = `https://www.paytr.com/odeme/guvenli/${data.token}`
+    } else {
+      setStudioBooked(true)
+    }
+    setStudioSubmitting(false)
+  }
+
+  const studioPopup = isStudioType && selectedDate && mounted ? createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={e => { if (e.target === e.currentTarget) { setSelectedDate(null); setStudioBooked(false) } }}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md bg-surface rounded-2xl border border-[rgba(228,224,216,0.15)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(228,224,216,0.08)] flex-shrink-0">
+          <p className="font-semibold text-text-primary text-sm">
+            {selectedDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          <button onClick={() => { setSelectedDate(null); setStudioBooked(false) }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.08)]">
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          {studioBooked ? (
+            <div className="text-center py-6">
+              <p className="text-2xl mb-2">✓</p>
+              <p className="font-semibold text-text-primary">Rezervasyon Alındı</p>
+              <p className="text-text-muted text-sm mt-1">Mekan onayladığında bildirim alacaksınız.</p>
+              <button onClick={() => { setSelectedDate(null); setStudioBooked(false) }}
+                className="mt-4 text-accent text-sm hover:underline">Kapat</button>
+            </div>
+          ) : (
+            <>
+              {studioRooms.length > 0 && (
+                <div>
+                  <label className="label">Oda / Salon</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <button type="button" onClick={() => setStudioForm(p => ({ ...p, room_id: '' }))}
+                      className={cn('text-xs px-3 py-1.5 rounded border transition-colors', !studioForm.room_id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]')}>
+                      Fark etmez
+                    </button>
+                    {studioRooms.map(r => (
+                      <button key={r.id} type="button" onClick={() => setStudioForm(p => ({ ...p, room_id: r.id }))}
+                        className={cn('text-xs px-3 py-1.5 rounded border transition-colors', studioForm.room_id === r.id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]')}>
+                        {r.name}{r.price_per_hour ? ` · ₺${r.price_per_hour}/sa` : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Başlangıç</label>
+                  <select value={studioForm.start_time} onChange={e => setStudioForm(p => ({ ...p, start_time: e.target.value }))} className="input-field text-sm">
+                    {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Süre</label>
+                  <select value={studioForm.duration} onChange={e => setStudioForm(p => ({ ...p, duration: Number(e.target.value) }))} className="input-field text-sm">
+                    {[1, 2, 3, 4, 5, 6, 8].map(h => <option key={h} value={h}>{h} saat</option>)}
+                  </select>
+                </div>
+              </div>
+              {(() => {
+                const idx = HOURS.indexOf(studioForm.start_time)
+                const end = HOURS[idx + studioForm.duration]
+                const room = studioRooms.find(r => r.id === studioForm.room_id)
+                const price = (room?.price_per_hour ?? pricePerHour ?? 0) as number
+                const total = price * studioForm.duration
+                return end ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-text-muted">{studioForm.start_time} – {end}</span>
+                    {total > 0 && <span className="font-bebas text-xl text-accent">₺{total}</span>}
+                  </div>
+                ) : null
+              })()}
+
+              <input value={studioForm.name} onChange={e => setStudioForm(p => ({ ...p, name: e.target.value }))} placeholder="Ad Soyad *" className="input-field text-sm" />
+              <input type="email" value={studioForm.email} onChange={e => setStudioForm(p => ({ ...p, email: e.target.value }))} placeholder="E-posta *" className="input-field text-sm" />
+              <input type="tel" value={studioForm.phone} onChange={e => setStudioForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon *" className="input-field text-sm" />
+              <textarea value={studioForm.notes} onChange={e => setStudioForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="input-field text-sm resize-none" placeholder="Notlar (isteğe bağlı)" />
+
+              {studioError && <p className="text-red-400 text-xs">{studioError}</p>}
+            </>
+          )}
+        </div>
+
+        {!studioBooked && (
+          <div className="px-5 py-4 border-t border-[rgba(228,224,216,0.08)] flex-shrink-0">
+            <button onClick={handleStudioReserve}
+              disabled={studioSubmitting || !studioForm.name || !studioForm.email || !studioForm.phone}
+              className="btn-accent w-full py-3 text-sm disabled:opacity-50">
+              {studioSubmitting ? 'İşleniyor...' : 'Rezervasyon Yap'}
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body
@@ -749,7 +908,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
           const isToday = date.getTime() === today.getTime()
           const isSelected = selectedDate?.getTime() === date.getTime()
 
-          const isEmptyFuture = isOwner && !isPast && !hasEvent && !hasOpenSlot && !isSelected
+          const isEmptyFuture = (isOwner || isStudioType) && !isPast && !hasEvent && !hasOpenSlot && !isSelected
 
           return (
             <button
@@ -763,7 +922,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   ? 'bg-success/20 text-white hover:bg-success/30 cursor-pointer'
                   : hasOpenSlot
                   ? 'bg-accent/10 text-accent hover:bg-accent/20'
-                  : isOwner
+                  : (isOwner || isStudioType)
                   ? isPast
                     ? 'text-white/30 hover:bg-white/5 cursor-pointer'
                     : 'text-white/50 hover:bg-accent/10 hover:text-accent/80 cursor-pointer'
@@ -795,24 +954,35 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-text-muted">
-        {(artistId || isOwner) && (
+        {!isStudioType && (artistId || isOwner) && (
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-accent/15 border border-accent/20" />
             <span>{isEn ? 'Open Stage' : 'Boş Sahne'}</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-success/25 border border-success/30" />
-          <span>{isEn ? 'Event Scheduled' : 'Etkinlik Planlandı'}</span>
-        </div>
+        {!isStudioType && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-success/25 border border-success/30" />
+            <span>{isEn ? 'Event Scheduled' : 'Etkinlik Planlandı'}</span>
+          </div>
+        )}
+        {isStudioType && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-accent/15 border border-accent/20" />
+            <span>Rezervasyon yapmak için güne tıkla</span>
+          </div>
+        )}
       </div>
       </div>{/* end max-w-[500px] */}
 
+      {/* Studio reservation popup */}
+      {studioPopup}
+
       {/* Owner popup */}
-      {ownerPopup}
+      {!isStudioType && ownerPopup}
 
       {/* Non-owner popup */}
-      {nonOwnerPopup}
+      {!isStudioType && nonOwnerPopup}
     </div>
   )
 }

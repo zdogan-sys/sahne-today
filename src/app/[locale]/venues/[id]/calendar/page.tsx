@@ -51,7 +51,9 @@ export default async function VenueCalendarPage({ params }: Props) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const [slotsRes, eventsRes, bandsRes, allArtistsRes, allBandsRes] = await Promise.all([
+  const isStudioType = ['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type ?? '')
+
+  const [slotsRes, eventsRes, bandsRes, allArtistsRes, allBandsRes, roomsRes] = await Promise.all([
     canSeeSlots
       ? supabase
           .from('slots')
@@ -85,6 +87,7 @@ export default async function VenueCalendarPage({ params }: Props) {
     isOwner
       ? supabase.from('bands').select('id, name, city').order('name')
       : Promise.resolve({ data: [] }),
+    supabase.from('studio_rooms').select('id, name, price_per_hour').eq('venue_id', id).eq('is_active', true),
   ])
 
   const slots = (slotsRes.data ?? []) as any[]
@@ -94,6 +97,7 @@ export default async function VenueCalendarPage({ params }: Props) {
     .filter(Boolean) as { id: string; name: string }[]
   const allArtists = (allArtistsRes.data ?? []) as { id: string; stage_name: string; city: string | null }[]
   const allBands = (allBandsRes.data ?? []) as { id: string; name: string; city: string | null }[]
+  const studioRooms = (roomsRes.data ?? []) as { id: string; name: string; price_per_hour: number | null }[]
 
   const upcomingEvents = events.filter((e: any) => e.event_date >= today)
   const sortedSlots = [...slots].sort((a, b) => {
@@ -113,7 +117,7 @@ export default async function VenueCalendarPage({ params }: Props) {
       </Link>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-bebas text-3xl text-text-primary">{isEn ? 'STAGE CALENDAR' : 'SAHNE TAKVİMİ'}</h1>
+        <h1 className="font-bebas text-3xl text-text-primary">{isStudioType ? 'TAKVİM' : (isEn ? 'STAGE CALENDAR' : 'SAHNE TAKVİMİ')}</h1>
         <VenueCalendarSubscribe venueId={id} venueName={v.name} />
       </div>
 
@@ -189,6 +193,9 @@ export default async function VenueCalendarPage({ params }: Props) {
               isOwner={isOwner}
               initialArtists={allArtists}
               initialBands={allBands}
+              isStudioType={isStudioType}
+              studioRooms={studioRooms}
+              pricePerHour={(venue as any).price_per_hour ?? null}
             />
           </div>
         </div>
