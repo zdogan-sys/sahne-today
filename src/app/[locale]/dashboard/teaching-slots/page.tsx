@@ -3,14 +3,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, X, Check, Loader2, Calendar, Repeat, Clock } from 'lucide-react'
+import { ArrowLeft, Plus, X, Check, Loader2, Calendar, Clock, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 const DAY_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 
-type AddMode = 'recurring' | 'onetime'
+const TIME_TEMPLATES = [
+  { label: '09:00 - 18:00', start: '09:00', end: '18:00' },
+  { label: '10:00 - 20:00', start: '10:00', end: '20:00' },
+  { label: '09:00 - 21:00', start: '09:00', end: '21:00' },
+  { label: '17:00 - 22:00', start: '17:00', end: '22:00' },
+  { label: 'Özel saat', start: '', end: '' },
+]
 
 const ADMIN_EMAIL = 'z_dogan@hotmail.com'
 
@@ -27,35 +33,38 @@ export default function TeachingSlotsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [addMode, setAddMode] = useState<AddMode>('recurring')
+  const [addMode, setAddMode] = useState<'template' | 'manual'>('template')
   const [actingBooking, setActingBooking] = useState<string | null>(null)
   const [togglingPayment, setTogglingPayment] = useState<string | null>(null)
   const [addBookingSlot, setAddBookingSlot] = useState<string | null>(null)
   const [bookForm, setBookForm] = useState({ student_name: '', student_email: '', student_phone: '', lesson_date: '' })
 
-  // Form state
-  const [instrument, setInstrument] = useState('')
+  // Template form
+  const [templateIdx, setTemplateIdx] = useState(0)
   const [selectedDays, setSelectedDays] = useState<number[]>([])
-  const [startTime, setStartTime] = useState('10:00')
-  const [endTime, setEndTime] = useState('11:00')
-  const [recurrence, setRecurrence] = useState('weekly')
+  const [instrument, setInstrument] = useState('')
   const [price, setPrice] = useState('')
   const [isOnline, setIsOnline] = useState(false)
   const [lessonType, setLessonType] = useState<'individual' | 'group'>('individual')
   const [maxParticipants, setMaxParticipants] = useState(1)
-  // One-time
-  const [slotDate, setSlotDate] = useState('')
+
+  // Manual form
+  const [manualInstrument, setManualInstrument] = useState('')
+  const [manualDayOfWeek, setManualDayOfWeek] = useState(1)
+  const [manualStartTime, setManualStartTime] = useState('10:00')
+  const [manualEndTime, setManualEndTime] = useState('11:00')
+  const [manualRecurrence, setManualRecurrence] = useState('weekly')
+  const [manualPrice, setManualPrice] = useState('')
+  const [manualSlotDate, setManualSlotDate] = useState('')
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
     const isAdmin = user.email === ADMIN_EMAIL
-
     let artistData: any = null
 
     if (isAdmin && artistParam) {
-      // Admin belirli bir sanatçıyı yönetiyor
       const { data } = await supabase
         .from('artists')
         .select('id, stage_name, teaching_instruments, profile_id')
@@ -63,7 +72,6 @@ export default function TeachingSlotsPage() {
         .single()
       artistData = data
     } else {
-      // Normal kullanıcı kendi profilini yönetiyor
       const { data } = await supabase
         .from('artists')
         .select('id, stage_name, teaching_instruments, profile_id')
@@ -73,14 +81,12 @@ export default function TeachingSlotsPage() {
     }
 
     if (!artistData && !isAdmin) { router.push('/dashboard'); return }
-
     if (!isAdmin) {
       const { data: profile } = await supabase.from('profiles').select('is_pro_individual').eq('id', user.id).single()
       if (!profile?.is_pro_individual) { router.push('/dashboard'); return }
     }
 
     setArtist(artistData)
-
     if (artistData) {
       const [slotsRes, bookingsRes] = await Promise.all([
         supabase.from('teaching_slots').select('*').eq('artist_id', artistData.id).eq('is_active', true).order('day_of_week').order('start_time'),
@@ -100,41 +106,91 @@ export default function TeachingSlotsPage() {
   }
   function quickSelect(days: number[]) { setSelectedDays(days) }
 
-  async function addSlots() {
-    if (!instrument || !price) { setError('Enstrüman ve ücret zorunludur.'); return }
-    if (addMode === 'recurring' && selectedDays.length === 0) { setError('En az bir gün seçin.'); return }
-    if (addMode === 'onetime' && !slotDate) { setError('Tarih seçin.'); return }
-    setSaving(true); setError('')
+  async function addTemplateSlots() {
+    if (!instrument || !price || selectedDays.length === 0) {
+      setError('Enstrüman, ücret ve en az bir gün seçin.')
+      return
+    }
 
-    const base = {
+    const template = TIME_TEMPLATES[templateIdx]
+    if (!template.start || !template.end) {
+      setError('Özel saat seçtiyseniz, saatleri manuel formdan ekleyin.')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    const rows = selectedDays.map(d => ({
       artist_id: artist.id,
       instrument,
-      start_time: startTime + ':00',
-      end_time: endTime + ':00',
+      day_of_week: d,
+      slot_date: null,
+      start_time: template.start + ':00',
+      end_time: template.end + ':00',
       price_per_session: parseFloat(price),
       is_online: isOnline,
       lesson_type: lessonType,
       max_participants: lessonType === 'group' ? maxParticipants : 1,
-      recurrence,
+      recurrence: 'weekly',
       is_active: true,
-    }
-
-    const rows = addMode === 'recurring'
-      ? selectedDays.map(d => ({ ...base, day_of_week: d, slot_date: null }))
-      : [{ ...base, day_of_week: null, slot_date: slotDate, recurrence: 'once' }]
+    }))
 
     const { data, error: err } = await supabase.from('teaching_slots').insert(rows as any).select()
     if (err) { setError(err.message); setSaving(false); return }
 
-    setSlots(prev => [...prev, ...(data ?? [])].sort((a, b) => {
+    setSlots(prev => [...prev, ...(data ?? [])].sort((a, b) =>
+      (a.day_of_week ?? 0) - (b.day_of_week ?? 0) || a.start_time.localeCompare(b.start_time)
+    ))
+
+    setInstrument('')
+    setPrice('')
+    setSelectedDays([])
+    setTemplateIdx(0)
+    setShowForm(false)
+    setSaving(false)
+  }
+
+  async function addManualSlot() {
+    if (!manualInstrument || !manualPrice) {
+      setError('Enstrüman ve ücret zorunludur.')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    const row = {
+      artist_id: artist.id,
+      instrument: manualInstrument,
+      day_of_week: manualSlotDate ? null : manualDayOfWeek,
+      slot_date: manualSlotDate || null,
+      start_time: manualStartTime + ':00',
+      end_time: manualEndTime + ':00',
+      price_per_session: parseFloat(manualPrice),
+      is_online: isOnline,
+      lesson_type: lessonType,
+      max_participants: lessonType === 'group' ? maxParticipants : 1,
+      recurrence: manualSlotDate ? 'once' : manualRecurrence,
+      is_active: true,
+    }
+
+    const { data, error: err } = await supabase.from('teaching_slots').insert(row as any).select().single()
+    if (err) { setError(err.message); setSaving(false); return }
+
+    setSlots(prev => [...prev, data].sort((a, b) => {
       if (a.slot_date && b.slot_date) return a.slot_date.localeCompare(b.slot_date)
       if (a.slot_date) return 1
       if (b.slot_date) return -1
       return (a.day_of_week ?? 0) - (b.day_of_week ?? 0) || a.start_time.localeCompare(b.start_time)
     }))
 
-    setInstrument(''); setPrice(''); setSelectedDays([]); setSlotDate('')
-    setShowForm(false); setSaving(false)
+    setManualInstrument('')
+    setManualPrice('')
+    setManualStartTime('10:00')
+    setManualEndTime('11:00')
+    setManualSlotDate('')
+    setSaving(false)
   }
 
   async function deleteSlot(slotId: string) {
@@ -172,12 +228,8 @@ export default function TeachingSlotsPage() {
 
   const teachingInstruments: string[] = artist?.teaching_instruments ?? []
   const today = new Date().toISOString().split('T')[0]
-
-  // Tekrarlayan slotlar
   const recurringSlots = slots.filter(s => !s.slot_date)
-  // Tek seferlik slotlar
   const onetimeSlots = slots.filter(s => !!s.slot_date).sort((a, b) => a.slot_date.localeCompare(b.slot_date))
-
   const pendingBookings = bookings.filter(b => b.status === 'pending' || b.status === 'awaiting_student')
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed')
 
@@ -199,188 +251,202 @@ export default function TeachingSlotsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-bebas text-4xl text-text-primary">DERS SAATLERİM</h1>
-            <p className="text-text-muted text-sm mt-0.5">Müsait ders saatlerini belirle, öğrenciler rezervasyon yapsın</p>
+            <p className="text-text-muted text-sm mt-0.5">Şablon veya manuel slot ekle</p>
           </div>
-          <button
-            onClick={() => { setShowForm(!showForm); setError('') }}
-            className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5"
-          >
+          <button onClick={() => setShowForm(!showForm)} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
             <Plus size={14} /> {showForm ? 'İptal' : 'Slot Ekle'}
           </button>
         </div>
       </div>
 
-      {/* Slot Ekleme Formu */}
       {showForm && (
         <div className="card p-5 space-y-5">
           {/* Mod seçimi */}
           <div className="flex gap-2">
-            {(['recurring', 'onetime'] as AddMode[]).map(m => (
+            {(['template', 'manual'] as const).map(m => (
               <button key={m} onClick={() => setAddMode(m)}
                 className={cn('flex-1 py-2 text-xs font-medium rounded-lg border flex items-center justify-center gap-1.5 transition-colors',
                   addMode === m ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
                 )}>
-                {m === 'recurring' ? <><Repeat size={11} /> Tekrarlayan</> : <><Calendar size={11} /> Tek Seferlik</>}
+                {m === 'template' ? <><Zap size={11} /> Şablon Kullan</> : <><Clock size={11} /> Manuel Ekle</>}
               </button>
             ))}
           </div>
 
-          {/* Enstrüman */}
-          {teachingInstruments.length > 0 ? (
-            <div>
-              <label className="label">Enstrüman / Ders</label>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {teachingInstruments.map(inst => (
-                  <button key={inst} onClick={() => setInstrument(inst)}
-                    className={cn('text-xs px-3 py-1.5 rounded border transition-colors',
-                      instrument === inst ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-                    )}>
-                    {inst}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-yellow-400 text-xs">Önce profilinde "Kurs Veriyorum" bölümünden enstrüman seç.</p>
-          )}
+          {/* Template Mode */}
+          {addMode === 'template' && (
+            <div className="space-y-4">
+              {teachingInstruments.length > 0 ? (
+                <div>
+                  <label className="label">Enstrüman</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {teachingInstruments.map(inst => (
+                      <button key={inst} onClick={() => setInstrument(inst)}
+                        className={cn('text-xs px-3 py-1.5 rounded border transition-colors',
+                          instrument === inst ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                        )}>
+                        {inst}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-yellow-400 text-xs">Önce profilinde enstrüman seç.</p>
+              )}
 
-          {/* Tekrarlayan: Gün Seçimi */}
-          {addMode === 'recurring' && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="label">Günler</label>
+              <div>
+                <label className="label">Saat Şablonu</label>
+                <select value={templateIdx} onChange={e => setTemplateIdx(Number(e.target.value))} className="input-field text-sm mt-1">
+                  {TIME_TEMPLATES.map((t, i) => <option key={i} value={i}>{t.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label">Günler</label>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => quickSelect([1, 2, 3, 4, 5])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftaiçi</button>
+                    <button onClick={() => quickSelect([0, 6])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftasonu</button>
+                  </div>
+                </div>
                 <div className="flex gap-1.5">
-                  <button onClick={() => quickSelect([1, 2, 3, 4, 5])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftaiçi</button>
-                  <button onClick={() => quickSelect([0, 6])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Haftasonu</button>
-                  <button onClick={() => quickSelect([0, 1, 2, 3, 4, 5, 6])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">Her Gün</button>
+                  {DAY_SHORT.map((d, i) => (
+                    <button key={i} onClick={() => toggleDay(i)}
+                      className={cn('flex-1 py-2 text-xs rounded border transition-colors',
+                        selectedDays.includes(i) ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                      )}>
+                      {d}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex gap-1.5">
-                {DAY_SHORT.map((d, i) => (
-                  <button key={i} onClick={() => toggleDay(i)}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Seans Ücreti (₺)</label>
+                  <input type="number" min={0} value={price} onChange={e => setPrice(e.target.value)} placeholder="500" className="input-field text-sm" />
+                </div>
+                <div>
+                  <label className="label">Ders Türü</label>
+                  <select value={lessonType} onChange={e => setLessonType(e.target.value as any)} className="input-field text-sm">
+                    <option value="individual">Bireysel</option>
+                    <option value="group">Grup</option>
+                  </select>
+                </div>
+              </div>
+
+              {selectedDays.length > 0 && price && (
+                <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">
+                  <p className="text-accent text-sm font-medium">{selectedDays.length} gün × {TIME_TEMPLATES[templateIdx].label}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{selectedDays.length} slot oluşturulacak</p>
+                </div>
+              )}
+
+              {error && <p className="text-red-400 text-xs">{error}</p>}
+
+              <button onClick={addTemplateSlots} disabled={saving || !instrument || !price || selectedDays.length === 0}
+                className="btn-accent w-full py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? <><Loader2 size={14} className="animate-spin" /> Oluşturuluyor...</> : <><Plus size={14} /> Şablon Uygula</>}
+              </button>
+            </div>
+          )}
+
+          {/* Manual Mode */}
+          {addMode === 'manual' && (
+            <div className="space-y-4">
+              <div>
+                <label className="label">Enstrüman</label>
+                <input value={manualInstrument} onChange={e => setManualInstrument(e.target.value)} className="input-field text-sm" placeholder="Enstrüman adı" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Başlangıç Saati</label>
+                  <input type="time" value={manualStartTime} onChange={e => setManualStartTime(e.target.value)} className="input-field text-sm" />
+                </div>
+                <div>
+                  <label className="label">Bitiş Saati</label>
+                  <input type="time" value={manualEndTime} onChange={e => setManualEndTime(e.target.value)} className="input-field text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label className="label mb-2 block">Tip</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setManualSlotDate('')}
                     className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                      selectedDays.includes(i) ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-                    )}>
-                    {d}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tek Seferlik: Tarih */}
-          {addMode === 'onetime' && (
-            <div>
-              <label className="label">Tarih</label>
-              <input type="date" min={today} value={slotDate} onChange={e => setSlotDate(e.target.value)} className="input-field text-sm" />
-            </div>
-          )}
-
-          {/* Saat */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Başlangıç Saati</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm" />
-            </div>
-            <div>
-              <label className="label">Bitiş Saati</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm" />
-            </div>
-          </div>
-
-          {/* Tekrar (sadece recurring) */}
-          {addMode === 'recurring' && (
-            <div>
-              <label className="label">Tekrar</label>
-              <div className="flex gap-2 mt-1">
-                {[['weekly', 'Her Hafta'], ['biweekly', '2 Haftada Bir']].map(([val, label]) => (
-                  <button key={val} onClick={() => setRecurrence(val)}
+                      !manualSlotDate ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                    )}>Tekrarlayan</button>
+                  <button onClick={() => { setManualSlotDate(today); setManualDayOfWeek(1); }}
                     className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                      recurrence === val ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-                    )}>
-                    {label}
-                  </button>
-                ))}
+                      manualSlotDate ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                    )}>Tek Seferlik</button>
+                </div>
               </div>
+
+              {!manualSlotDate ? (
+                <div className="space-y-2">
+                  <label className="label">Gün</label>
+                  <div className="flex gap-1.5">
+                    {DAY_SHORT.map((d, i) => (
+                      <button key={i} onClick={() => setManualDayOfWeek(i)}
+                        className={cn('flex-1 py-2 text-xs rounded border transition-colors',
+                          manualDayOfWeek === i ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                        )}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="label">Tekrar</label>
+                  <select value={manualRecurrence} onChange={e => setManualRecurrence(e.target.value)} className="input-field text-sm">
+                    <option value="weekly">Haftalık</option>
+                    <option value="biweekly">2 Haftada Bir</option>
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="label">Tarih</label>
+                  <input type="date" min={today} value={manualSlotDate} onChange={e => setManualSlotDate(e.target.value)} className="input-field text-sm" />
+                </div>
+              )}
+
+              <div>
+                <label className="label">Seans Ücreti (₺)</label>
+                <input type="number" min={0} value={manualPrice} onChange={e => setManualPrice(e.target.value)} placeholder="500" className="input-field text-sm" />
+              </div>
+
+              {error && <p className="text-red-400 text-xs">{error}</p>}
+
+              <button onClick={addManualSlot} disabled={saving || !manualInstrument || !manualPrice}
+                className="btn-accent w-full py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? <><Loader2 size={14} className="animate-spin" /> Ekleniyor...</> : <><Plus size={14} /> Slot Ekle</>}
+              </button>
             </div>
           )}
-
-          {/* Online / Yüz Yüze */}
-          <div>
-            <label className="label mb-2 block">Ders Şekli</label>
-            <div className="flex gap-2">
-              <button onClick={() => setIsOnline(false)}
-                className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                  !isOnline ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                )}>Yüz Yüze</button>
-              <button onClick={() => setIsOnline(true)}
-                className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                  isOnline ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                )}>Online</button>
-            </div>
-          </div>
-
-          {/* Ders Türü */}
-          <div>
-            <label className="label mb-2 block">Ders Türü</label>
-            <div className="flex gap-2">
-              <button onClick={() => { setLessonType('individual'); setMaxParticipants(1) }}
-                className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                  lessonType === 'individual' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                )}>Bireysel</button>
-              <button onClick={() => { setLessonType('group'); setMaxParticipants(prev => prev < 2 ? 4 : prev) }}
-                className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                  lessonType === 'group' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                )}>Grup</button>
-            </div>
-            {lessonType === 'group' && (
-              <div className="mt-2">
-                <label className="label">Maksimum Katılımcı</label>
-                <input type="number" min={2} max={30} value={maxParticipants} onChange={e => setMaxParticipants(Number(e.target.value))} className="input-field text-sm" />
-              </div>
-            )}
-          </div>
-
-          {/* Ücret */}
-          <div>
-            <label className="label">Seans Ücreti (₺)</label>
-            <input type="number" min={0} value={price} onChange={e => setPrice(e.target.value)} placeholder="500" className="input-field text-sm" />
-          </div>
-
-          {selectedDays.length > 1 && addMode === 'recurring' && (
-            <p className="text-text-muted text-xs">{selectedDays.length} gün için {selectedDays.length} ayrı slot oluşturulacak.</p>
-          )}
-
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-
-          <button onClick={addSlots} disabled={saving || !instrument || !price}
-            className="btn-accent w-full py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
-            {saving ? <><Loader2 size={14} className="animate-spin" /> Oluşturuluyor...</> : <><Plus size={14} /> Slot Oluştur</>}
-          </button>
         </div>
       )}
 
-      {/* Tekrarlayan Slotlar */}
+      {/* Slots List */}
       {(recurringSlots.length > 0 || onetimeSlots.length > 0) ? (
         <div className="space-y-6">
           {recurringSlots.length > 0 && (
             <div>
-              <h2 className="font-bebas text-xl text-text-primary mb-3 flex items-center gap-2">
-                <Repeat size={15} /> TEKRARLAYAN
-              </h2>
+              <h2 className="font-bebas text-xl text-text-primary mb-3">TEKRARLAYAN SLOTLAR</h2>
               <div className="space-y-2">
-                {recurringSlots.map(slot => <SlotCard key={slot.id} slot={slot} onDelete={deleteSlot} onTogglePayment={togglePayment} togglingPayment={togglingPayment} onAddBooking={(id) => { setAddBookingSlot(addBookingSlot === id ? null : id); setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' }) }} addBookingSlot={addBookingSlot} bookForm={bookForm} setBookForm={setBookForm} onSubmitBooking={addBookingForStudent} saving={saving} />)}
+                {recurringSlots.map(slot => (
+                  <SlotCard key={slot.id} slot={slot} onDelete={deleteSlot} onTogglePayment={togglePayment} togglingPayment={togglingPayment} onAddBooking={(id) => { setAddBookingSlot(addBookingSlot === id ? null : id); setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' }) }} addBookingSlot={addBookingSlot} bookForm={bookForm} setBookForm={setBookForm} onSubmitBooking={addBookingForStudent} saving={saving} />
+                ))}
               </div>
             </div>
           )}
 
           {onetimeSlots.length > 0 && (
             <div>
-              <h2 className="font-bebas text-xl text-text-primary mb-3 flex items-center gap-2">
-                <Calendar size={15} /> TEK SEFERLİK
-              </h2>
+              <h2 className="font-bebas text-xl text-text-primary mb-3">TEK SEFERLİK SLOTLAR</h2>
               <div className="space-y-2">
-                {onetimeSlots.map(slot => <SlotCard key={slot.id} slot={slot} onDelete={deleteSlot} onTogglePayment={togglePayment} togglingPayment={togglingPayment} onAddBooking={(id) => { setAddBookingSlot(addBookingSlot === id ? null : id); setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' }) }} addBookingSlot={addBookingSlot} bookForm={bookForm} setBookForm={setBookForm} onSubmitBooking={addBookingForStudent} saving={saving} />)}
+                {onetimeSlots.map(slot => (
+                  <SlotCard key={slot.id} slot={slot} onDelete={deleteSlot} onTogglePayment={togglePayment} togglingPayment={togglingPayment} onAddBooking={(id) => { setAddBookingSlot(addBookingSlot === id ? null : id); setBookForm({ student_name: '', student_email: '', student_phone: '', lesson_date: '' }) }} addBookingSlot={addBookingSlot} bookForm={bookForm} setBookForm={setBookForm} onSubmitBooking={addBookingForStudent} saving={saving} />
+                ))}
               </div>
             </div>
           )}
@@ -391,7 +457,7 @@ export default function TeachingSlotsPage() {
         </div>
       )}
 
-      {/* Rezervasyonlar */}
+      {/* Bookings */}
       {bookings.length > 0 && (
         <div>
           <h2 className="font-bebas text-2xl text-text-primary mb-3">
@@ -406,22 +472,14 @@ export default function TeachingSlotsPage() {
             {[...pendingBookings, ...confirmedBookings].map(b => {
               const slot = b.teaching_slots
               const dateStr = b.lesson_date ? new Date(b.lesson_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'
-              const statusCfg: Record<string, string> = {
-                pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-                awaiting_student: 'text-accent bg-accent/10 border-accent/20',
-                confirmed: 'text-success bg-success/10 border-success/20',
-              }
-              const statusLabel: Record<string, string> = {
-                pending: 'Hoca Onayı Bekliyor',
-                awaiting_student: 'Öğrenci Onayı Bekliyor',
-                confirmed: 'Onaylandı',
-              }
               return (
                 <div key={b.id} className="card p-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-text-primary text-sm font-medium">{b.student_name}</p>
-                      <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', statusCfg[b.status] ?? '')}>{statusLabel[b.status] ?? b.status}</span>
+                      <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', b.status === 'pending' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' : 'text-success bg-success/10 border-success/20')}>
+                        {b.status === 'pending' ? 'Hoca Onayı' : 'Onaylandı'}
+                      </span>
                     </div>
                     <p className="text-text-muted text-xs mt-0.5">{slot?.instrument} · {dateStr} · {slot?.start_time?.slice(0, 5)}</p>
                     <p className="text-text-muted text-xs">{b.student_phone} · {b.student_email}</p>
@@ -443,21 +501,12 @@ export default function TeachingSlotsPage() {
 }
 
 function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooking, addBookingSlot, bookForm, setBookForm, onSubmitBooking, saving }: {
-  slot: any
-  onDelete: (id: string) => void
-  onTogglePayment: (id: string, current: boolean) => void
-  togglingPayment: string | null
-  onAddBooking: (id: string) => void
-  addBookingSlot: string | null
-  bookForm: any
-  setBookForm: (f: any) => void
-  onSubmitBooking: (id: string) => void
-  saving: boolean
+  slot: any; onDelete: (id: string) => void; onTogglePayment: (id: string, current: boolean) => void; togglingPayment: string | null; onAddBooking: (id: string) => void; addBookingSlot: string | null; bookForm: any; setBookForm: (f: any) => void; onSubmitBooking: (id: string) => void; saving: boolean
 }) {
   const isOnetime = !!slot.slot_date
   const dayLabel = isOnetime
     ? new Date(slot.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
-    : `${DAY_NAMES[slot.day_of_week]} · ${slot.recurrence === 'biweekly' ? '2 haftada bir' : 'haftalık'}`
+    : `${['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'][slot.day_of_week]} · ${slot.recurrence === 'biweekly' ? '2 haftada bir' : 'haftalık'}`
 
   const nextDates = isOnetime ? [slot.slot_date] : getNextDates(slot.day_of_week, slot.recurrence)
 
@@ -470,15 +519,7 @@ function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooki
             <span className="text-text-primary text-sm">{dayLabel}</span>
             <span className="text-text-muted text-xs flex items-center gap-0.5"><Clock size={9} />{slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}</span>
           </div>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', slot.is_online ? 'text-accent bg-accent/10 border-accent/20' : 'text-text-muted border-[rgba(228,224,216,0.1)]')}>
-              {slot.is_online ? 'Online' : 'Yüz Yüze'}
-            </span>
-            <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', slot.lesson_type === 'group' ? 'text-success bg-success/10 border-success/20' : 'text-text-muted border-[rgba(228,224,216,0.1)]')}>
-              {slot.lesson_type === 'group' ? `Grup · maks ${slot.max_participants}` : 'Bireysel'}
-            </span>
-            <span className="text-[10px] text-accent font-semibold">₺{slot.price_per_session}</span>
-          </div>
+          <p className="text-text-muted text-xs mt-0.5">₺{slot.price_per_session}</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button onClick={() => onTogglePayment(slot.id, slot.payment_enabled)} disabled={togglingPayment === slot.id}
@@ -487,13 +528,8 @@ function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooki
             )}>
             {slot.payment_enabled ? '₺ Açık' : '₺ Kapalı'}
           </button>
-          <button onClick={() => onAddBooking(slot.id)}
-            className="text-[10px] px-2 py-1 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-            + Öğrenci
-          </button>
-          <button onClick={() => onDelete(slot.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors">
-            <X size={13} />
-          </button>
+          <button onClick={() => onAddBooking(slot.id)} className="text-[10px] px-2 py-1 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">+ Öğrenci</button>
+          <button onClick={() => onDelete(slot.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors"><X size={13} /></button>
         </div>
       </div>
 
