@@ -284,7 +284,7 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </div>
 
-        {((venue as any).venue_type === 'studio' || (venue as any).venue_type === 'dance_studio') && (venue as any).price_per_hour && (
+        {(['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (venue as any).price_per_hour && (
           <div className="card p-4 flex items-center justify-between">
             <div>
               <p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">{isEn ? 'Hourly Rate' : 'Saatlik Ücret'}</p>

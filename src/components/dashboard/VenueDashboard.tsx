@@ -113,7 +113,7 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
     setTeachingSlotsAtVenues(slotsRes.data ?? [])
 
     const studioVenueIds = (venueData ?? [])
-      .filter((v: any) => v.venue_subtype === 'studio' || v.venue_subtype === 'dance_studio')
+      .filter((v: any) => ['studio', 'dance_studio', 'music_school'].includes(v.venue_subtype))
       .map((v: any) => v.id)
 
     if (studioVenueIds.length > 0) {

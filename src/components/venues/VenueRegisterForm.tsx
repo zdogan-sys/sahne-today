@@ -21,6 +21,10 @@ const STUDIO_EQUIPMENT_EN = ['Recording Booth', 'Analog Mixer', 'Digital Mixer',
 
 const DANCE_STYLES = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Latin', 'Swing', 'Bachata', 'Kizomba', 'Breakdance']
 
+const MUSIC_INSTRUMENTS = ['Gitar', 'Piyano', 'Keman', 'Saksafon', 'Davul', 'Bas Gitar', 'Vokal', 'Flüt', 'Klarnet', 'Trompet', 'Ud', 'Bağlama', 'Viyolonsel', 'Korna', 'Trombon']
+const MUSIC_SCHOOL_EQUIPMENT_TR = ['Piyano / Klavye', 'Gitar Stüdyosu', 'Davul Odası', 'Ses Yalıtımı', 'Kayıt İmkânı', 'Nota Tahtası', 'PA Sistemi', 'Klima', 'Soyunma Odası', 'Bekleme Salonu']
+const MUSIC_SCHOOL_EQUIPMENT_EN = ['Piano / Keyboard', 'Guitar Studio', 'Drum Room', 'Sound Insulation', 'Recording Option', 'Music Stand', 'PA System', 'Air Conditioning', 'Changing Room', 'Waiting Area']
+
 const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
   { key: 'pub', tr: 'Pub', en: 'Pub' },
   { key: 'turku_bar', tr: 'Türkü Bar', en: 'Turkish Folk Bar' },
@@ -30,12 +34,13 @@ const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
   { key: 'cafe', tr: 'Kafe', en: 'Cafe' },
   { key: 'studio', tr: 'Prova / Kayıt Stüdyosu', en: 'Rehearsal / Recording Studio' },
   { key: 'dance_studio', tr: 'Dans Stüdyosu', en: 'Dance Studio' },
+  { key: 'music_school', tr: 'Müzik Dersanesi', en: 'Music School' },
   { key: 'other', tr: 'Diğer', en: 'Other' },
 ]
 
-type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'studio' | 'dance_studio' | 'other'
+type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'studio' | 'dance_studio' | 'music_school' | 'other'
 
-const STUDIO_TYPES: VenueType[] = ['studio', 'dance_studio']
+const STUDIO_TYPES: VenueType[] = ['studio', 'dance_studio', 'music_school']
 
 function venueTypeLabel(key: VenueType | '', isEn: boolean): string {
   const found = VENUE_TYPES.find((v) => v.key === key)
@@ -241,7 +246,43 @@ export function VenueRegisterForm() {
 
       {step === 2 && (
         <div className="card p-6 space-y-5">
-          {venueType === 'dance_studio' ? (
+          {venueType === 'music_school' ? (
+            <>
+              <h2 className="font-semibold text-text-primary">{isEn ? 'Music School Details' : 'Müzik Dersanesi Detayları'}</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">{isEn ? 'Max Participants' : 'Maks. Öğrenci / Derslik'}</label>
+                  <input value={capacityStanding} onChange={(e) => setCapacityStanding(e.target.value)} type="number" placeholder="10" className="input-field" />
+                </div>
+                <div>
+                  <label className="label">{isEn ? 'Price per Hour (₺)' : 'Saatlik Kira (₺)'}</label>
+                  <input type="number" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="300" min="0" className="input-field" />
+                  <p className="text-text-muted text-xs mt-1">{isEn ? 'Room rental per hour.' : 'Derslik kiralama saatlik ücreti.'}</p>
+                </div>
+              </div>
+              <ChipSelector
+                options={isEn ? MUSIC_SCHOOL_EQUIPMENT_EN : MUSIC_SCHOOL_EQUIPMENT_TR}
+                selected={equipment}
+                onToggle={(v) => setEquipment((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v])}
+                label={isEn ? 'Equipment & Facilities' : 'Ekipman & Olanaklar'}
+              />
+              <div>
+                <label className="label">{isEn ? 'Instruments Taught' : 'Verilen Enstrüman Dersleri'}</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {MUSIC_INSTRUMENTS.map(inst => (
+                    <button key={inst} type="button"
+                      onClick={() => setGenres(p => p.includes(inst) ? p.filter(x => x !== inst) : [...p, inst])}
+                      className={cn('chip border transition-colors', genres.includes(inst)
+                        ? 'bg-accent/10 text-accent border-accent/30'
+                        : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
+                      )}>
+                      {inst}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : venueType === 'dance_studio' ? (
             <>
               <h2 className="font-semibold text-text-primary">{isEn ? 'Dance Studio Details' : 'Dans Stüdyosu Detayları'}</h2>
               <div className="grid grid-cols-2 gap-4">
