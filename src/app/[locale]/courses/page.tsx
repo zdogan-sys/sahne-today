@@ -43,8 +43,8 @@ export default async function CoursesPage({ searchParams }: Props) {
 
   let query = supabase
     .from('courses')
-    .select('id, title, category, subcategory, course_type, level, price_per_session, currency, is_online, location, max_participants, min_female, min_male, instructor_id, profiles(display_name, avatar_url), course_sessions(id)')
-    .eq('status', 'active')
+    .select('id, title, category, subcategory, course_type, level, price_per_session, currency, is_online, location, max_participants, min_female, min_male, instructor_id, status, profiles(display_name, avatar_url), course_sessions(id)')
+    .in('status', ['active', 'full'])
     .order('created_at', { ascending: false })
 
   if (sp.category) query = query.eq('category', sp.category)

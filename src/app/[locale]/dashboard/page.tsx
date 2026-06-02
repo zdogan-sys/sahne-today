@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { VenueDashboard } from '@/components/dashboard/VenueDashboard'
 import { ArtistDashboard } from '@/components/dashboard/ArtistDashboard'
 import { AudienceDashboard } from '@/components/dashboard/AudienceDashboard'
+import { StudentDashboard } from '@/components/dashboard/StudentDashboard'
 import { UserProfileEditor } from '@/components/dashboard/UserProfileEditor'
 import { FoundingMemberBadge } from '@/components/ui/FoundingMemberBadge'
 import type { Profile } from '@/lib/supabase/types'
@@ -92,6 +93,11 @@ export default async function DashboardPage() {
           <VenueDashboard userId={user.id} calendarToken={(profileData as any).calendar_token ?? null} />
         </section>
       )}
+
+      {/* Öğrenci paneli — tüm kullanıcılar için (ders/kurs rezervasyonları) */}
+      <section className="pt-8 border-t border-[rgba(228,224,216,0.1)]">
+        <StudentDashboard userId={user.id} />
+      </section>
     </div>
   )
 }

@@ -8,7 +8,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VENUE_TYPE_LABELS, formatDate } from '@/lib/utils'
-import { MapPin, Phone, Mail, Users, Zap, ArrowLeft, Music, Images, CalendarDays } from 'lucide-react'
+import { MapPin, Phone, Mail, Users, Zap, ArrowLeft, Music, Images, CalendarDays, GraduationCap } from 'lucide-react'
+import { ReviewSection } from '@/components/ui/ReviewSection'
 import { isAdminUser } from '@/lib/admin'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VenueCoverEditor } from '@/components/venues/VenueCoverEditor'
@@ -64,7 +65,7 @@ export default async function VenuePage({ params }: Props) {
   }
   const ownerCheck = await isOwnerCheck()
 
-  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData, coursesRes, teachingSlotsRes] = await Promise.all([
+  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData, coursesRes, teachingSlotsRes, instructorsRes, reviewsRes, userReviewRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     ownerCheck
       ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
@@ -104,6 +105,9 @@ export default async function VenuePage({ params }: Props) {
       : Promise.resolve({ data: null }),
     supabase.from('courses').select('id, title, category, level, price_per_session').eq('venue_id', id).eq('status', 'active'),
     supabase.from('teaching_slots').select('id, instrument, day_of_week, slot_date, start_time, end_time, price_per_session, lesson_type, is_online').eq('venue_id', id).eq('is_active', true),
+    supabase.from('venue_instructors').select('id, name, instruments, bio, photo_url').eq('venue_id', id).eq('is_active', true),
+    supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('venue_id', id).order('created_at', { ascending: false }),
+    user ? supabase.from('reviews').select('*').eq('venue_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
   ])
 
   if (!venueRes.data) notFound()
@@ -113,6 +117,9 @@ export default async function VenuePage({ params }: Props) {
   const pastEvents = (pastEventsRes.data ?? []) as any[]
   const coursesAtVenue = (coursesRes.data ?? []) as any[]
   const teachingSlotsAtVenue = (teachingSlotsRes.data ?? []) as any[]
+  const venueInstructors = (instructorsRes.data ?? []) as any[]
+  const venueReviews = (reviewsRes.data ?? []) as any[]
+  const userVenueReview = (userReviewRes as any)?.data ?? null
   const isOwner = user?.id === venue.owner_id || isAdminUser(user)
   const canSeeSlots = isOwner || isArtist
   const isFollowing = !!(followData as any)?.data?.id
@@ -428,6 +435,49 @@ export default async function VenuePage({ params }: Props) {
             hasUser={!!user}
           />
         )}
+
+        {/* Eğitmenler */}
+        {venueInstructors.length > 0 && (
+          <div>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3 flex items-center gap-2">
+              <GraduationCap size={18} className="text-accent" />
+              {isEn ? 'INSTRUCTORS' : 'EĞİTMENLER'}
+            </h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {venueInstructors.map(inst => (
+                <div key={inst.id} className="card p-4 flex items-start gap-3">
+                  {inst.photo_url ? (
+                    <img src={inst.photo_url} alt={inst.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[rgba(212,168,32,0.15)] flex items-center justify-center flex-shrink-0">
+                      <GraduationCap size={18} className="text-[#d4a820]" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-text-primary text-sm">{inst.name}</p>
+                    {inst.instruments && inst.instruments.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {inst.instruments.map((i: string) => (
+                          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">{i}</span>
+                        ))}
+                      </div>
+                    )}
+                    {inst.bio && <p className="text-text-muted text-xs mt-1.5 line-clamp-2">{inst.bio}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Değerlendirmeler */}
+        <ReviewSection
+          reviews={venueReviews}
+          targetType="venue"
+          targetId={venue.id}
+          userId={user?.id ?? null}
+          userReview={userVenueReview}
+        />
 
         {(upcomingEvents.length > 0 || pastEvents.length > 0 || isOwner) && (
           <div>

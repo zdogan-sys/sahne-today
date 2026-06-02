@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Clock, Users, MapPin, Video } from 'lucide-react'
 import type { Metadata } from 'next'
+import { ReviewSection } from '@/components/ui/ReviewSection'
 
 interface Props {
   params: Promise<{ id: string; locale: string }>
@@ -36,10 +37,18 @@ export default async function CourseDetailPage({ params }: Props) {
     .from('courses')
     .select('*, profiles(id, display_name, avatar_url, bio), venues(id, name, city), course_sessions(id, session_date, start_time, end_time, status), course_enrollments(id, gender, status)')
     .eq('id', id)
-    .eq('status', 'active')
+    .in('status', ['active', 'full'])
     .single()
 
   if (!course) notFound()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const [reviewsRes, userReviewRes] = await Promise.all([
+    supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('course_id', id).order('created_at', { ascending: false }),
+    user ? supabase.from('reviews').select('*').eq('course_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+  ])
+  const courseReviews = (reviewsRes.data ?? []) as any[]
+  const userCourseReview = (userReviewRes as any)?.data ?? null
 
   const instructor = (course as any).profiles
   const venue = (course as any).venues
@@ -74,6 +83,11 @@ export default async function CourseDetailPage({ params }: Props) {
           {(course as any).is_online && (
             <span className="chip bg-success/10 text-success border border-success/20 text-xs flex items-center gap-1">
               <Video size={10} /> Online
+            </span>
+          )}
+          {(course as any).status === 'full' && (
+            <span className="chip bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-semibold">
+              DOLU
             </span>
           )}
         </div>
@@ -204,12 +218,27 @@ export default async function CourseDetailPage({ params }: Props) {
       </div>
 
       {/* Kayıt ol butonu */}
-      <Link
-        href={`/courses/${id}/enroll`}
-        className="btn-accent w-full py-3 text-center flex items-center justify-center gap-2 text-sm"
-      >
-        Kayıt Ol
-      </Link>
+      {(course as any).status === 'full' ? (
+        <div className="card p-4 text-center text-red-400 text-sm font-semibold">Bu kurs doldu.</div>
+      ) : (
+        <Link
+          href={`/courses/${id}/enroll`}
+          className="btn-accent w-full py-3 text-center flex items-center justify-center gap-2 text-sm"
+        >
+          Kayıt Ol
+        </Link>
+      )}
+
+      {/* Değerlendirmeler */}
+      <div className="mt-8">
+        <ReviewSection
+          reviews={courseReviews}
+          targetType="course"
+          targetId={id}
+          userId={user?.id ?? null}
+          userReview={userCourseReview}
+        />
+      </div>
     </div>
   )
 }
