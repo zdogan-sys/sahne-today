@@ -10,6 +10,7 @@ import { GenreChip } from '@/components/ui/GenreChip'
 import { VideoEmbed } from '@/components/artists/VideoEmbed'
 import { formatDate } from '@/lib/utils'
 import { MapPin, ArrowLeft, ChevronDown, Mail, Building2, GraduationCap } from 'lucide-react'
+import { ReviewSection } from '@/components/ui/ReviewSection'
 import type { Artist, Profile, Event, Venue } from '@/lib/supabase/types'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VENUE_TYPE_LABELS, translateInstrument } from '@/lib/utils'
@@ -56,10 +57,12 @@ export default async function ArtistPage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [artistRes, membershipsRes, teachingSlotsRes] = await Promise.all([
+  const [artistRes, membershipsRes, teachingSlotsRes, reviewsRes, userReviewRes] = await Promise.all([
     supabase.from('artists').select('*, profiles(*)').eq('id', id).single(),
     supabase.from('band_members').select('band_id, role, bands(id, name, photo_url, genres, city)').eq('artist_id', id).eq('status', 'accepted'),
     supabase.from('teaching_slots').select('id, instrument, day_of_week, start_time, end_time, recurrence, price_per_session').eq('artist_id', id).eq('is_active', true).order('day_of_week').order('start_time'),
+    supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('artist_id', id).order('created_at', { ascending: false }),
+    user ? supabase.from('reviews').select('*').eq('artist_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
   ])
 
   if (!artistRes.data) notFound()
@@ -96,6 +99,8 @@ export default async function ArtistPage({ params }: Props) {
   const isOwner = user?.id === artist.profile_id || isAdminUser(user)
   const ownedVenue = venueRes.data as any
   const teachingSlots = (teachingSlotsRes.data ?? []) as any[]
+  const artistReviews = (reviewsRes.data ?? []) as any[]
+  const userArtistReview = (userReviewRes as any)?.data ?? null
 
   const { data: followData } = user
     ? await supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'artist').eq('target_id', id).maybeSingle()
@@ -392,6 +397,14 @@ export default async function ArtistPage({ params }: Props) {
             {isEn ? 'Contact' : 'İletişime Geç'}
           </a>
         </div>
+
+        <ReviewSection
+          reviews={artistReviews}
+          targetType="artist"
+          targetId={id}
+          userId={user?.id ?? null}
+          userReview={userArtistReview}
+        />
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search, MessageSquare } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Mic2, Store, MapPin, ChevronDown, Search, MessageSquare, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useTranslations, useLocale } from 'next-intl'
@@ -15,7 +15,7 @@ export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cityOpen, setCityOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string>('Tümü')
-  const [user, setUser] = useState<{ id?: string; email?: string; display_name?: string } | null>(null)
+  const [user, setUser] = useState<{ id?: string; email?: string; display_name?: string; is_pro?: boolean } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,8 +34,11 @@ export function TopNav() {
       setSelectedCity(savedCity)
     }
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUser({ id: user.id, email: user.email, display_name: user.user_metadata?.display_name })
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('is_pro_individual').eq('id', user.id).single()
+        setUser({ id: user.id, email: user.email, display_name: user.user_metadata?.display_name, is_pro: !!(profile as any)?.is_pro_individual })
+      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -126,6 +129,11 @@ export function TopNav() {
                 <Store size={14} />
                 {t('venues.portal')}
               </Link>
+              {!user.is_pro && (
+                <Link href="/pro" className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-full border border-[#d4a820]/40 text-[#d4a820] hover:bg-[#d4a820]/10 transition-colors">
+                  <Star size={11} fill="currentColor" /> PRO
+                </Link>
+              )}
               <div className="w-px h-4 bg-[rgba(228,224,216,0.1)] mx-1"></div>
               {user.id && <NotificationBell userId={user.id} />}
               <Link href="/messages" className="w-8 h-8 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary hover:bg-[rgba(228,224,216,0.08)] transition-colors" title="Mesajlar">
@@ -187,6 +195,12 @@ export function TopNav() {
                   {t('venues.portal')}
                 </Link>
                 <div className="my-1 border-t border-[rgba(228,224,216,0.08)]"></div>
+                {!user.is_pro && (
+                  <Link href="/pro" onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 py-2.5 text-sm text-[#d4a820] font-medium">
+                    <Star size={14} fill="currentColor" /> Pro Ol
+                  </Link>
+                )}
                 <Link href="/messages" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 py-2.5 text-sm text-text-muted hover:text-accent">
                   <MessageSquare size={14} />

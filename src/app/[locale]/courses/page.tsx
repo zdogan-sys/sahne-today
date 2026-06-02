@@ -161,6 +161,9 @@ export default async function CoursesPage({ searchParams }: Props) {
                   {course.is_online && (
                     <span className="chip bg-success/10 text-success border border-success/20 text-[10px]">Online</span>
                   )}
+                  {course.status === 'full' && (
+                    <span className="chip bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-semibold">DOLU</span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[rgba(228,224,216,0.08)]">
