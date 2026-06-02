@@ -121,7 +121,8 @@ export default async function VenuePage({ params }: Props) {
   const venueReviews = (reviewsRes.data ?? []) as any[]
   const userVenueReview = (userReviewRes as any)?.data ?? null
   const isOwner = user?.id === venue.owner_id || isAdminUser(user)
-  const canSeeSlots = isOwner || isArtist
+  const isStudioType = ['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)
+  const canSeeSlots = (isOwner || isArtist) && !isStudioType
   const isFollowing = !!(followData as any)?.data?.id
   const photos: string[] = (venue as any).photos ?? []
   const videoUrls: string[] = (venue as any).video_urls ?? []
@@ -334,20 +335,22 @@ export default async function VenuePage({ params }: Props) {
           </div>
         ) : null}
 
-        {/* Calendar link */}
-        <Link
-          href={`/venues/${venue.id}/calendar`}
-          className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <CalendarDays size={18} className="text-accent" />
-            <div>
-              <span className="text-text-primary text-sm font-medium">{isEn ? 'Calendar' : 'Takvim'}</span>
-              <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Events and open stages' : 'Etkinlikler ve açık sahneler'}</p>
+        {/* Calendar link — stüdyolarda gizle */}
+        {!isStudioType && (
+          <Link
+            href={`/venues/${venue.id}/calendar`}
+            className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <CalendarDays size={18} className="text-accent" />
+              <div>
+                <span className="text-text-primary text-sm font-medium">{isEn ? 'Calendar' : 'Takvim'}</span>
+                <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Events and open stages' : 'Etkinlikler ve açık sahneler'}</p>
+              </div>
             </div>
-          </div>
-          <span className="text-text-muted text-xs">→</span>
-        </Link>
+            <span className="text-text-muted text-xs">→</span>
+          </Link>
+        )}
 
         {/* Kurslar */}
         {coursesAtVenue.length > 0 && (
@@ -479,7 +482,7 @@ export default async function VenuePage({ params }: Props) {
           userReview={userVenueReview}
         />
 
-        {(upcomingEvents.length > 0 || pastEvents.length > 0 || isOwner) && (
+        {!isStudioType && (upcomingEvents.length > 0 || pastEvents.length > 0 || isOwner) && (
           <div>
             <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'EVENTS' : 'ETKİNLİKLER'}</h2>
             <VenueEventTabs
