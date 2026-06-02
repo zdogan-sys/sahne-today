@@ -183,7 +183,7 @@ export default function VenueInstructorsPage() {
                 <p className="font-medium text-text-primary">{inst.name}</p>
                 {inst.instruments && inst.instruments.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {inst.instruments.map(i => (
+                    {inst.instruments.map((i: string) => (
                       <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">
                         {i}
                       </span>
