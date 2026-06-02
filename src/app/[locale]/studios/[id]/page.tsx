@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import Image from 'next/image'
 import { ArrowLeft, MapPin, Clock, Loader2, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,7 @@ export default function StudioDetailPage() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const hasError = searchParams.get('error') === '1'
+  const router = useRouter()
 
   const [studio, setStudio] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -141,7 +142,9 @@ export default function StudioDetailPage() {
       </div>
       <h1 className="font-bebas text-3xl text-text-primary mb-2">REZERVASYON ALINDI</h1>
       <p className="text-text-muted text-sm">Mekan onayladığında bildirim alacaksınız. Ödeme çalışma sonunda yapılır.</p>
-      <Link href={`/studios/${id}`} className="text-accent mt-4 block hover:underline">Stüdyoya dön →</Link>
+      <button onClick={() => router.push(`/studios/${id}` as any)} className="text-accent mt-4 block hover:underline mx-auto">
+        Stüdyoya dön →
+      </button>
     </div>
   )
 
