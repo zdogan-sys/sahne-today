@@ -448,9 +448,14 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                 {/* Yönetim linkleri */}
                 <div className="flex flex-wrap gap-2">
                   {v.venue_type === 'studio' && (
-                    <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                      🚪 Odalar
-                    </Link>
+                    <>
+                      <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        🚪 Odalar
+                      </Link>
+                      <Link href={`/dashboard/venue/${v.id}/availability`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        🕐 Çalışma Saatleri
+                      </Link>
+                    </>
                   )}
                   {['dance_studio', 'music_school'].includes(v.venue_type) && (
                     <>
