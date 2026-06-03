@@ -302,12 +302,28 @@ export default function RoomCalendarPage() {
     const lesson = lessons.find(l => l.id === active.id)
     if (!lesson) return
 
-    const [newCol, newHour] = (over.id as string).split('-').map(Number)
-    const newDate = dateStr(weekDates[newCol])
-    if (newDate === lesson.slot_date && newHour === parseInt(lesson.start_time.split(':')[0])) return
-
+    const overId = over.id as string
     setError('')
     const seriesCount = lesson.series_id ? lessons.filter(l => l.series_id === lesson.series_id).length : 1
+
+    // Oda sekmesine bırakıldı → başka odaya taşı
+    if (overId.startsWith('room-')) {
+      const targetRoomId = overId.slice(5)
+      if (targetRoomId === roomId) return
+      const target = rooms.find(r => r.id === targetRoomId)
+      if (!target) return
+      if (seriesCount > 1) {
+        setPendingRoomMove({ slot: lesson, targetRoomId, targetRoomName: target.name, seriesCount })
+      } else {
+        await applyRoomMove(lesson, targetRoomId, false)
+      }
+      return
+    }
+
+    // Hücreye bırakıldı → gün/saat taşı
+    const [newCol, newHour] = overId.split('-').map(Number)
+    const newDate = dateStr(weekDates[newCol])
+    if (newDate === lesson.slot_date && newHour === parseInt(lesson.start_time.split(':')[0])) return
 
     // Seride birden fazla ders varsa: tüm haftalara mı diye sor
     if (seriesCount > 1) {
@@ -423,32 +439,26 @@ export default function RoomCalendarPage() {
         </div>
       </div>
 
-      {/* Oda sekmeleri */}
-      {rooms.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          {rooms.map(r => (
-            <Link key={r.id} href={`/dashboard/venue/${venueId}/rooms/${r.id}`}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                r.id === roomId
-                  ? 'bg-accent/10 text-accent border-accent/30 font-medium'
-                  : 'text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary hover:border-[rgba(228,224,216,0.25)]'
-              }`}>
-              {r.name}
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Genel hata (sürükle-bırak çakışması vb.) */}
-      {error && !addCell && !detailItem && !pendingMove && !pendingRoomMove && (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-3 py-2 flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError('')} className="text-red-400 hover:text-red-300"><X size={14} /></button>
-        </div>
-      )}
-
-      {/* Takvim — açık tema */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {/* Oda sekmeleri — dersi sürükleyip başka oda sekmesine bırakabilirsin */}
+        {rooms.length > 1 && (
+          <div className="flex gap-2 flex-wrap items-center mb-5">
+            {rooms.map(r => (
+              <RoomTab key={r.id} room={r} venueId={venueId} isCurrent={r.id === roomId} />
+            ))}
+            <span className="text-text-muted text-[10px] ml-1">← dersi başka oda sekmesine sürükleyerek taşı</span>
+          </div>
+        )}
+
+        {/* Genel hata (sürükle-bırak çakışması vb.) */}
+        {error && !addCell && !detailItem && !pendingMove && !pendingRoomMove && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-3 py-2 flex items-center justify-between mb-5">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+          </div>
+        )}
+
+        {/* Takvim — açık tema */}
         <div className="overflow-x-auto rounded-2xl p-3" style={{ background: 'transparent' }}>
           <div className="grid gap-1.5" style={{ gridTemplateColumns: '64px repeat(7, minmax(120px, 1fr))', minWidth: '900px' }}>
             {/* Köşe boş */}
@@ -797,6 +807,24 @@ export default function RoomCalendarPage() {
           </div>
         </Modal>
       )}
+    </div>
+  )
+}
+
+function RoomTab({ room, venueId, isCurrent }: { room: any; venueId: string; isCurrent: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `room-${room.id}`, disabled: isCurrent })
+  return (
+    <div ref={setNodeRef} className={isOver ? 'ring-2 ring-accent rounded-lg' : ''}>
+      <Link href={`/dashboard/venue/${venueId}/rooms/${room.id}`}
+        className={`block px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+          isCurrent
+            ? 'bg-accent/10 text-accent border-accent/30 font-medium'
+            : isOver
+              ? 'bg-accent/20 text-accent border-accent/50'
+              : 'text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary hover:border-[rgba(228,224,216,0.25)]'
+        }`}>
+        {room.name}
+      </Link>
     </div>
   )
 }
