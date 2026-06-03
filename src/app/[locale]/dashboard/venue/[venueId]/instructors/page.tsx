@@ -18,6 +18,7 @@ export default function VenueInstructorsPage() {
   const [instructors, setInstructors] = useState<any[]>([])
   const [artists, setArtists] = useState<any[]>([])
   const [artistQuery, setArtistQuery] = useState('')
+  const [artistFocused, setArtistFocused] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -180,21 +181,23 @@ export default function VenueInstructorsPage() {
                 <input
                   value={artistQuery}
                   onChange={e => setArtistQuery(e.target.value)}
-                  placeholder="Sanatçı ara..."
+                  onFocus={() => setArtistFocused(true)}
+                  onBlur={() => setTimeout(() => setArtistFocused(false), 150)}
+                  placeholder="Tıkla veya isim yaz..."
                   className="input-field text-sm"
                 />
-                {artistQuery && (
+                {artistFocused && (
                   <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
                     {(() => {
                       const filtered = artists.filter(a => {
-                        if (!a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())) return false
+                        if (artistQuery && !a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())) return false
                         const teaches = a.teaching_instruments ?? []
                         return teaches.some((ti: string) => formData.instruments.includes(ti))
-                      }).slice(0, 10)
+                      }).slice(0, 20)
                       if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Bu enstrümanı öğreten sanatçı bulunamadı</p>
                       return filtered.map(a => (
                         <button key={a.id} type="button"
-                          onClick={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery('') }}
+                          onMouseDown={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery(''); setArtistFocused(false) }}
                           className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors flex items-center justify-between">
                           <span>{a.stage_name}</span>
                           <span className="text-[10px] text-text-muted">{(a.teaching_instruments ?? []).filter((ti: string) => formData.instruments.includes(ti)).join(', ')}</span>
