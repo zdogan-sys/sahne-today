@@ -60,7 +60,7 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
       const client = createClient()
       const dayOfWeek = new Date(dateStr + 'T00:00:00').getDay()
 
-      const [eventsRes, slotsRes, courseSessionsRes] = await Promise.all([
+      const [eventsRes, slotsRes] = await Promise.all([
         client.from('events')
           .select('id, title, start_time, end_time, venues(name, city)')
           .eq('event_date', dateStr)
@@ -71,15 +71,21 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
           .eq('day_of_week', dayOfWeek)
           .eq('is_active', true)
           .limit(6),
-        client.from('course_sessions')
+      ])
+
+      let courseSessionsRes = { data: [] }
+      try {
+        const res = await client.from('course_sessions')
           .select('id, start_time, end_time, courses(id, title, category, price_per_session, profiles(display_name), venues(name))')
           .eq('session_date', dateStr)
-          .limit(6),
-      ])
+          .limit(6)
+        courseSessionsRes = res
+      } catch (e) {
+        console.warn('Course sessions skipped:', e)
+      }
 
       if (eventsRes.error) console.error('Events error:', eventsRes.error)
       if (slotsRes.error) console.error('Slots error:', slotsRes.error)
-      if (courseSessionsRes.error) console.error('Course sessions error:', courseSessionsRes.error)
 
       setDiscoveries({
         events: eventsRes.data ?? [],
