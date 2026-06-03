@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
-import { ArrowLeft, Check, X, Loader2, Clock } from 'lucide-react'
+import { ArrowLeft, Check, X, Loader2, Clock, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,8 @@ const STATUS_TABS = [
   { key: 'cancelled', label: 'İptal' },
 ]
 
+const HOURS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`)
+
 export default function VenueReservationsPage() {
   const router = useRouter()
   const params = useParams()
@@ -20,10 +22,14 @@ export default function VenueReservationsPage() {
   const supabase = createClient()
 
   const [venue, setVenue] = useState<any>(null)
+  const [rooms, setRooms] = useState<any[]>([])
   const [reservations, setReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('pending')
   const [acting, setActing] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ start_time: '', duration: 2, room_id: '' })
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -31,23 +37,17 @@ export default function VenueReservationsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const { data: venueData } = await supabase
-      .from('venues')
-      .select('id, name, owner_id')
-      .eq('id', venueId)
-      .single()
+    const [venueRes, roomsRes, resRes] = await Promise.all([
+      supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
+      supabase.from('studio_rooms').select('id, name, price_per_hour').eq('venue_id', venueId).eq('is_active', true),
+      supabase.from('studio_reservations').select('*').eq('venue_id', venueId).order('reservation_date', { ascending: false }),
+    ])
 
-    if (!venueData || venueData.owner_id !== user.id) { router.push('/dashboard'); return }
+    if (!venueRes.data || venueRes.data.owner_id !== user.id) { router.push('/dashboard'); return }
 
-    setVenue(venueData)
-
-    const { data } = await supabase
-      .from('studio_reservations')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('reservation_date', { ascending: false })
-
-    setReservations(data ?? [])
+    setVenue(venueRes.data)
+    setRooms(roomsRes.data ?? [])
+    setReservations(resRes.data ?? [])
     setLoading(false)
   }
 
@@ -56,6 +56,52 @@ export default function VenueReservationsPage() {
     await supabase.from('studio_reservations').update({ status } as any).eq('id', id)
     setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
     setActing(null)
+  }
+
+  function startEdit(res: any) {
+    const startIdx = HOURS.findIndex(h => res.start_time?.startsWith(h))
+    const endIdx = HOURS.findIndex(h => res.end_time?.startsWith(h))
+    const duration = endIdx > startIdx ? endIdx - startIdx : 2
+    setEditForm({
+      start_time: startIdx >= 0 ? HOURS[startIdx] : '10:00',
+      duration,
+      room_id: res.room_id ?? '',
+    })
+    setEditingId(res.id)
+  }
+
+  async function saveEdit(res: any) {
+    setSaving(true)
+    const startIdx = HOURS.indexOf(editForm.start_time)
+    const endTime = HOURS[startIdx + editForm.duration]
+    if (!endTime) { setSaving(false); return }
+
+    const selectedRoom = rooms.find(r => r.id === editForm.room_id)
+    const pricePerHour = selectedRoom?.price_per_hour ?? res.price_per_hour
+    const totalPrice = pricePerHour * editForm.duration
+
+    await supabase.from('studio_reservations').update({
+      start_time: editForm.start_time + ':00',
+      end_time: endTime + ':00',
+      duration_hours: editForm.duration,
+      room_id: editForm.room_id || null,
+      room_name: selectedRoom?.name ?? null,
+      price_per_hour: pricePerHour,
+      total_price: totalPrice,
+    } as any).eq('id', res.id)
+
+    setReservations(prev => prev.map(r => r.id === res.id ? {
+      ...r,
+      start_time: editForm.start_time + ':00',
+      end_time: endTime + ':00',
+      duration_hours: editForm.duration,
+      room_id: editForm.room_id || null,
+      room_name: selectedRoom?.name ?? null,
+      total_price: totalPrice,
+    } : r))
+
+    setEditingId(null)
+    setSaving(false)
   }
 
   const filtered = reservations.filter(r => r.status === activeTab)
@@ -103,8 +149,11 @@ export default function VenueReservationsPage() {
             const dateStr = new Date(res.reservation_date + 'T00:00:00').toLocaleDateString('tr-TR', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
             })
+            const isEditing = editingId === res.id
+
             return (
-              <div key={res.id} className={cn('card p-4', res.status === 'pending' && 'border-yellow-400/20')}>
+              <div key={res.id} className={cn('card p-4 space-y-3', res.status === 'pending' && 'border-yellow-400/20')}>
+                {/* Bilgiler */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-text-primary">{res.reserver_name}</p>
@@ -128,19 +177,80 @@ export default function VenueReservationsPage() {
                       </span>
                     </div>
                   </div>
-                  {res.status === 'pending' && (
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => handleUpdate(res.id, 'confirmed')} disabled={acting === res.id}
-                        className="w-8 h-8 rounded-lg bg-success/10 text-success hover:bg-success/20 flex items-center justify-center disabled:opacity-40">
-                        <Check size={14} />
+
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    {res.status !== 'cancelled' && (
+                      <button onClick={() => isEditing ? setEditingId(null) : startEdit(res)}
+                        className={cn('w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                          isEditing ? 'bg-accent/20 text-accent' : 'bg-[rgba(228,224,216,0.06)] text-text-muted hover:text-accent hover:bg-accent/10'
+                        )}>
+                        <Pencil size={13} />
                       </button>
-                      <button onClick={() => handleUpdate(res.id, 'cancelled')} disabled={acting === res.id}
-                        className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    {res.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleUpdate(res.id, 'confirmed')} disabled={acting === res.id}
+                          className="w-8 h-8 rounded-lg bg-success/10 text-success hover:bg-success/20 flex items-center justify-center disabled:opacity-40">
+                          <Check size={14} />
+                        </button>
+                        <button onClick={() => handleUpdate(res.id, 'cancelled')} disabled={acting === res.id}
+                          className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40">
+                          <X size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* Düzenleme formu */}
+                {isEditing && (
+                  <div className="pt-3 border-t border-[rgba(228,224,216,0.08)] space-y-3">
+                    {rooms.length > 0 && (
+                      <div>
+                        <label className="label text-xs mb-1">Oda</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button type="button" onClick={() => setEditForm(p => ({ ...p, room_id: '' }))}
+                            className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors',
+                              !editForm.room_id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                            )}>
+                            Fark etmez
+                          </button>
+                          {rooms.map(r => (
+                            <button key={r.id} type="button" onClick={() => setEditForm(p => ({ ...p, room_id: r.id }))}
+                              className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors',
+                                editForm.room_id === r.id ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                              )}>
+                              {r.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="label text-xs mb-1">Başlangıç Saati</label>
+                        <select value={editForm.start_time} onChange={e => setEditForm(p => ({ ...p, start_time: e.target.value }))} className="input-field text-sm">
+                          {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label text-xs mb-1">Süre</label>
+                        <select value={editForm.duration} onChange={e => setEditForm(p => ({ ...p, duration: Number(e.target.value) }))} className="input-field text-sm">
+                          {[1, 2, 3, 4, 5, 6, 8].map(h => <option key={h} value={h}>{h} saat</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    {(() => {
+                      const idx = HOURS.indexOf(editForm.start_time)
+                      const end = HOURS[idx + editForm.duration]
+                      return end ? <p className="text-text-muted text-xs">{editForm.start_time} – {end}</p> : null
+                    })()}
+                    <button onClick={() => saveEdit(res)} disabled={saving}
+                      className="btn-accent w-full py-2 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                      {saving ? <><Loader2 size={13} className="animate-spin" /> Kaydediliyor...</> : 'Kaydet'}
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
