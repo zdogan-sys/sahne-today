@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const { data: slot } = await admin
       .from('teaching_slots')
-      .select('*, artists(id, stage_name, profile_id)')
+      .select('*, artists(id, stage_name, profile_id), venues(id, owner_id)')
       .eq('id', slot_id)
       .eq('is_active', true)
       .single()
@@ -33,24 +33,27 @@ export async function POST(req: NextRequest) {
     if (!slot) return NextResponse.json({ error: 'Slot bulunamadı' }, { status: 404 })
 
     const artist = slot.artists as any
+    const venue = slot.venues as any
 
-    // Hoca adına rezervasyon: sadece hoca veya admin yapabilir
+    // Hoca adına rezervasyon: sadece hoca, venue sahibi veya admin yapabilir
     if (booked_by === 'teacher') {
-      const isOwner = user?.id === artist.profile_id
-      if (!isOwner && !isAdminUser(user)) {
+      const isArtistOwner = user?.id === artist?.profile_id
+      const isVenueOwner = user?.id === venue?.owner_id
+      if (!isArtistOwner && !isVenueOwner && !isAdminUser(user)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
     }
 
     const totalPrice = Number(slot.price_per_session)
     const needsPayment = slot.payment_enabled && booked_by === 'student'
+    const instructorName = artist?.stage_name ?? slot.instructor_name ?? 'Eğitmen'
 
     // Rezervasyonu oluştur
     const { data: booking, error: bookErr } = await admin
       .from('teaching_bookings')
       .insert({
         slot_id,
-        artist_id: artist.id,
+        artist_id: artist?.id ?? null,
         student_id: user?.id ?? null,
         student_name,
         student_email,
@@ -75,9 +78,9 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: 'Sahne.Today <noreply@sahne.today>',
           to: student_email,
-          subject: `Ders Rezervasyonu — ${artist.stage_name}`,
+          subject: `Ders Rezervasyonu — ${instructorName}`,
           html: `<p>Merhaba ${student_name},</p>
-<p><strong>${artist.stage_name}</strong> sizi <strong>${slot.instrument}</strong> dersi için rezerve etti.</p>
+<p><strong>${instructorName}</strong> sizi <strong>${slot.instrument}</strong> dersi için rezerve etti.</p>
 <p>Tarih: ${new Date(lesson_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
 <p>Saat: ${slot.start_time?.slice(0, 5)} – ${slot.end_time?.slice(0, 5)}</p>
 <p>Ücret: ₺${totalPrice}</p>
@@ -111,10 +114,17 @@ export async function POST(req: NextRequest) {
 
     const userIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '127.0.0.1'
     const paymentAmount = Math.round(totalPrice * 100)
-    const userBasket = Buffer.from(JSON.stringify([[`${artist.stage_name} — ${slot.instrument} Dersi`, totalPrice.toFixed(2), 1]])).toString('base64')
+    const userBasket = Buffer.from(JSON.stringify([[`${instructorName} — ${slot.instrument} Dersi`, totalPrice.toFixed(2), 1]])).toString('base64')
     const noInstallment = 0; const maxInstallment = 0; const currency = 'TL'; const testMode = 1
     const hashStr = `${MERCHANT_ID}${userIp}${merchantOid}${student_email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}`
     const paytrToken = crypto.createHmac('sha256', MERCHANT_KEY).update(hashStr + MERCHANT_SALT).digest('base64')
+
+    const successUrl = artist?.profile_id
+      ? `${SITE_URL}/artists/${artist.profile_id}/book/${slot_id}/success?order_id=${merchantOid}`
+      : `${SITE_URL}/dashboard?payment_success=1&order_id=${merchantOid}`
+    const failUrl = artist?.id
+      ? `${SITE_URL}/artists/${artist.id}/book/${slot_id}?error=1`
+      : `${SITE_URL}/dashboard?payment_error=1`
 
     const params = new URLSearchParams({
       merchant_id: MERCHANT_ID, user_ip: userIp, merchant_oid: merchantOid,
@@ -122,8 +132,8 @@ export async function POST(req: NextRequest) {
       user_basket: userBasket, debug_on: '1', no_installment: String(noInstallment),
       max_installment: String(maxInstallment), user_name: student_name,
       user_address: 'Türkiye', user_phone: student_phone,
-      merchant_ok_url: `${SITE_URL}/artists/${artist.profile_id}/book/${slot_id}/success?order_id=${merchantOid}`,
-      merchant_fail_url: `${SITE_URL}/artists/${artist.id}/book/${slot_id}?error=1`,
+      merchant_ok_url: successUrl,
+      merchant_fail_url: failUrl,
       timeout_limit: '30', currency, test_mode: String(testMode),
     })
 
