@@ -87,7 +87,7 @@ export default function RoomCalendarPage() {
         supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('teaching_slots').select('*, teaching_bookings(id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
-        supabase.from('profiles').select('id, display_name, email').not('display_name', 'is', null).order('display_name').limit(500),
+        supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
       ])
       setInstructors(instRes.data ?? [])
       setTemplates(templRes.data ?? [])
@@ -414,18 +414,17 @@ export default function RoomCalendarPage() {
                   {(() => {
                     const q = memberQuery.toLowerCase()
                     const filtered = members.filter(m =>
-                      !q || (m.display_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
+                      !q || m.display_name?.toLowerCase().includes(q)
                     ).slice(0, 20)
                     if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Üye bulunamadı</p>
                     return filtered.map(m => (
                       <button key={m.id} type="button"
                         onMouseDown={() => {
-                          setForm(p => ({ ...p, student_name: m.display_name ?? '', student_email: m.email ?? '', student_id: m.id }))
+                          setForm(p => ({ ...p, student_name: m.display_name ?? '', student_id: m.id }))
                           setMemberQuery(''); setMemberFocused(false)
                         }}
                         className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
-                        <div>{m.display_name}</div>
-                        <div className="text-[10px] text-text-muted">{m.email}</div>
+                        {m.display_name}
                       </button>
                     ))
                   })()}
@@ -525,14 +524,13 @@ export default function RoomCalendarPage() {
                       <div className="absolute z-20 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
                         {(() => {
                           const q = stuMemberQuery.toLowerCase()
-                          const filtered = members.filter(m => !q || (m.display_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))).slice(0, 20)
+                          const filtered = members.filter(m => !q || m.display_name?.toLowerCase().includes(q)).slice(0, 20)
                           if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Üye bulunamadı</p>
                           return filtered.map(m => (
                             <button key={m.id} type="button"
-                              onMouseDown={() => { setStuForm({ student_name: m.display_name ?? '', student_email: m.email ?? '', student_phone: '', student_id: m.id }); setStuMemberQuery(''); setStuMemberFocused(false) }}
+                              onMouseDown={() => { setStuForm({ student_name: m.display_name ?? '', student_email: '', student_phone: '', student_id: m.id }); setStuMemberQuery(''); setStuMemberFocused(false) }}
                               className="w-full text-left px-3 py-2 text-xs text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
-                              <div>{m.display_name}</div>
-                              <div className="text-[10px] text-text-muted">{m.email}</div>
+                              {m.display_name}
                             </button>
                           ))
                         })()}
