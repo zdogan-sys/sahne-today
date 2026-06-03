@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, GraduationCap, Clock, Building2, Ticket, Star } from 'lucide-react'
+import { BookOpen, GraduationCap, Clock, Building2, Ticket, Star, CalendarPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -13,7 +13,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   cancelled:        { label: 'İptal',            color: 'text-red-400 bg-red-400/10 border-red-400/20' },
 }
 
-export function StudentDashboard({ userId }: { userId: string }) {
+export function StudentDashboard({ userId, calendarToken }: { userId: string; calendarToken?: string | null }) {
   const supabase = createClient()
   const [bookings, setBookings] = useState<any[]>([])
   const [enrollments, setEnrollments] = useState<any[]>([])
@@ -83,7 +83,10 @@ export function StudentDashboard({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-bebas text-2xl text-text-primary">ETKİNLİKLERİM & REZERVASYONLARIM</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-bebas text-2xl text-text-primary">ETKİNLİKLERİM & REZERVASYONLARIM</h2>
+        {calendarToken && <PersonalCalendarSubscribe token={calendarToken} />}
+      </div>
 
       {tickets.length > 0 && (
         <div>
@@ -248,6 +251,56 @@ export function StudentDashboard({ userId }: { userId: string }) {
       <Link href="/courses" className="text-accent text-xs hover:underline block">
         Tüm kurslara göz at →
       </Link>
+    </div>
+  )
+}
+
+function PersonalCalendarSubscribe({ token }: { token: string }) {
+  const [open, setOpen] = useState(false)
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://sahne.today'
+  const feedUrl = `${siteUrl}/api/feed/personal/${token}/ics`
+  const webcalUrl = feedUrl.replace(/^https?:/, 'webcal:')
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors">
+        <CalendarPlus size={13} /> Takvime Ekle
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 w-60 bg-surface border border-[rgba(228,224,216,0.12)] rounded-xl shadow-2xl z-50 overflow-hidden">
+            <p className="px-4 pt-3 pb-1 text-[10px] text-text-muted uppercase tracking-wider">Otomatik Senkronizasyon</p>
+            <a href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(228,224,216,0.04)] transition-colors"
+              onClick={() => setOpen(false)}>
+              <span className="text-2xl leading-none">📅</span>
+              <div>
+                <p className="text-sm text-text-primary font-medium">Google Takvim</p>
+                <p className="text-[10px] text-text-muted">Her 1 saatte güncellenir</p>
+              </div>
+            </a>
+            <a href={webcalUrl}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(228,224,216,0.04)] transition-colors"
+              onClick={() => setOpen(false)}>
+              <span className="text-2xl leading-none">🍎</span>
+              <div>
+                <p className="text-sm text-text-primary font-medium">Apple Takvim</p>
+                <p className="text-[10px] text-text-muted">Her 1 saatte güncellenir</p>
+              </div>
+            </a>
+            <div className="border-t border-[rgba(228,224,216,0.08)] px-4 pt-2 pb-3">
+              <a href={feedUrl} download="kisisel-takvim.ics"
+                className="text-xs text-accent hover:underline"
+                onClick={() => setOpen(false)}>
+                .ics dosyası indir →
+              </a>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

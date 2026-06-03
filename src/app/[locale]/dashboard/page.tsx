@@ -96,7 +96,7 @@ export default async function DashboardPage() {
 
       {/* Öğrenci paneli — tüm kullanıcılar için (ders/kurs rezervasyonları) */}
       <section className="pt-8 border-t border-[rgba(228,224,216,0.1)]">
-        <StudentDashboard userId={user.id} />
+        <StudentDashboard userId={user.id} calendarToken={(profileData as any).calendar_token ?? null} />
       </section>
     </div>
   )
