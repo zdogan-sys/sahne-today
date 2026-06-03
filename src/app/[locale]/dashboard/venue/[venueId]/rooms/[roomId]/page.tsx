@@ -57,6 +57,12 @@ export default function RoomCalendarPage() {
     instructor_name: '', lesson_type: 'single' as 'single' | 'package', template_id: '',
   })
 
+  // Detay modalında öğrenci ekleme
+  const [showAddStudent, setShowAddStudent] = useState(false)
+  const [stuForm, setStuForm] = useState({ student_name: '', student_email: '', student_phone: '', student_id: null as string | null })
+  const [stuMemberQuery, setStuMemberQuery] = useState('')
+  const [stuMemberFocused, setStuMemberFocused] = useState(false)
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   const isLesson = venue && ['dance_studio', 'music_school'].includes(venue.venue_type)
@@ -96,6 +102,15 @@ export default function RoomCalendarPage() {
   }, [venueId, roomId, supabase, router])
 
   useEffect(() => { load() }, [load])
+
+  // Açık detay modalını taze veriyle senkronize tut (öğrenci eklenince güncellensin)
+  useEffect(() => {
+    if (detailItem && detailItem.slot_date) {
+      const fresh = lessons.find(l => l.id === detailItem.id)
+      if (fresh && fresh !== detailItem) setDetailItem(fresh)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessons])
 
   const weekDates = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(weekStart)
@@ -157,6 +172,9 @@ export default function RoomCalendarPage() {
       pricePer = tmpl.weeks > 0 ? tmpl.price_total / tmpl.weeks : tmpl.price_total
     }
 
+    // Seri kimliği — aynı kursun tüm haftaları ortak series_id taşır
+    const seriesId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
     // N haftalık slotlar oluştur
     const slotRows = []
     for (let w = 0; w < weeks; w++) {
@@ -168,6 +186,7 @@ export default function RoomCalendarPage() {
         day_of_week: colDayOfWeek, slot_date: dateStr(d),
         start_time: startTime, end_time: endTime,
         price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
+        series_id: seriesId,
       })
     }
 
@@ -193,6 +212,41 @@ export default function RoomCalendarPage() {
     setSaving(true)
     await supabase.from('teaching_slots').update({ is_active: false }).eq('id', slotId)
     setDetailItem(null)
+    await load()
+    setSaving(false)
+  }
+
+  async function addStudentToLesson() {
+    if (!detailItem || !stuForm.student_name) { setError('Öğrenci adı zorunludur'); return }
+    setSaving(true)
+    setError('')
+
+    // Seri varsa tüm haftalara, yoksa sadece bu derse ekle
+    const targetSlots = detailItem.series_id
+      ? lessons.filter(l => l.series_id === detailItem.series_id)
+      : [detailItem]
+
+    const rows = targetSlots.map(s => ({
+      slot_id: s.id, artist_id: null, student_id: stuForm.student_id,
+      student_name: stuForm.student_name,
+      student_email: stuForm.student_email || 'belirtilmedi@sahne.today',
+      student_phone: stuForm.student_phone || '-',
+      lesson_date: s.slot_date, status: 'confirmed', booked_by: 'teacher',
+    }))
+
+    const { error: err } = await supabase.from('teaching_bookings').insert(rows as any)
+    if (err) { setError(err.message); setSaving(false); return }
+
+    setStuForm({ student_name: '', student_email: '', student_phone: '', student_id: null })
+    setStuMemberQuery('')
+    setShowAddStudent(false)
+    await load()
+    setSaving(false)
+  }
+
+  async function removeStudent(bookingId: string) {
+    setSaving(true)
+    await supabase.from('teaching_bookings').update({ status: 'cancelled' }).eq('id', bookingId)
     await load()
     setSaving(false)
   }
@@ -282,7 +336,7 @@ export default function RoomCalendarPage() {
                     <Cell key={key} id={key} hasItem={!!item} dayLight={DAY_LIGHT[col]} isLesson={isLesson} onAdd={() => openAdd(col, hour)}>
                       {item && (
                         isLesson
-                          ? <LessonChip lesson={item} color={DAY_COLORS[col]} light={DAY_LIGHT[col]} onClick={() => setDetailItem(item)} />
+                          ? <LessonChip lesson={item} color={DAY_COLORS[col]} light={DAY_LIGHT[col]} onClick={() => { setDetailItem(item); setShowAddStudent(false); setStuMemberQuery('') }} />
                           : <ReservationChip res={item} onClick={() => setDetailItem(item)} />
                       )}
                     </Cell>
@@ -427,19 +481,78 @@ export default function RoomCalendarPage() {
               </div>
               <DetailRow label="Tarih" value={new Date(detailItem.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
               <DetailRow label="Saat" value={`${detailItem.start_time?.slice(0, 5)} – ${detailItem.end_time?.slice(0, 5)}`} />
-              {detailItem.teaching_bookings?.length > 0 && (
-                <div>
-                  <label className="label text-xs">Öğrenci(ler)</label>
-                  <div className="space-y-1 mt-1">
-                    {detailItem.teaching_bookings.map((b: any) => (
-                      <div key={b.id} className="text-sm text-text-primary bg-[rgba(228,224,216,0.05)] rounded px-2 py-1">
-                        {b.student_name}{b.student_phone && b.student_phone !== '-' ? ` · ${b.student_phone}` : ''}
+              {/* Öğrenci listesi */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label text-xs">
+                    Öğrenciler ({(detailItem.teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled').length})
+                  </label>
+                  <button onClick={() => { setShowAddStudent(!showAddStudent); setError(''); setStuForm({ student_name: '', student_email: '', student_phone: '', student_id: null }); setStuMemberQuery('') }}
+                    className="text-[11px] px-2 py-1 rounded-lg border border-accent/30 text-accent hover:bg-accent/10 transition-colors flex items-center gap-1">
+                    <Plus size={11} /> Öğrenci Ekle
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {(detailItem.teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled').map((b: any) => (
+                    <div key={b.id} className="text-sm text-text-primary bg-[rgba(228,224,216,0.05)] rounded px-2 py-1.5 flex items-center justify-between gap-2">
+                      <span className="truncate">{b.student_name}{b.student_phone && b.student_phone !== '-' ? ` · ${b.student_phone}` : ''}</span>
+                      <button onClick={() => removeStudent(b.id)} disabled={saving} className="text-text-muted hover:text-red-400 flex-shrink-0"><X size={13} /></button>
+                    </div>
+                  ))}
+                  {(detailItem.teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled').length === 0 && (
+                    <p className="text-text-muted text-xs">Henüz öğrenci yok.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Öğrenci ekleme formu */}
+              {showAddStudent && (
+                <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 space-y-2">
+                  {detailItem.series_id && (
+                    <p className="text-accent text-[11px]">Bu kursun tüm haftalarına eklenecek.</p>
+                  )}
+                  {/* Üye havuzundan seç */}
+                  <div className="relative">
+                    <input
+                      value={stuMemberQuery}
+                      onChange={e => setStuMemberQuery(e.target.value)}
+                      onFocus={() => setStuMemberFocused(true)}
+                      onBlur={() => setTimeout(() => setStuMemberFocused(false), 150)}
+                      placeholder="Üye havuzundan seç..."
+                      className="input-field text-xs"
+                    />
+                    {stuMemberFocused && (
+                      <div className="absolute z-20 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
+                        {(() => {
+                          const q = stuMemberQuery.toLowerCase()
+                          const filtered = members.filter(m => !q || (m.display_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))).slice(0, 20)
+                          if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Üye bulunamadı</p>
+                          return filtered.map(m => (
+                            <button key={m.id} type="button"
+                              onMouseDown={() => { setStuForm({ student_name: m.display_name ?? '', student_email: m.email ?? '', student_phone: '', student_id: m.id }); setStuMemberQuery(''); setStuMemberFocused(false) }}
+                              className="w-full text-left px-3 py-2 text-xs text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                              <div>{m.display_name}</div>
+                              <div className="text-[10px] text-text-muted">{m.email}</div>
+                            </button>
+                          ))
+                        })()}
                       </div>
-                    ))}
+                    )}
                   </div>
+                  <input value={stuForm.student_name} onChange={e => setStuForm(p => ({ ...p, student_name: e.target.value, student_id: null }))} placeholder="Öğrenci adı *" className="input-field text-xs" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="email" value={stuForm.student_email} onChange={e => setStuForm(p => ({ ...p, student_email: e.target.value }))} placeholder="E-posta" className="input-field text-xs" />
+                    <input type="tel" value={stuForm.student_phone} onChange={e => setStuForm(p => ({ ...p, student_phone: e.target.value }))} placeholder="Telefon" className="input-field text-xs" />
+                  </div>
+                  <button onClick={addStudentToLesson} disabled={saving || !stuForm.student_name} className="btn-accent w-full py-2 text-xs disabled:opacity-50 flex items-center justify-center gap-1.5">
+                    {saving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Ekle
+                  </button>
                 </div>
               )}
+
               {detailItem.price_per_session > 0 && <DetailRow label="Ücret" value={`₺${detailItem.price_per_session}`} />}
+
+              {error && <p className="text-red-400 text-xs">{error}</p>}
 
               <div className="pt-2">
                 <button onClick={() => deleteLesson(detailItem.id)} disabled={saving} className="w-full py-2.5 text-sm rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50">
