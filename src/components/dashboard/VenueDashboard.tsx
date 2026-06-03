@@ -375,21 +375,35 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
               const venueSlots = teachingSlotsAtVenues.filter(s => s.venues?.name === v.name)
               if (venueCourses.length === 0 && venueSlots.length === 0) return null
               return (
-                <Link key={v.id} href={`/dashboard/venue/${v.id}/courses`} className="card p-4 hover:border-accent/30 transition-colors block">
-                  <p className="font-semibold text-text-primary text-sm">{v.name}</p>
-                  <div className="flex gap-3 mt-2.5">
+                <div key={v.id} className="card p-4">
+                  <p className="font-semibold text-text-primary text-sm mb-2.5">{v.name}</p>
+                  <div className="flex gap-2 flex-wrap">
                     {venueCourses.length > 0 && (
                       <Link href={`/dashboard/venue/${v.id}/courses`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
                         {venueCourses.length} {isEn ? 'Courses' : 'Kurs'}
                       </Link>
                     )}
                     {venueSlots.length > 0 && (
-                      <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
-                        {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
-                      </Link>
+                      <>
+                        <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                          {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
+                        </Link>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Bu mekana ait tüm ders slotları silinsin mi?')) return
+                            const slotIds = venueSlots.map((s: any) => s.id)
+                            await supabase.from('teaching_slots').update({ is_active: false } as any).in('id', slotIds)
+                            setTeachingSlotsAtVenues(prev => prev.filter((s: any) => s.venues?.name !== v.name))
+                          }}
+                          className="px-2.5 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors"
+                          title="Tüm ders slotlarını sil"
+                        >
+                          <X size={12} />
+                        </button>
+                      </>
                     )}
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>
