@@ -35,7 +35,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const { data: course } = await supabase
     .from('courses')
-    .select('*, profiles(id, display_name, avatar_url, bio), venues(id, name, city), course_sessions(id, session_date, start_time, end_time, status), course_enrollments(id, gender, status)')
+    .select('*, profiles(id, display_name, avatar_url, bio), venues(id, name, city, owner_id), course_sessions(id, session_date, start_time, end_time, status), course_enrollments(id, gender, status)')
     .eq('id', id)
     .in('status', ['active', 'full'])
     .single()
@@ -52,6 +52,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const instructor = (course as any).profiles
   const venue = (course as any).venues
+  const isOwner = !!user && (user.id === (course as any).instructor_id || user.id === venue?.owner_id)
   const sessions: any[] = (course as any).course_sessions ?? []
   const enrollments: any[] = (course as any).course_enrollments?.filter((e: any) => e.status === 'confirmed') ?? []
 
@@ -217,8 +218,15 @@ export default async function CourseDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* Kayıt ol butonu */}
-      {(course as any).status === 'full' ? (
+      {/* Kayıt ol butonu — kurs sahibine gösterilmez */}
+      {isOwner ? (
+        <Link
+          href={`/dashboard/courses/${id}`}
+          className="card p-4 text-center text-accent text-sm font-semibold block hover:border-accent/30 transition-colors"
+        >
+          Bu senin kursun · Yönet →
+        </Link>
+      ) : (course as any).status === 'full' ? (
         <div className="card p-4 text-center text-red-400 text-sm font-semibold">Bu kurs doldu.</div>
       ) : (
         <Link
