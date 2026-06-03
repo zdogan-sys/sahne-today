@@ -181,13 +181,22 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {venues.map((venue: any) => {
+              const isStudioType = ['studio', 'dance_studio', 'music_school'].includes(venue.venue_type)
+              const typeLabel = venue.venue_type === 'studio' ? (isEn ? 'Recording Studio' : 'Kayıt Stüdyosu')
+                : venue.venue_type === 'dance_studio' ? (isEn ? 'Dance Studio' : 'Dans Stüdyosu')
+                : venue.venue_type === 'music_school' ? (isEn ? 'Music School' : 'Ders Stüdyosu')
+                : null
               const openSlots    = venue.slots?.filter((s: any) => s.status === 'open').length ?? 0
               const pendingSlots = venue.slots?.filter((s: any) => s.status === 'pending').length ?? 0
               const bookedSlots  = venue.slots?.filter((s: any) => s.status === 'booked').length ?? 0
               const totalSlots   = openSlots + pendingSlots + bookedSlots
               const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : null
+
+              // Stüdyo tipleri yönetim hub'ına gider, diğerleri public sayfaya
+              const href = isStudioType ? `/dashboard/venue/${venue.id}` : `/venues/${venue.id}`
+
               return (
-                <Link key={venue.id} href={`/venues/${venue.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
+                <Link key={venue.id} href={href} className="card p-4 hover:border-accent/30 transition-colors block">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold text-text-primary">{venue.name}</h3>
@@ -196,41 +205,52 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                         {venue.district}, {venue.city}
                       </div>
                     </div>
-                    {occupancyRate !== null && (
+                    {occupancyRate !== null && !isStudioType && (
                       <div className="text-right flex-shrink-0">
                         <p className="font-bebas text-2xl text-accent leading-none">%{occupancyRate}</p>
                         <p className="text-[9px] text-text-muted uppercase tracking-wide">{isEn ? 'Full' : 'Dolu'}</p>
                       </div>
                     )}
                   </div>
-                  {totalSlots > 0 && (
-                    <div className="mt-3 h-1.5 rounded-full bg-[rgba(228,224,216,0.08)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-accent transition-all"
-                        style={{ width: `${occupancyRate ?? 0}%` }}
-                      />
+
+                  {isStudioType ? (
+                    <div className="flex items-center justify-between mt-3">
+                      {typeLabel && (
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-medium uppercase tracking-wide">
+                          {typeLabel}
+                        </span>
+                      )}
+                      <span className="text-accent text-xs font-medium">{isEn ? 'Manage →' : 'Yönet →'}</span>
                     </div>
+                  ) : (
+                    <>
+                      {totalSlots > 0 && (
+                        <div className="mt-3 h-1.5 rounded-full bg-[rgba(228,224,216,0.08)] overflow-hidden">
+                          <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${occupancyRate ?? 0}%` }} />
+                        </div>
+                      )}
+                      <div className="flex gap-3 mt-3 flex-wrap">
+                        {openSlots > 0 && (
+                          <span style={{ backgroundColor: 'rgba(29,158,117,0.15)', color: '#1D9E75', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                            {openSlots} {isEn ? 'Open' : 'Açık'}
+                          </span>
+                        )}
+                        {pendingSlots > 0 && (
+                          <span style={{ backgroundColor: 'rgba(212,168,32,0.15)', color: '#d4a820', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                            {pendingSlots} Bekliyor
+                          </span>
+                        )}
+                        {bookedSlots > 0 && (
+                          <span style={{ backgroundColor: 'rgba(143,136,212,0.15)', color: '#8f88d4', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
+                            {bookedSlots} Dolu
+                          </span>
+                        )}
+                        {totalSlots === 0 && (
+                          <span className="text-text-muted text-xs">{isEn ? 'No slots' : 'Slot yok'}</span>
+                        )}
+                      </div>
+                    </>
                   )}
-                  <div className="flex gap-3 mt-3 flex-wrap">
-                    {openSlots > 0 && (
-                      <span style={{ backgroundColor: 'rgba(29,158,117,0.15)', color: '#1D9E75', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
-                        {openSlots} {isEn ? 'Open' : 'Açık'}
-                      </span>
-                    )}
-                    {pendingSlots > 0 && (
-                      <span style={{ backgroundColor: 'rgba(212,168,32,0.15)', color: '#d4a820', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
-                        {pendingSlots} Bekliyor
-                      </span>
-                    )}
-                    {bookedSlots > 0 && (
-                      <span style={{ backgroundColor: 'rgba(143,136,212,0.15)', color: '#8f88d4', fontSize: '10px', padding: '3px 9px', borderRadius: '3px', fontWeight: 500, textTransform: 'uppercase' }}>
-                        {bookedSlots} Dolu
-                      </span>
-                    )}
-                    {openSlots === 0 && pendingSlots === 0 && bookedSlots === 0 && (
-                      <span className="text-text-muted text-xs">{isEn ? 'No slots' : 'Slot yok'}</span>
-                    )}
-                  </div>
                 </Link>
               )
             })}
@@ -362,84 +382,6 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Kurslar & Dersler */}
-      {(coursesAtVenues.length > 0 || teachingSlotsAtVenues.length > 0) && (
-        <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-4">{isEn ? 'COURSES & LESSONS' : 'KURSLAR & DERSLER'}</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {venues.map(v => {
-              const venueCourses = coursesAtVenues.filter(c => c.venues?.name === v.name)
-              const venueSlots = teachingSlotsAtVenues.filter(s => s.venues?.name === v.name)
-              if (venueCourses.length === 0 && venueSlots.length === 0) return null
-              return (
-                <Link key={v.id} href={`/dashboard/venue/${v.id}`} className="card p-4 hover:border-accent/30 transition-colors cursor-pointer">
-                  <p className="font-semibold text-text-primary text-sm mb-2.5">{v.name}</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {venueCourses.length > 0 && (
-                      <span className="py-1.5 px-2.5 rounded-lg bg-accent/10 text-accent text-xs font-medium">
-                        {venueCourses.length} {isEn ? 'Courses' : 'Kurs'}
-                      </span>
-                    )}
-                    {venueSlots.length > 0 && (
-                      <span className="py-1.5 px-2.5 rounded-lg bg-accent/10 text-accent text-xs font-medium">
-                        {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Stüdyo yönetimi — stüdyo türündeki tüm mekanlarda göster */}
-      {venues.some(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)) && (
-        <div>
-          <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'STUDIO MANAGEMENT' : 'STÜDYO YÖNETİMİ'}</h2>
-
-          {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => {
-            const venueReservations = studioReservations.filter((r: any) => r.venue_id === v.id)
-            const pendingCount = venueReservations.filter((r: any) => r.status === 'pending').length
-            return (
-              <div key={v.id} className="card p-4 mb-3 space-y-3">
-                {/* Başlık + ödeme toggle */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-text-primary text-sm font-semibold">{v.name}</p>
-                    {pendingCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-400 border border-yellow-400/20 font-semibold">
-                        {pendingCount} bekliyor
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      const newVal = !v.studio_payment_enabled
-                      await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
-                      setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
-                    }}
-                    className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
-                      ? 'bg-accent/10 text-accent border-accent/30'
-                      : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                    )}
-                  >
-                    {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
-                  </button>
-                </div>
-
-                {/* Yönetim linki */}
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/dashboard/venue/${v.id}`} className="flex-1 text-center text-xs px-3 py-1.5 rounded border text-accent border-accent/30 bg-accent/10 hover:bg-accent/20 transition-colors font-medium">
-                    ⚙️ Yönet
-                  </Link>
-                </div>
-              </div>
-            )
-          })}
         </div>
       )}
 
