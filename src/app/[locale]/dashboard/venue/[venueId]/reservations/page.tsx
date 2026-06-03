@@ -200,6 +200,12 @@ export default function VenueReservationsPage() {
                         </button>
                       </>
                     )}
+                  {res.status === 'confirmed' && (
+                    <button onClick={() => { if (confirm('Bu rezervasyon iptal edilsin mi?')) handleUpdate(res.id, 'cancelled') }} disabled={acting === res.id}
+                      className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40" title="İptal Et">
+                      <X size={14} />
+                    </button>
+                  )}
                   </div>
                 </div>
 
