@@ -12,6 +12,30 @@ const DAYS_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumar
 const DAYS_SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 const DAY_COLORS = ['#3b82f6', '#f97316', '#eab308', '#22c55e', '#ec4899', '#a855f7', '#ef4444']
 const DAY_LIGHT = ['#dbeafe', '#ffedd5', '#fef9c3', '#dcfce7', '#fce7f3', '#f3e8ff', '#fee2e2']
+
+// Kurs/ders rengi — güne göre değil kursa göre atanır, taşınsa da korunur
+const COURSE_PALETTE = [
+  { bg: '#3b82f6', light: '#dbeafe' }, // mavi
+  { bg: '#f97316', light: '#ffedd5' }, // turuncu
+  { bg: '#22c55e', light: '#dcfce7' }, // yeşil
+  { bg: '#ec4899', light: '#fce7f3' }, // pembe
+  { bg: '#a855f7', light: '#f3e8ff' }, // mor
+  { bg: '#ef4444', light: '#fee2e2' }, // kırmızı
+  { bg: '#14b8a6', light: '#ccfbf1' }, // teal
+  { bg: '#eab308', light: '#fef9c3' }, // sarı
+  { bg: '#6366f1', light: '#e0e7ff' }, // indigo
+  { bg: '#f43f5e', light: '#ffe4e6' }, // rose
+  { bg: '#84cc16', light: '#ecfccb' }, // lime
+  { bg: '#06b6d4', light: '#cffafe' }, // cyan
+]
+const courseColor = (idx: number | null | undefined) => COURSE_PALETTE[((idx ?? 0) % COURSE_PALETTE.length + COURSE_PALETTE.length) % COURSE_PALETTE.length]
+
+// Aktif derslerde kullanılmayan ilk renk indeksini seç
+function pickColorIndex(activeLessons: any[]): number {
+  const used = new Set(activeLessons.map(l => l.color_index).filter((i: any) => i != null))
+  for (let i = 0; i < COURSE_PALETTE.length; i++) if (!used.has(i)) return i
+  return used.size % COURSE_PALETTE.length
+}
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 8) // 08:00 - 21:00
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -125,6 +149,24 @@ export default function RoomCalendarPage() {
         await Promise.all(updates.map(u => supabase.from('teaching_slots').update({ series_id: u.series_id }).eq('id', u.id)))
       }
 
+      // Backfill renkler: color_index'i olmayan serilere kullanılmayan renk ata
+      const missingColor = slotsData.filter((s: any) => s.color_index == null)
+      if (missingColor.length > 0) {
+        const used = new Set<number>(slotsData.filter((s: any) => s.color_index != null).map((s: any) => s.color_index))
+        const seriesColor = new Map<string, number>()
+        let next = 0
+        const nextFree = () => { while (used.has(next % COURSE_PALETTE.length)) next++; const c = next % COURSE_PALETTE.length; used.add(c); next++; return c }
+        const colorUpdates: { id: string; color_index: number }[] = []
+        for (const s of missingColor) {
+          const sid = s.series_id ?? s.id
+          let ci = seriesColor.get(sid)
+          if (ci == null) { ci = nextFree(); seriesColor.set(sid, ci) }
+          s.color_index = ci
+          colorUpdates.push({ id: s.id, color_index: ci })
+        }
+        await Promise.all(colorUpdates.map(u => supabase.from('teaching_slots').update({ color_index: u.color_index }).eq('id', u.id)))
+      }
+
       setInstructors(instRes.data ?? [])
       setTemplates(templRes.data ?? [])
       setLessons(slotsData)
@@ -212,6 +254,8 @@ export default function RoomCalendarPage() {
 
     // Seri kimliği — aynı kursun tüm haftaları ortak series_id taşır
     const seriesId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    // Renk — aktif derslerde kullanılmayan yeni bir renk
+    const colorIndex = pickColorIndex(lessons)
 
     // N haftalık slotlar oluştur
     const slotRows = []
@@ -224,7 +268,7 @@ export default function RoomCalendarPage() {
         day_of_week: colDayOfWeek, slot_date: dateStr(d),
         start_time: startTime, end_time: endTime,
         price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
-        series_id: seriesId,
+        series_id: seriesId, color_index: colorIndex,
       })
     }
 
@@ -488,11 +532,12 @@ export default function RoomCalendarPage() {
                     <Cell key={key} id={key} hasItem={items.length > 0} dayLight={DAY_LIGHT[col]} isLesson={isLesson} onAdd={() => openAdd(col, hour)}>
                       {items.length > 0 && (
                         <div className="flex flex-col gap-0.5 h-full">
-                          {items.map((item: any) => (
-                            isLesson
-                              ? <LessonChip key={item.id} lesson={item} color={DAY_COLORS[col]} light={DAY_LIGHT[col]} onClick={() => { setDetailItem(item); setShowAddStudent(false); setStuMemberQuery('') }} />
+                          {items.map((item: any) => {
+                            const cc = courseColor(item.color_index)
+                            return isLesson
+                              ? <LessonChip key={item.id} lesson={item} color={cc.bg} light={cc.light} onClick={() => { setDetailItem(item); setShowAddStudent(false); setStuMemberQuery('') }} />
                               : <ReservationChip key={item.id} res={item} onClick={() => setDetailItem(item)} />
-                          ))}
+                          })}
                         </div>
                       )}
                     </Cell>
