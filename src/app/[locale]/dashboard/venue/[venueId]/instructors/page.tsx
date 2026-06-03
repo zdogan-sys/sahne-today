@@ -16,6 +16,8 @@ export default function VenueInstructorsPage() {
 
   const [venue, setVenue] = useState<any>(null)
   const [instructors, setInstructors] = useState<any[]>([])
+  const [artists, setArtists] = useState<any[]>([])
+  const [artistQuery, setArtistQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -25,6 +27,7 @@ export default function VenueInstructorsPage() {
     name: '',
     instruments: [] as string[],
     bio: '',
+    artist_id: null as string | null,
   })
 
   useEffect(() => {
@@ -35,9 +38,10 @@ export default function VenueInstructorsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [venueRes, instRes] = await Promise.all([
+    const [venueRes, instRes, artistsRes] = await Promise.all([
       supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
+      supabase.from('artists').select('id, stage_name').order('stage_name').limit(300),
     ])
 
     if (!venueRes.data || venueRes.data.owner_id !== user.id) {
@@ -47,6 +51,7 @@ export default function VenueInstructorsPage() {
 
     setVenue(venueRes.data)
     setInstructors(instRes.data ?? [])
+    setArtists(artistsRes.data ?? [])
     setLoading(false)
   }
 
@@ -75,6 +80,7 @@ export default function VenueInstructorsPage() {
         name: formData.name,
         instruments: formData.instruments,
         bio: formData.bio || null,
+        artist_id: formData.artist_id,
         is_active: true,
       })
       .select()
@@ -87,7 +93,8 @@ export default function VenueInstructorsPage() {
     }
 
     setInstructors(prev => [...prev, data])
-    setFormData({ name: '', instruments: [], bio: '' })
+    setFormData({ name: '', instruments: [], bio: '', artist_id: null })
+    setArtistQuery('')
     setShowForm(false)
     setSaving(false)
   }
@@ -129,12 +136,43 @@ export default function VenueInstructorsPage() {
 
       {showForm && (
         <div className="card p-5 space-y-4">
-          <input
-            value={formData.name}
-            onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Eğitmen adı *"
-            className="input-field text-sm"
-          />
+          <div>
+            <label className="label text-xs mb-1 block">Eğitmen Adı *</label>
+            <input
+              value={formData.name}
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value, artist_id: null }))}
+              placeholder="Eğitmen adını yazın"
+              className="input-field text-sm"
+            />
+          </div>
+
+          {/* Sanatçı havuzundan seç */}
+          <div className="relative">
+            <label className="label text-xs mb-1 block">ya da platform sanatçı havuzundan seç</label>
+            <input
+              value={artistQuery}
+              onChange={e => setArtistQuery(e.target.value)}
+              placeholder="Sanatçı ara..."
+              className="input-field text-sm"
+            />
+            {artistQuery && (
+              <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
+                {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).slice(0, 10).map(a => (
+                  <button key={a.id} type="button"
+                    onClick={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery('') }}
+                    className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                    {a.stage_name}
+                  </button>
+                ))}
+                {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).length === 0 && (
+                  <p className="px-3 py-2 text-xs text-text-muted">Sonuç yok</p>
+                )}
+              </div>
+            )}
+            {formData.artist_id && (
+              <p className="text-accent text-xs mt-1.5">✓ Platform sanatçısı seçildi: <strong>{formData.name}</strong></p>
+            )}
+          </div>
 
           <div>
             <label className="label mb-2">Enstrümanlar *</label>
