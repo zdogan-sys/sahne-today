@@ -77,8 +77,8 @@ export default function VenueNewCoursePage() {
   const [minFemale, setMinFemale] = useState(0)
   const [minMale, setMinMale] = useState(0)
 
-  // Fiyat
-  const [pricePerSession, setPricePerSession] = useState('')
+  // Fiyat — toplam kurs ücreti
+  const [coursePrice, setCoursePrice] = useState('')
 
   function toggleDay(d: number) {
     setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
@@ -89,13 +89,14 @@ export default function VenueNewCoursePage() {
     [startDate, selectedDays, weeks, startTime, endTime]
   )
 
-  const totalPrice = pricePerSession && generatedSessions.length
-    ? (parseFloat(pricePerSession) * generatedSessions.length).toFixed(0)
+  // Toplam fiyat girilince, seans başına düşen tutarı bilgi olarak göster
+  const perSessionInfo = coursePrice && generatedSessions.length
+    ? (parseFloat(coursePrice) / generatedSessions.length).toFixed(0)
     : null
 
   async function handleSave() {
     if (!title) { setError('Kurs adı zorunludur.'); return }
-    if (!pricePerSession) { setError('Seans ücreti zorunludur.'); return }
+    if (!coursePrice) { setError('Kurs ücreti zorunludur.'); return }
     if (!startDate) { setError('Başlangıç tarihi seçin.'); return }
     if (selectedDays.length === 0) { setError('En az bir gün seçin.'); return }
     if (generatedSessions.length === 0) { setError('Geçerli seans bulunamadı.'); return }
@@ -116,7 +117,7 @@ export default function VenueNewCoursePage() {
         course_type: 'group',
         level,
         duration_minutes: durationMinutes,
-        price_per_session: Number(pricePerSession),
+        price_per_session: Number(coursePrice),
         max_participants: maxParticipants,
         min_female: minFemale,
         min_male: minMale,
@@ -314,14 +315,15 @@ export default function VenueNewCoursePage() {
           <h2 className="font-bebas text-xl text-text-primary">Fiyatlandırma</h2>
 
           <div>
-            <label className="label">Seans Ücreti (₺) *</label>
-            <input type="number" min={0} step={10} value={pricePerSession} onChange={e => setPricePerSession(e.target.value)} placeholder="500" className="input-field" />
+            <label className="label">Toplam Kurs Ücreti (₺) *</label>
+            <input type="number" min={0} step={50} value={coursePrice} onChange={e => setCoursePrice(e.target.value)} placeholder="2000" className="input-field" />
+            <p className="text-text-muted text-xs mt-1">Kursun tamamı için öğrencinin ödeyeceği toplam tutar.</p>
           </div>
 
-          {totalPrice && (
+          {perSessionInfo && generatedSessions.length > 0 && (
             <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">
-              <p className="text-text-muted text-xs">Toplam Kurs Fiyatı</p>
-              <p className="font-bebas text-accent text-2xl">₺{totalPrice}</p>
+              <p className="text-text-muted text-xs">{generatedSessions.length} seans · seans başına ≈ ₺{perSessionInfo}</p>
+              <p className="font-bebas text-accent text-2xl">Toplam ₺{coursePrice}</p>
             </div>
           )}
 

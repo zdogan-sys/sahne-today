@@ -202,12 +202,8 @@ export default function CourseEnrollPage() {
 
         {/* Özet */}
         <div className="card p-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-text-muted">Seans ücreti</span>
-            <span className="text-text-primary font-medium">₺{course.price_per_session}</span>
-          </div>
           <div className="flex items-center justify-between text-sm border-t border-[rgba(228,224,216,0.1)] pt-2">
-            <span className="text-text-primary font-semibold">Toplam</span>
+            <span className="text-text-primary font-semibold">Toplam Kurs Ücreti</span>
             <span className="font-bebas text-xl text-accent">₺{course.price_per_session}</span>
           </div>
         </div>
