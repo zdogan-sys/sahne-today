@@ -167,7 +167,7 @@ export default function RoomCalendarPage() {
         instructor_name: form.instructor_name, instrument: subject,
         day_of_week: colDayOfWeek, slot_date: dateStr(d),
         start_time: startTime, end_time: endTime,
-        price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'once',
+        price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
       })
     }
 
