@@ -470,17 +470,18 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   )}
                 </div>
 
-                {/* Bu mekana ait rezervasyonlar */}
-                {venueReservations.length > 0 && (
-                  <div className="pt-2 border-t border-[rgba(228,224,216,0.08)] space-y-2">
-                    {venueReservations.map((res: any) => (
-                      <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
-                        setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-                        supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
-                      }} />
-                    ))}
-                  </div>
-                )}
+                {/* Rezervasyon özeti + link */}
+                <div className="pt-2 border-t border-[rgba(228,224,216,0.08)]">
+                  <Link href={`/dashboard/venue/${v.id}/reservations`}
+                    className="flex items-center justify-between text-sm hover:text-accent transition-colors">
+                    <span className="text-text-muted">
+                      {venueReservations.length > 0
+                        ? `${venueReservations.length} rezervasyon`
+                        : 'Rezervasyon yok'}
+                    </span>
+                    <span className="text-accent text-xs">Tümünü Gör →</span>
+                  </Link>
+                </div>
               </div>
             )
           })}
