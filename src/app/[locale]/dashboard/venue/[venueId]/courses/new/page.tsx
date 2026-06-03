@@ -57,7 +57,7 @@ export default function VenueNewCoursePage() {
           .then(({ data: t }) => setTemplates(t ?? []))
         supabase.from('studio_rooms').select('id, name').eq('venue_id', venueId).eq('is_active', true).order('created_at')
           .then(({ data: r }) => setRooms(r ?? []))
-        supabase.from('venue_instructors').select('id, name').eq('venue_id', venueId).eq('is_active', true)
+        supabase.from('venue_instructors').select('id, name, instruments').eq('venue_id', venueId).eq('is_active', true)
           .then(({ data: i }) => setInstructors(i ?? []))
         setLoading(false)
       })
@@ -263,18 +263,31 @@ export default function VenueNewCoursePage() {
             </div>
           </div>
 
-          {/* Eğitmen */}
-          <div>
-            <label className="label">Eğitmen <span className="text-text-muted font-normal">(opsiyonel)</span></label>
-            {instructors.length > 0 ? (
-              <select value={instructorName} onChange={e => setInstructorName(e.target.value)} className="input-field text-sm mt-1">
-                <option value="">Eğitmen seç...</option>
-                {instructors.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
-              </select>
-            ) : (
-              <input value={instructorName} onChange={e => setInstructorName(e.target.value)} placeholder="Eğitmen adı" className="input-field mt-1" />
-            )}
-          </div>
+          {/* Eğitmen — seçili enstrümana (altkategori) göre filtrelenir */}
+          {(() => {
+            const matching = instructors.filter(i => !subcategory || (i.instruments ?? []).includes(subcategory))
+            return (
+              <div>
+                <label className="label">
+                  Eğitmen <span className="text-text-muted font-normal">(opsiyonel)</span>
+                  {subcategory && <span className="text-accent ml-1">· {subcategory} eğitmenleri</span>}
+                </label>
+                {instructors.length > 0 ? (
+                  <>
+                    <select value={instructorName} onChange={e => setInstructorName(e.target.value)} className="input-field text-sm mt-1">
+                      <option value="">Eğitmen seç...</option>
+                      {matching.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
+                    </select>
+                    {subcategory && matching.length === 0 && (
+                      <p className="text-text-muted text-xs mt-1">"{subcategory}" işaretli eğitmen yok. Eğitmenler sayfasından enstrüman ekleyebilirsin.</p>
+                    )}
+                  </>
+                ) : (
+                  <input value={instructorName} onChange={e => setInstructorName(e.target.value)} placeholder="Eğitmen adı" className="input-field mt-1" />
+                )}
+              </div>
+            )
+          })()}
 
           {!isOnline && (
             <div>
