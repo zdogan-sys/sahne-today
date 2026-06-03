@@ -21,3 +21,7 @@ CREATE POLICY "Public read" ON venue_lesson_templates
 DROP POLICY IF EXISTS "Owner manage" ON venue_lesson_templates;
 CREATE POLICY "Owner manage" ON venue_lesson_templates
   FOR ALL USING (auth.uid() = (SELECT owner_id FROM venues WHERE id = venue_id));
+
+-- Table-level grants (self-hosted Supabase için gerekli)
+GRANT SELECT, INSERT, UPDATE, DELETE ON venue_lesson_templates TO authenticated;
+GRANT SELECT ON venue_lesson_templates TO anon;
