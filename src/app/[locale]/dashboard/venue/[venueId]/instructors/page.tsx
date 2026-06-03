@@ -41,7 +41,7 @@ export default function VenueInstructorsPage() {
     const [venueRes, instRes, artistsRes] = await Promise.all([
       supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
-      supabase.from('artists').select('id, stage_name').order('stage_name').limit(300),
+      supabase.from('artists').select('id, stage_name, teaching_instruments').order('stage_name').limit(300),
     ])
 
     if (!venueRes.data || venueRes.data.owner_id !== user.id) {
@@ -136,44 +136,7 @@ export default function VenueInstructorsPage() {
 
       {showForm && (
         <div className="card p-5 space-y-4">
-          <div>
-            <label className="label text-xs mb-1 block">Eğitmen Adı *</label>
-            <input
-              value={formData.name}
-              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value, artist_id: null }))}
-              placeholder="Eğitmen adını yazın"
-              className="input-field text-sm"
-            />
-          </div>
-
-          {/* Sanatçı havuzundan seç */}
-          <div className="relative">
-            <label className="label text-xs mb-1 block">ya da platform sanatçı havuzundan seç</label>
-            <input
-              value={artistQuery}
-              onChange={e => setArtistQuery(e.target.value)}
-              placeholder="Sanatçı ara..."
-              className="input-field text-sm"
-            />
-            {artistQuery && (
-              <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
-                {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).slice(0, 10).map(a => (
-                  <button key={a.id} type="button"
-                    onClick={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery('') }}
-                    className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
-                    {a.stage_name}
-                  </button>
-                ))}
-                {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).length === 0 && (
-                  <p className="px-3 py-2 text-xs text-text-muted">Sonuç yok</p>
-                )}
-              </div>
-            )}
-            {formData.artist_id && (
-              <p className="text-accent text-xs mt-1.5">✓ Platform sanatçısı seçildi: <strong>{formData.name}</strong></p>
-            )}
-          </div>
-
+          {/* 1. Enstrüman seçimi (önce) */}
           <div>
             <label className="label mb-2">Enstrümanlar *</label>
             <div className="flex flex-wrap gap-1.5">
@@ -191,6 +154,60 @@ export default function VenueInstructorsPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* 2. Eğitmen adı */}
+          <div>
+            <label className="label text-xs mb-1 block">Eğitmen Adı *</label>
+            <input
+              value={formData.name}
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value, artist_id: null }))}
+              placeholder="Eğitmen adını yazın"
+              className="input-field text-sm"
+            />
+          </div>
+
+          {/* 3. Sanatçı havuzundan seç (seçili enstrümana göre filtreli) */}
+          <div className="relative">
+            <label className="label text-xs mb-1 block">
+              ya da platform sanatçı havuzundan seç
+              {formData.instruments.length > 0 && <span className="text-accent ml-1">({formData.instruments.join(', ')} eğitmenleri)</span>}
+            </label>
+            {formData.instruments.length === 0 ? (
+              <p className="text-text-muted text-xs italic">Önce yukarıdan enstrüman seçin — o enstrümanı öğreten sanatçılar listelenir.</p>
+            ) : (
+              <>
+                <input
+                  value={artistQuery}
+                  onChange={e => setArtistQuery(e.target.value)}
+                  placeholder="Sanatçı ara..."
+                  className="input-field text-sm"
+                />
+                {artistQuery && (
+                  <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
+                    {(() => {
+                      const filtered = artists.filter(a => {
+                        if (!a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())) return false
+                        const teaches = a.teaching_instruments ?? []
+                        return teaches.some((ti: string) => formData.instruments.includes(ti))
+                      }).slice(0, 10)
+                      if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Bu enstrümanı öğreten sanatçı bulunamadı</p>
+                      return filtered.map(a => (
+                        <button key={a.id} type="button"
+                          onClick={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery('') }}
+                          className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors flex items-center justify-between">
+                          <span>{a.stage_name}</span>
+                          <span className="text-[10px] text-text-muted">{(a.teaching_instruments ?? []).filter((ti: string) => formData.instruments.includes(ti)).join(', ')}</span>
+                        </button>
+                      ))
+                    })()}
+                  </div>
+                )}
+              </>
+            )}
+            {formData.artist_id && (
+              <p className="text-accent text-xs mt-1.5">✓ Platform sanatçısı seçildi: <strong>{formData.name}</strong></p>
+            )}
           </div>
 
           <textarea
