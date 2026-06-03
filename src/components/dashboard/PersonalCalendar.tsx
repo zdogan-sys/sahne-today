@@ -80,7 +80,40 @@ export function PersonalCalendar({ entries, calendarToken, showTitle = false }: 
       {showTitle ? (
         <div className="flex items-center justify-between">
           <h1 className="font-bebas text-4xl text-text-primary">KİŞİSEL TAKVİM</h1>
-          {calendarToken && <PersonalCalendarSubscribe token={calendarToken} />}
+          {calendarToken && (
+            <div className="relative">
+              <button onClick={() => setShowSubscribe(o => !o)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors">
+                <CalendarPlus size={13} /> Takvime Ekle
+              </button>
+              {showSubscribe && (
+                <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowSubscribe(false)} />
+                <div className="absolute right-0 top-full mt-2 w-60 bg-surface border border-[rgba(228,224,216,0.12)] rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <p className="px-4 pt-3 pb-1 text-[10px] text-text-muted uppercase tracking-wider">Otomatik Senkronizasyon</p>
+                  <a href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl!)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(228,224,216,0.04)]"
+                    onClick={() => setShowSubscribe(false)}>
+                    <span className="text-2xl">📅</span>
+                    <div><p className="text-sm text-text-primary font-medium">Google Takvim</p><p className="text-[10px] text-text-muted">Otomatik güncellenir</p></div>
+                  </a>
+                  <a href={webcalUrl!}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(228,224,216,0.04)]"
+                    onClick={() => setShowSubscribe(false)}>
+                    <span className="text-2xl">🍎</span>
+                    <div><p className="text-sm text-text-primary font-medium">Apple Takvim</p><p className="text-[10px] text-text-muted">Otomatik güncellenir</p></div>
+                  </a>
+                  <div className="border-t border-[rgba(228,224,216,0.08)] px-4 pt-2 pb-3">
+                    <a href={feedUrl!} download="kisisel-takvim.ics" className="text-xs text-accent hover:underline" onClick={() => setShowSubscribe(false)}>
+                      .ics dosyası indir →
+                    </a>
+                  </div>
+                </div>
+              </>
+            )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex items-center justify-between flex-wrap gap-3">
