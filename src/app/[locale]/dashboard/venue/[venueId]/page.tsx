@@ -187,62 +187,14 @@ export default function VenueHubPage() {
         </div>
       )}
 
-      {/* Odalar */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bebas text-2xl text-text-primary">ODALAR</h2>
-          <button onClick={() => { setShowRoomForm(!showRoomForm); setEditingRoomId(null); setRoomForm({ name: '', capacity: 1, price_per_hour: 0 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
-            <Plus size={14} /> {showRoomForm ? 'İptal' : 'Oda Ekle'}
-          </button>
-        </div>
-
-        {showRoomForm && (
-          <div className="card p-4 space-y-3">
-            <input value={roomForm.name} onChange={e => setRoomForm(p => ({ ...p, name: e.target.value }))} placeholder="Oda Adı *" className="input-field text-sm w-full" />
-            <div className="grid grid-cols-2 gap-3">
-              <input type="number" min={1} value={roomForm.capacity} onChange={e => setRoomForm(p => ({ ...p, capacity: parseInt(e.target.value) }))} placeholder="Kapasite" className="input-field text-sm" />
-              <input type="number" min={0} value={roomForm.price_per_hour} onChange={e => setRoomForm(p => ({ ...p, price_per_hour: parseFloat(e.target.value) }))} placeholder="Saat Ücreti (₺)" className="input-field text-sm" />
-            </div>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
-            <button onClick={saveRoom} disabled={saving} className="btn-accent w-full py-2 text-sm disabled:opacity-50">
-              {editingRoomId ? 'Güncelle' : 'Oda Ekle'}
-            </button>
-          </div>
-        )}
-
-        {rooms.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {rooms.map(room => (
-              <Link key={room.id} href={`/dashboard/venue/${venueId}/rooms/${room.id}`}>
-                <div className="card p-4 hover:border-accent/30 transition-colors cursor-pointer group">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-text-primary group-hover:text-accent transition-colors">{room.name}</p>
-                      <p className="text-text-muted text-xs mt-0.5">{room.capacity} kişi</p>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={(e) => { e.preventDefault(); setEditingRoomId(room.id); setRoomForm(room); setShowRoomForm(true) }} className="p-1 text-text-muted hover:text-accent"><Edit2 size={13} /></button>
-                      <button onClick={(e) => { e.preventDefault(); deleteRoom(room.id) }} className="p-1 text-text-muted hover:text-red-400"><X size={13} /></button>
-                    </div>
-                  </div>
-                  {room.price_per_hour > 0 && <p className="text-accent text-sm font-bebas">₺{room.price_per_hour}/saat</p>}
-                  <div className="mt-3 pt-3 border-t border-[rgba(228,224,216,0.1)] flex items-center gap-1 text-[10px] text-text-muted group-hover:text-accent transition-colors">
-                    <Eye size={12} /> Programı Gör
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="card p-6 text-center text-text-muted text-sm">Henüz oda eklenmedi.</div>
-        )}
-      </div>
-
-      {/* Ders Şablonları (sadece dans/müzik okulu) */}
+      {/* Ders Şablonları — mekan geneli, odalardan bağımsız */}
       {isLesson && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-bebas text-2xl text-text-primary">DERS ŞABLONLARı</h2>
+            <div>
+              <h2 className="font-bebas text-2xl text-text-primary">DERS ŞABLONLARı</h2>
+              <p className="text-text-muted text-xs">Mekan geneli — tüm odalarda kullanılabilir</p>
+            </div>
             <button onClick={() => { setShowTemplateForm(!showTemplateForm); setEditingTemplateId(null); setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
               <Plus size={14} /> {showTemplateForm ? 'İptal' : 'Şablon Ekle'}
             </button>
@@ -300,6 +252,57 @@ export default function VenueHubPage() {
           )}
         </div>
       )}
+
+      {/* Odalar */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bebas text-2xl text-text-primary">ODALAR</h2>
+          <button onClick={() => { setShowRoomForm(!showRoomForm); setEditingRoomId(null); setRoomForm({ name: '', capacity: 1, price_per_hour: 0 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+            <Plus size={14} /> {showRoomForm ? 'İptal' : 'Oda Ekle'}
+          </button>
+        </div>
+
+        {showRoomForm && (
+          <div className="card p-4 space-y-3">
+            <input value={roomForm.name} onChange={e => setRoomForm(p => ({ ...p, name: e.target.value }))} placeholder="Oda Adı *" className="input-field text-sm w-full" />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="number" min={1} value={roomForm.capacity} onChange={e => setRoomForm(p => ({ ...p, capacity: parseInt(e.target.value) }))} placeholder="Kapasite" className="input-field text-sm" />
+              <input type="number" min={0} value={roomForm.price_per_hour} onChange={e => setRoomForm(p => ({ ...p, price_per_hour: parseFloat(e.target.value) }))} placeholder="Saat Ücreti (₺)" className="input-field text-sm" />
+            </div>
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <button onClick={saveRoom} disabled={saving} className="btn-accent w-full py-2 text-sm disabled:opacity-50">
+              {editingRoomId ? 'Güncelle' : 'Oda Ekle'}
+            </button>
+          </div>
+        )}
+
+        {rooms.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {rooms.map(room => (
+              <Link key={room.id} href={`/dashboard/venue/${venueId}/rooms/${room.id}`}>
+                <div className="card p-4 hover:border-accent/30 transition-colors cursor-pointer group">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-text-primary group-hover:text-accent transition-colors">{room.name}</p>
+                      <p className="text-text-muted text-xs mt-0.5">{room.capacity} kişi</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={(e) => { e.preventDefault(); setEditingRoomId(room.id); setRoomForm(room); setShowRoomForm(true) }} className="p-1 text-text-muted hover:text-accent"><Edit2 size={13} /></button>
+                      <button onClick={(e) => { e.preventDefault(); deleteRoom(room.id) }} className="p-1 text-text-muted hover:text-red-400"><X size={13} /></button>
+                    </div>
+                  </div>
+                  {room.price_per_hour > 0 && <p className="text-accent text-sm font-bebas">₺{room.price_per_hour}/saat</p>}
+                  <div className="mt-3 pt-3 border-t border-[rgba(228,224,216,0.1)] flex items-center gap-1 text-[10px] text-text-muted group-hover:text-accent transition-colors">
+                    <Eye size={12} /> Programı Gör
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="card p-6 text-center text-text-muted text-sm">Henüz oda eklenmedi.</div>
+        )}
+      </div>
 
       {/* Diğer Linkler */}
       <div className="card p-4 border-t border-[rgba(228,224,216,0.1)] space-y-2 text-sm">
