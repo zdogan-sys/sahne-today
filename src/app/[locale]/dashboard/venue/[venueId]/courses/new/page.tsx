@@ -40,6 +40,7 @@ export default function VenueNewCoursePage() {
 
   const [venue, setVenue] = useState<any>(null)
   const [templates, setTemplates] = useState<any[]>([])
+  const [rooms, setRooms] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -52,6 +53,8 @@ export default function VenueNewCoursePage() {
         setVenue(data)
         supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at')
           .then(({ data: t }) => setTemplates(t ?? []))
+        supabase.from('studio_rooms').select('id, name').eq('venue_id', venueId).eq('is_active', true).order('created_at')
+          .then(({ data: r }) => setRooms(r ?? []))
         setLoading(false)
       })
     })
@@ -256,7 +259,19 @@ export default function VenueNewCoursePage() {
           </div>
 
           {!isOnline && (
-            <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Yer (opsiyonel)" className="input-field" />
+            <div>
+              <label className="label">Yer / Oda <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+              {rooms.length > 0 && (
+                <select
+                  value={rooms.find(r => r.name === location) ? location : ''}
+                  onChange={e => setLocation(e.target.value)}
+                  className="input-field text-sm mt-1">
+                  <option value="">Oda seç veya aşağıya yaz...</option>
+                  {rooms.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                </select>
+              )}
+              <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Yer (serbest metin)" className="input-field mt-2" />
+            </div>
           )}
 
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Açıklama (opsiyonel)" className="input-field" rows={3} />
