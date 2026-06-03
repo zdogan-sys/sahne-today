@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS venue_lesson_templates (
 
 ALTER TABLE venue_lesson_templates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read" ON venue_lesson_templates;
 CREATE POLICY "Public read" ON venue_lesson_templates
   FOR SELECT USING (is_active = true);
 
+DROP POLICY IF EXISTS "Owner manage" ON venue_lesson_templates;
 CREATE POLICY "Owner manage" ON venue_lesson_templates
   FOR ALL USING (auth.uid() = (SELECT owner_id FROM venues WHERE id = venue_id));
