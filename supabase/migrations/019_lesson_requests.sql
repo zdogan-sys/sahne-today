@@ -27,5 +27,7 @@ CREATE POLICY "Venue owner manages requests" ON lesson_requests FOR ALL USING (
 );
 
 -- Table-level grants (self-hosted Supabase için gerekli)
+-- service_role: admin client (API) bu tabloya yazıyor, mutlaka gerekli
+GRANT ALL ON lesson_requests TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON lesson_requests TO authenticated;
 GRANT INSERT ON lesson_requests TO anon;
