@@ -37,6 +37,11 @@ export default function VenueTeachingSlotsPage() {
   const [addBookingSlot, setAddBookingSlot] = useState<string | null>(null)
   const [bookForm, setBookForm] = useState({ student_name: '', student_email: '', student_phone: '', lesson_date: '' })
 
+  // Artist search
+  const [artists, setArtists] = useState<any[]>([])
+  const [artistQuery, setArtistQuery] = useState('')
+  const [artistQueryManual, setArtistQueryManual] = useState('')
+
   // Template form
   const [templateIdx, setTemplateIdx] = useState(0)
   const [selectedDays, setSelectedDays] = useState<number[]>([])
@@ -72,15 +77,17 @@ export default function VenueTeachingSlotsPage() {
 
     setVenue(venueData)
 
-    const [instRes, slotsRes, bookingsRes] = await Promise.all([
+    const [instRes, slotsRes, bookingsRes, artistsRes] = await Promise.all([
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
       supabase.from('teaching_slots').select('*').eq('venue_id', venueId).eq('is_active', true).order('day_of_week').order('start_time'),
       supabase.from('teaching_bookings').select('*, teaching_slots(instructor_name, day_of_week, slot_date, start_time, end_time)').eq('artist_id', null).eq('teaching_slots.venue_id', venueId as any).in('status', ['pending', 'awaiting_student', 'confirmed']).order('lesson_date'),
+      supabase.from('artists').select('id, stage_name').order('stage_name').limit(200),
     ])
 
     setInstructors(instRes.data ?? [])
     setSlots(slotsRes.data ?? [])
     setBookings(bookingsRes.data ?? [])
+    setArtists(artistsRes.data ?? [])
     setLoading(false)
   }, [venueId])
 
@@ -268,6 +275,28 @@ export default function VenueTeachingSlotsPage() {
                 ) : (
                   <input value={instructorName} onChange={e => setInstructorName(e.target.value)} className="input-field text-sm mt-1" placeholder="Eğitmen adı" />
                 )}
+                <p className="text-text-muted text-xs mt-1">ya da platformdan sanatçı seç:</p>
+                <div className="relative mt-1">
+                  <input
+                    value={artistQuery}
+                    onChange={e => setArtistQuery(e.target.value)}
+                    placeholder="Sanatçı ara..."
+                    className="input-field text-sm"
+                  />
+                  {artistQuery && (
+                    <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
+                      {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).slice(0, 8).map(a => (
+                        <button key={a.id} type="button" onClick={() => { setInstructorName(a.stage_name); setArtistQuery('') }}
+                          className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                          {a.stage_name}
+                        </button>
+                      ))}
+                      {artists.filter(a => a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())).length === 0 && (
+                        <p className="px-3 py-2 text-xs text-text-muted">Sonuç yok</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -334,6 +363,28 @@ export default function VenueTeachingSlotsPage() {
                 ) : (
                   <input value={manualInstructor} onChange={e => setManualInstructor(e.target.value)} className="input-field text-sm mt-1" placeholder="Eğitmen adı" />
                 )}
+                <p className="text-text-muted text-xs mt-1">ya da platformdan sanatçı seç:</p>
+                <div className="relative mt-1">
+                  <input
+                    value={artistQueryManual}
+                    onChange={e => setArtistQueryManual(e.target.value)}
+                    placeholder="Sanatçı ara..."
+                    className="input-field text-sm"
+                  />
+                  {artistQueryManual && (
+                    <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
+                      {artists.filter(a => a.stage_name.toLowerCase().includes(artistQueryManual.toLowerCase())).slice(0, 8).map(a => (
+                        <button key={a.id} type="button" onClick={() => { setManualInstructor(a.stage_name); setArtistQueryManual('') }}
+                          className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                          {a.stage_name}
+                        </button>
+                      ))}
+                      {artists.filter(a => a.stage_name.toLowerCase().includes(artistQueryManual.toLowerCase())).length === 0 && (
+                        <p className="px-3 py-2 text-xs text-text-muted">Sonuç yok</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
