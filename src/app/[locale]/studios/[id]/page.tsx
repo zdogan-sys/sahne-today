@@ -43,10 +43,13 @@ export default function StudioDetailPage() {
 
   useEffect(() => {
     async function load() {
+      console.log('🔍 Studio ID:', id)
       const [venueRes, roomsRes] = await Promise.all([
         supabase.from('venues').select('id, name, city, district, photo_url, description, equipment, price_per_hour, venue_type, studio_payment_enabled').eq('id', id).single(),
         supabase.from('studio_rooms').select('*').eq('venue_id', id).eq('is_active', true).order('created_at'),
       ])
+      console.log('📍 Venue:', venueRes.data?.name, venueRes.error)
+      console.log('🚪 Rooms:', roomsRes.data?.length ?? 0, 'odalar', roomsRes.error)
       setStudio(venueRes.data)
       setRooms(roomsRes.data ?? [])
 
