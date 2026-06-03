@@ -231,7 +231,7 @@ export default function VenueHubPage() {
             </div>
           )}
 
-          {templates.length > 0 ? (
+          {!showTemplateForm && (templates.length > 0 ? (
             <div className="space-y-2">
               {templates.map(tmpl => (
                 <div key={tmpl.id} className="card p-3 flex items-center justify-between">
@@ -249,10 +249,13 @@ export default function VenueHubPage() {
             </div>
           ) : (
             <div className="card p-6 text-center text-text-muted text-sm">Henüz şablon eklenmedi.</div>
-          )}
+          ))}
         </div>
       )}
 
+      {/* Form açıkken sadece şablon ekleme görünür; odalar/linkler gizlenir */}
+      {!showTemplateForm && (
+      <>
       {/* Odalar */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -327,6 +330,8 @@ export default function VenueHubPage() {
           </Link>
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }
