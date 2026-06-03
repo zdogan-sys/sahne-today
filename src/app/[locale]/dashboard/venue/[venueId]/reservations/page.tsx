@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
-import { ArrowLeft, Check, X, Loader2, Clock, Pencil } from 'lucide-react'
+import { ArrowLeft, Check, X, Loader2, Clock, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { TimeSlotPicker } from '@/components/ui/TimeSlotPicker'
@@ -56,6 +56,14 @@ export default function VenueReservationsPage() {
     setActing(id)
     await supabase.from('studio_reservations').update({ status } as any).eq('id', id)
     setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    setActing(null)
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Bu rezervasyon kalıcı olarak silinecek. Emin misin?')) return
+    setActing(id)
+    await supabase.from('studio_reservations').delete().eq('id', id)
+    setReservations(prev => prev.filter(r => r.id !== id))
     setActing(null)
   }
 
@@ -200,12 +208,18 @@ export default function VenueReservationsPage() {
                         </button>
                       </>
                     )}
-                  {res.status === 'confirmed' && (
-                    <button onClick={() => { if (confirm('Bu rezervasyon iptal edilsin mi?')) handleUpdate(res.id, 'cancelled') }} disabled={acting === res.id}
-                      className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40" title="İptal Et">
-                      <X size={14} />
-                    </button>
-                  )}
+                    {res.status === 'confirmed' && (
+                      <button onClick={() => { if (confirm('Bu rezervasyon iptal edilsin mi?')) handleUpdate(res.id, 'cancelled') }} disabled={acting === res.id}
+                        className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40" title="İptal Et">
+                        <X size={14} />
+                      </button>
+                    )}
+                    {res.status === 'cancelled' && (
+                      <button onClick={() => handleDelete(res.id)} disabled={acting === res.id}
+                        className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center disabled:opacity-40" title="Kalıcı Olarak Sil">
+                        {acting === res.id ? <Loader2 size={14} className='animate-spin' /> : <Trash2 size={14} />}
+                      </button>
+                    )}
                   </div>
                 </div>
 
