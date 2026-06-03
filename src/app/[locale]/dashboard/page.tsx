@@ -7,6 +7,8 @@ import { VenueDashboard } from '@/components/dashboard/VenueDashboard'
 import { ArtistDashboard } from '@/components/dashboard/ArtistDashboard'
 import { AudienceDashboard } from '@/components/dashboard/AudienceDashboard'
 import { StudentDashboard } from '@/components/dashboard/StudentDashboard'
+import { CalendarDays } from 'lucide-react'
+import Link from 'next/link'
 import { UserProfileEditor } from '@/components/dashboard/UserProfileEditor'
 import { FoundingMemberBadge } from '@/components/ui/FoundingMemberBadge'
 import type { Profile } from '@/lib/supabase/types'
@@ -59,6 +61,11 @@ export default async function DashboardPage() {
           <p className="text-text-muted text-sm">
             {t('title')}
           </p>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <Link href="/dashboard/calendar" className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors border border-[rgba(228,224,216,0.1)] px-3 py-1.5 rounded-full hover:border-accent/40">
+              <CalendarDays size={13} /> Kişisel Takvim
+            </Link>
+          </div>
           <UserProfileEditor
             userId={user.id}
             initialData={{
