@@ -158,22 +158,24 @@ export default function RoomCalendarPage() {
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }
   function thisWeek() { setWeekStart(getMonday(new Date())) }
 
-  // Grid map: key = `${col}-${hour}` → item
-  const grid: Record<string, any> = {}
+  // Grid map: key = `${col}-${hour}` → item listesi (çakışma olursa üst üste gösterilir)
+  const grid: Record<string, any[]> = {}
   if (isLesson) {
     lessons.forEach(l => {
       if (!l.slot_date) return
       const col = weekDates.findIndex(wd => dateStr(wd) === l.slot_date)
       if (col === -1) return
       const hour = parseInt(l.start_time.split(':')[0])
-      grid[`${col}-${hour}`] = l
+      const key = `${col}-${hour}`
+      ;(grid[key] = grid[key] || []).push(l)
     })
   } else {
     reservations.forEach(r => {
       const col = weekDates.findIndex(wd => dateStr(wd) === r.reservation_date)
       if (col === -1) return
       const hour = parseInt(r.start_time.split(':')[0])
-      grid[`${col}-${hour}`] = r
+      const key = `${col}-${hour}`
+      ;(grid[key] = grid[key] || []).push(r)
     })
   }
 
@@ -393,28 +395,12 @@ export default function RoomCalendarPage() {
   }
 
   // Dersi başka odaya taşı. allWeeks=true ise serinin tüm slotları taşınır.
+  // Not: Hedef odada aynı saatte ders olsa bile taşımaya izin verilir; aynı hücrede
+  // üst üste gösterilir, kullanıcı sürükleyerek boş saate ayırabilir.
   async function applyRoomMove(slot: any, targetRoomId: string, allWeeks: boolean) {
     const seriesSlots = allWeeks && slot.series_id
       ? lessons.filter(l => l.series_id === slot.series_id)
       : [slot]
-
-    // Hedef odada aynı tarih+saatte ders var mı? (DB'den sorgula)
-    const dates = seriesSlots.map(s => s.slot_date)
-    const { data: targetSlots } = await supabase
-      .from('teaching_slots')
-      .select('slot_date, start_time, instrument')
-      .eq('room_id', targetRoomId)
-      .eq('is_active', true)
-      .in('slot_date', dates)
-
-    for (const s of seriesSlots) {
-      const hour = parseInt(s.start_time.split(':')[0])
-      const conflict = (targetSlots ?? []).find((t: any) => t.slot_date === s.slot_date && parseInt(t.start_time.split(':')[0]) === hour)
-      if (conflict) {
-        setError(`Hedef odada çakışma: ${new Date(s.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} ${pad(hour)}:00'da "${conflict.instrument}" var. Taşıma iptal edildi.`)
-        return
-      }
-    }
 
     setSaving(true)
     await Promise.all(seriesSlots.map(s =>
@@ -497,13 +483,17 @@ export default function RoomCalendarPage() {
                 {/* Hücreler */}
                 {weekDates.map((_, col) => {
                   const key = `${col}-${hour}`
-                  const item = grid[key]
+                  const items = grid[key] ?? []
                   return (
-                    <Cell key={key} id={key} hasItem={!!item} dayLight={DAY_LIGHT[col]} isLesson={isLesson} onAdd={() => openAdd(col, hour)}>
-                      {item && (
-                        isLesson
-                          ? <LessonChip lesson={item} color={DAY_COLORS[col]} light={DAY_LIGHT[col]} onClick={() => { setDetailItem(item); setShowAddStudent(false); setStuMemberQuery('') }} />
-                          : <ReservationChip res={item} onClick={() => setDetailItem(item)} />
+                    <Cell key={key} id={key} hasItem={items.length > 0} dayLight={DAY_LIGHT[col]} isLesson={isLesson} onAdd={() => openAdd(col, hour)}>
+                      {items.length > 0 && (
+                        <div className="flex flex-col gap-0.5 h-full">
+                          {items.map((item: any) => (
+                            isLesson
+                              ? <LessonChip key={item.id} lesson={item} color={DAY_COLORS[col]} light={DAY_LIGHT[col]} onClick={() => { setDetailItem(item); setShowAddStudent(false); setStuMemberQuery('') }} />
+                              : <ReservationChip key={item.id} res={item} onClick={() => setDetailItem(item)} />
+                          ))}
+                        </div>
                       )}
                     </Cell>
                   )
