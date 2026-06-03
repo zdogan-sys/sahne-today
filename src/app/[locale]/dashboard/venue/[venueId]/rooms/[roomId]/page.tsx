@@ -51,6 +51,7 @@ export default function RoomCalendarPage() {
   // Modals
   const [addCell, setAddCell] = useState<{ col: number; hour: number } | null>(null)
   const [detailItem, setDetailItem] = useState<any>(null)
+  const [pendingMove, setPendingMove] = useState<{ slot: any; newCol: number; newHour: number; seriesCount: number } | null>(null)
 
   const [form, setForm] = useState({
     student_name: '', student_email: '', student_phone: '', student_id: null as string | null,
@@ -89,9 +90,26 @@ export default function RoomCalendarPage() {
         supabase.from('teaching_slots').select('*, teaching_bookings(id, student_id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
         supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
       ])
+      const slotsData = lessRes.data ?? []
+
+      // Backfill: series_id'si olmayan eski kursları gün/saat/eğitmen/ders eşleşmesiyle grupla ve kalıcı series_id ata
+      const missing = slotsData.filter((s: any) => !s.series_id)
+      if (missing.length > 0) {
+        const groupKey = new Map<string, string>()
+        const updates: { id: string; series_id: string }[] = []
+        for (const s of missing) {
+          const key = `${s.instrument}|${s.instructor_name}|${s.start_time}|${s.day_of_week}`
+          let sid = groupKey.get(key)
+          if (!sid) { sid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; groupKey.set(key, sid) }
+          s.series_id = sid
+          updates.push({ id: s.id, series_id: sid })
+        }
+        await Promise.all(updates.map(u => supabase.from('teaching_slots').update({ series_id: u.series_id }).eq('id', u.id)))
+      }
+
       setInstructors(instRes.data ?? [])
       setTemplates(templRes.data ?? [])
-      setLessons(lessRes.data ?? [])
+      setLessons(slotsData)
       setMembers(memRes.data ?? [])
     } else {
       const resRes = await supabase.from('studio_reservations').select('*').eq('room_id', roomId).not('status', 'eq', 'cancelled')
@@ -284,13 +302,58 @@ export default function RoomCalendarPage() {
     const newDate = dateStr(weekDates[newCol])
     if (newDate === lesson.slot_date && newHour === parseInt(lesson.start_time.split(':')[0])) return
 
+    setError('')
+    const seriesCount = lesson.series_id ? lessons.filter(l => l.series_id === lesson.series_id).length : 1
+
+    // Seride birden fazla ders varsa: tüm haftalara mı diye sor
+    if (seriesCount > 1) {
+      setPendingMove({ slot: lesson, newCol, newHour, seriesCount })
+      return
+    }
+
+    // Tek ders → doğrudan taşı (hedef hücre doluysa engelle)
+    await applyMove(lesson, newCol, newHour, false)
+  }
+
+  // newCol: 0=Pzt..6=Paz, hedef saat newHour. allWeeks=true ise serinin tüm slotları taşınır.
+  async function applyMove(slot: any, newCol: number, newHour: number, allWeeks: boolean) {
+    const newDayOfWeek = weekDates[newCol].getDay()
+    const startTime = `${pad(newHour)}:00:00`
+    const endTime = `${pad(newHour + 1)}:00:00`
+
+    const seriesSlots = allWeeks && slot.series_id
+      ? lessons.filter(l => l.series_id === slot.series_id)
+      : [slot]
+    const movingIds = new Set(seriesSlots.map(s => s.id))
+
+    // Her slot için yeni tarihi hesapla (kendi haftasındaki yeni gün)
+    const updates = seriesSlots.map(s => {
+      const mon = getMonday(new Date(s.slot_date + 'T00:00:00'))
+      const nd = new Date(mon)
+      nd.setDate(mon.getDate() + newCol) // newCol zaten Pzt=0 tabanlı
+      return { id: s.id, slot_date: dateStr(nd) }
+    })
+
+    // Çakışma kontrolü: hedef tarih+saatte (aynı oda) başka bir ders var mı?
+    for (const u of updates) {
+      const conflict = lessons.find(l =>
+        !movingIds.has(l.id) &&
+        l.slot_date === u.slot_date &&
+        parseInt(l.start_time.split(':')[0]) === newHour
+      )
+      if (conflict) {
+        setError(`Çakışma: ${new Date(u.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} ${pad(newHour)}:00'da "${conflict.instrument}" dersi var. Taşıma iptal edildi.`)
+        return
+      }
+    }
+
     setSaving(true)
-    await supabase.from('teaching_slots').update({
-      day_of_week: weekDates[newCol].getDay(),
-      slot_date: newDate,
-      start_time: `${pad(newHour)}:00:00`,
-      end_time: `${pad(newHour + 1)}:00:00`,
-    }).eq('id', lesson.id)
+    await Promise.all(updates.map(u =>
+      supabase.from('teaching_slots').update({
+        day_of_week: newDayOfWeek, slot_date: u.slot_date, start_time: startTime, end_time: endTime,
+      }).eq('id', u.id)
+    ))
+    setPendingMove(null)
     await load()
     setSaving(false)
   }
@@ -321,6 +384,14 @@ export default function RoomCalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* Genel hata (sürükle-bırak çakışması vb.) */}
+      {error && !addCell && !detailItem && !pendingMove && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-3 py-2 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Takvim — açık tema */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -585,6 +656,38 @@ export default function RoomCalendarPage() {
               </span>
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* === TAŞIMA ONAY MODALI === */}
+      {pendingMove && (
+        <Modal onClose={() => setPendingMove(null)} title="Dersi Taşı">
+          <div className="space-y-4">
+            <p className="text-text-primary text-sm">
+              <strong>{pendingMove.slot.instrument}</strong> dersi{' '}
+              <strong>{DAYS_TR[pendingMove.newCol]} {pad(pendingMove.newHour)}:00</strong>'a taşınıyor.
+            </p>
+            <p className="text-text-muted text-sm">
+              Bu kurs <strong>{pendingMove.seriesCount} haftalık</strong>. Değişiklik tüm haftalara mı uygulansın?
+            </p>
+
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+
+            <div className="space-y-2">
+              <button onClick={() => applyMove(pendingMove.slot, pendingMove.newCol, pendingMove.newHour, true)} disabled={saving}
+                className="btn-accent w-full py-2.5 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                {saving ? <Loader2 size={13} className="animate-spin" /> : null} Tüm Haftalara Uygula
+              </button>
+              <button onClick={() => applyMove(pendingMove.slot, pendingMove.newCol, pendingMove.newHour, false)} disabled={saving}
+                className="w-full py-2.5 text-sm rounded-lg border border-[rgba(228,224,216,0.15)] text-text-primary hover:bg-[rgba(228,224,216,0.04)] disabled:opacity-50">
+                Sadece Bu Hafta
+              </button>
+              <button onClick={() => { setPendingMove(null); setError('') }} disabled={saving}
+                className="w-full py-2 text-xs text-text-muted hover:text-text-primary">
+                Vazgeç
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
