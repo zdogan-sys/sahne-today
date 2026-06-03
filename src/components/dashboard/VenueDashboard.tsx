@@ -420,24 +420,26 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                  🚪 Odalar
-                </Link>
-                <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                  🕐 Ders Saatleri
-                </Link>
-                <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                  📚 Kurslar
-                </Link>
-                {v.venue_type === 'dance_studio' && (
-                  <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                    👤 Eğitmenler
+                {v.venue_type === 'studio' && (
+                  <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                    🚪 Odalar
                   </Link>
                 )}
-                {v.venue_type === 'music_school' && (
-                  <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                    👤 Eğitmenler
-                  </Link>
+                {['dance_studio', 'music_school'].includes(v.venue_type) && (
+                  <>
+                    <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                      🚪 Salonlar
+                    </Link>
+                    <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                      👤 Eğitmenler
+                    </Link>
+                    <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                      🕐 Ders Saatleri
+                    </Link>
+                    <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                      📚 Kurslar
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

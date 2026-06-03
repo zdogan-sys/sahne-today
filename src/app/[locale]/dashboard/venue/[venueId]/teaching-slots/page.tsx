@@ -68,11 +68,16 @@ export default function VenueTeachingSlotsPage() {
 
     const { data: venueData } = await supabase
       .from('venues')
-      .select('id, name, owner_id')
+      .select('id, name, owner_id, venue_type')
       .eq('id', venueId)
       .single()
 
     if (!venueData || venueData.owner_id !== user.id) {
+      router.push('/dashboard')
+      return
+    }
+
+    if (!['dance_studio', 'music_school'].includes(venueData.venue_type)) {
       router.push('/dashboard')
       return
     }
