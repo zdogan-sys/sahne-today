@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, X, Loader2, Trash2, GraduationCap, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { DndContext, DragEndEvent, useDraggable, useDroppable, useSensor, useSensors, PointerSensor } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, useDraggable, useDroppable, useSensor, useSensors, PointerSensor, pointerWithin } from '@dnd-kit/core'
 
 // Pazartesi → Pazar
 const DAYS_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']
@@ -454,7 +454,7 @@ export default function RoomCalendarPage() {
         </div>
       </div>
 
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
         {/* Oda sekmeleri — dersi sürükleyip başka oda sekmesine bırakabilirsin */}
         {rooms.length > 1 && (
           <div className="flex gap-2 flex-wrap items-center mb-5">
