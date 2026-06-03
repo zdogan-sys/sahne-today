@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, GraduationCap, Clock } from 'lucide-react'
+import { BookOpen, GraduationCap, Clock, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -17,6 +17,7 @@ export function StudentDashboard({ userId }: { userId: string }) {
   const supabase = createClient()
   const [bookings, setBookings] = useState<any[]>([])
   const [enrollments, setEnrollments] = useState<any[]>([])
+  const [studioReservations, setStudioReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export function StudentDashboard({ userId }: { userId: string }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [bookingsRes, enrollmentsRes] = await Promise.all([
+      const [bookingsRes, enrollmentsRes, studioRes] = await Promise.all([
         supabase
           .from('teaching_bookings')
           .select('id, lesson_date, status, teaching_slots(instrument, instructor_name, start_time, end_time, artists(stage_name), venues(name))')
@@ -39,10 +40,18 @@ export function StudentDashboard({ userId }: { userId: string }) {
           .not('status', 'eq', 'cancelled')
           .order('created_at', { ascending: false })
           .limit(10),
+        supabase
+          .from('studio_reservations')
+          .select('id, reservation_date, start_time, end_time, status, room_name, total_price, venues(id, name)')
+          .eq('reserver_id', user.id)
+          .not('status', 'eq', 'cancelled')
+          .order('reservation_date', { ascending: true })
+          .limit(10),
       ])
 
       setBookings(bookingsRes.data ?? [])
       setEnrollments(enrollmentsRes.data ?? [])
+      setStudioReservations(studioRes.data ?? [])
       setLoading(false)
     }
     load()
@@ -50,11 +59,40 @@ export function StudentDashboard({ userId }: { userId: string }) {
   }, [userId])
 
   if (loading) return null
-  if (bookings.length === 0 && enrollments.length === 0) return null
+  if (bookings.length === 0 && enrollments.length === 0 && studioReservations.length === 0) return null
 
   return (
     <div className="space-y-6">
-      <h2 className="font-bebas text-2xl text-text-primary">DERSLERİM & KURSLARIM</h2>
+      <h2 className="font-bebas text-2xl text-text-primary">DERSLERİM, KURSLARIM & REZERVASYONLARlM</h2>
+
+      {studioReservations.length > 0 && (
+        <div>
+          <h3 className="text-text-muted text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Building2 size={12} /> Stüdyo Rezervasyonları
+          </h3>
+          <div className="space-y-2">
+            {studioReservations.map(r => {
+              const s = STATUS_LABEL[r.status] ?? STATUS_LABEL.pending
+              const dateStr = new Date(r.reservation_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+              return (
+                <Link key={r.id} href={`/venues/${r.venues?.id}`} className="card p-3 flex items-center gap-3 hover:border-accent/30 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium">{r.venues?.name}</p>
+                    <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
+                      <Clock size={9} /> {dateStr} · {r.start_time?.slice(0, 5)}–{r.end_time?.slice(0, 5)}
+                      {r.room_name && <span className="ml-1">· {r.room_name}</span>}
+                      {r.total_price > 0 && <span className="ml-1 text-accent font-bebas">₺{r.total_price}</span>}
+                    </p>
+                  </div>
+                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0', s.color)}>
+                    {s.label}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {bookings.length > 0 && (
         <div>
