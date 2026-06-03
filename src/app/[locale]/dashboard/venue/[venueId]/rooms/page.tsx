@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
-import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, X, Loader2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +20,7 @@ export default function VenueRoomsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
@@ -54,23 +55,49 @@ export default function VenueRoomsPage() {
     }))
   }
 
+  function startEdit(room: any) {
+    setForm({
+      name: room.name,
+      description: room.description || '',
+      price_per_hour: room.price_per_hour?.toString() || '',
+      capacity: room.capacity?.toString() || '1',
+      equipment: room.equipment || [],
+    })
+    setEditingId(room.id)
+    setShowForm(true)
+  }
+
   async function addRoom() {
     if (!form.name) { setError('Oda adı zorunludur.'); return }
     setSaving(true); setError('')
 
-    const { data, error: err } = await supabase.from('studio_rooms').insert({
-      venue_id: venueId,
-      name: form.name,
-      description: form.description || null,
-      price_per_hour: form.price_per_hour ? parseFloat(form.price_per_hour) : null,
-      capacity: parseInt(form.capacity) || 1,
-      equipment: form.equipment,
-      is_active: true,
-    } as any).select().single()
+    if (editingId) {
+      const { error: err } = await supabase.from('studio_rooms').update({
+        name: form.name,
+        description: form.description || null,
+        price_per_hour: form.price_per_hour ? parseFloat(form.price_per_hour) : null,
+        capacity: parseInt(form.capacity) || 1,
+        equipment: form.equipment,
+      } as any).eq('id', editingId)
 
-    if (err) { setError(err.message); setSaving(false); return }
+      if (err) { setError(err.message); setSaving(false); return }
+      setRooms(prev => prev.map(r => r.id === editingId ? { ...r, name: form.name, description: form.description, price_per_hour: form.price_per_hour ? parseFloat(form.price_per_hour) : null, capacity: parseInt(form.capacity), equipment: form.equipment } : r))
+      setEditingId(null)
+    } else {
+      const { data, error: err } = await supabase.from('studio_rooms').insert({
+        venue_id: venueId,
+        name: form.name,
+        description: form.description || null,
+        price_per_hour: form.price_per_hour ? parseFloat(form.price_per_hour) : null,
+        capacity: parseInt(form.capacity) || 1,
+        equipment: form.equipment,
+        is_active: true,
+      } as any).select().single()
 
-    setRooms(prev => [...prev, data])
+      if (err) { setError(err.message); setSaving(false); return }
+      setRooms(prev => [...prev, data])
+    }
+
     setForm({ name: '', description: '', price_per_hour: '', capacity: '1', equipment: [] })
     setShowForm(false)
     setSaving(false)
@@ -94,7 +121,10 @@ export default function VenueRoomsPage() {
             <h1 className="font-bebas text-4xl text-text-primary">{venue?.name}</h1>
             <p className="text-text-muted text-sm mt-0.5">Odalar / Salonlar</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+          <button onClick={() => {
+            if (!showForm) { setEditingId(null); setForm({ name: '', description: '', price_per_hour: '', capacity: '1', equipment: [] }) }
+            setShowForm(!showForm)
+          }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
             <Plus size={14} /> {showForm ? 'İptal' : 'Oda Ekle'}
           </button>
         </div>
@@ -139,7 +169,7 @@ export default function VenueRoomsPage() {
 
           <button onClick={addRoom} disabled={saving || !form.name}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
-            {saving ? <><Loader2 size={14} className="animate-spin" /> Ekleniyor...</> : <><Plus size={14} /> Oda Ekle</>}
+            {saving ? <><Loader2 size={14} className="animate-spin" /> {editingId ? 'Güncelleniyor...' : 'Ekleniyor...'}</> : <><Plus size={14} /> {editingId ? 'Odayı Düzenle' : 'Oda Ekle'}</>}
           </button>
         </div>
       )}
@@ -167,9 +197,14 @@ export default function VenueRoomsPage() {
                   </div>
                 )}
               </div>
-              <button onClick={() => deleteRoom(room.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors flex-shrink-0">
-                <X size={13} />
-              </button>
+              <div className="flex gap-1 flex-shrink-0">
+                <button onClick={() => startEdit(room)} className="p-1 text-text-muted hover:text-accent transition-colors">
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => deleteRoom(room.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors">
+                  <X size={13} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
