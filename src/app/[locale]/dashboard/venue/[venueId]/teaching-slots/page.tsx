@@ -46,12 +46,14 @@ export default function VenueTeachingSlotsPage() {
   const [templateIdx, setTemplateIdx] = useState(0)
   const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [instructorName, setInstructorName] = useState('')
+  const [subject, setSubject] = useState('')
   const [price, setPrice] = useState('')
   const [isOnline, setIsOnline] = useState(false)
   const [lessonType, setLessonType] = useState<'individual' | 'group'>('individual')
   const [maxParticipants, setMaxParticipants] = useState(1)
 
   // Manual form
+  const [manualSubject, setManualSubject] = useState('')
   const [manualInstructor, setManualInstructor] = useState('')
   const [manualDayOfWeek, setManualDayOfWeek] = useState(1)
   const [manualStartTime, setManualStartTime] = useState('10:00')
@@ -113,6 +115,7 @@ export default function VenueTeachingSlotsPage() {
       venue_id: venueId,
       artist_id: null,
       instructor_name: instructorName,
+      instrument: subject || instructorName || 'Ders',
       day_of_week: d,
       slot_date: null,
       start_time: template.start + ':00',
@@ -153,6 +156,7 @@ export default function VenueTeachingSlotsPage() {
       venue_id: venueId,
       artist_id: null,
       instructor_name: manualInstructor,
+      instrument: manualSubject || manualInstructor || 'Ders',
       day_of_week: manualSlotDate ? null : manualDayOfWeek,
       slot_date: manualSlotDate || null,
       start_time: manualStartTime + ':00',
@@ -300,6 +304,11 @@ export default function VenueTeachingSlotsPage() {
               </div>
 
               <div>
+                <label className="label">Ders Konusu <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+                <input value={subject} onChange={e => setSubject(e.target.value)} className="input-field text-sm mt-1" placeholder="Gitar, Piyano, Tango..." />
+              </div>
+
+              <div>
                 <label className="label">Saat Şablonu</label>
                 <select value={templateIdx} onChange={e => setTemplateIdx(Number(e.target.value))} className="input-field text-sm mt-1">
                   {TIME_TEMPLATES.map((t, i) => <option key={i} value={i}>{t.label}</option>)}
@@ -385,6 +394,11 @@ export default function VenueTeachingSlotsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="label">Ders Konusu <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+                <input value={manualSubject} onChange={e => setManualSubject(e.target.value)} className="input-field text-sm" placeholder="Gitar, Piyano, Tango..." />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
