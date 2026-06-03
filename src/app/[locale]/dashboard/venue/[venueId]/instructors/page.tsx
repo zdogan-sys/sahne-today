@@ -5,8 +5,9 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getListConfigs } from '@/app/actions/site'
 
-const COMMON_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Korno', 'Fagot', 'Klarnet', 'Flüt', 'Saksofon', 'Trompet', 'Trombon', 'Vokal', 'Viyolonsel', 'Obua']
+const FALLBACK_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
 
 export default function VenueInstructorsPage() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export default function VenueInstructorsPage() {
 
   const [venue, setVenue] = useState<any>(null)
   const [instructors, setInstructors] = useState<any[]>([])
+  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(FALLBACK_INSTRUMENTS)
   const [artists, setArtists] = useState<any[]>([])
   const [artistQuery, setArtistQuery] = useState('')
   const [artistFocused, setArtistFocused] = useState(false)
@@ -53,6 +55,13 @@ export default function VenueInstructorsPage() {
     setVenue(venueRes.data)
     setInstructors(instRes.data ?? [])
     setArtists(artistsRes.data ?? [])
+
+    // Admin panelden yönetilen enstrüman listesi
+    try {
+      const configs = await getListConfigs()
+      if (configs?.instruments?.length) setInstrumentOptions(configs.instruments)
+    } catch { /* fallback kullanılır */ }
+
     setLoading(false)
   }
 
@@ -141,7 +150,7 @@ export default function VenueInstructorsPage() {
           <div>
             <label className="label mb-2">Enstrümanlar *</label>
             <div className="flex flex-wrap gap-1.5">
-              {COMMON_INSTRUMENTS.map(inst => (
+              {instrumentOptions.map(inst => (
                 <button
                   key={inst}
                   onClick={() => toggleInstrument(inst)}
