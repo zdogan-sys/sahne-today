@@ -37,11 +37,14 @@ export default function RoomCalendarPage() {
   const [room, setRoom] = useState<any>(null)
   const [instructors, setInstructors] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
+  const [members, setMembers] = useState<any[]>([])
   const [lessons, setLessons] = useState<any[]>([])
   const [reservations, setReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberFocused, setMemberFocused] = useState(false)
 
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
 
@@ -50,7 +53,7 @@ export default function RoomCalendarPage() {
   const [detailItem, setDetailItem] = useState<any>(null)
 
   const [form, setForm] = useState({
-    student_name: '', student_email: '', student_phone: '',
+    student_name: '', student_email: '', student_phone: '', student_id: null as string | null,
     instructor_name: '', lesson_type: 'single' as 'single' | 'package', template_id: '',
   })
 
@@ -74,14 +77,16 @@ export default function RoomCalendarPage() {
     const lessonModule = ['dance_studio', 'music_school'].includes(venueData.venue_type)
 
     if (lessonModule) {
-      const [instRes, templRes, lessRes] = await Promise.all([
+      const [instRes, templRes, lessRes, memRes] = await Promise.all([
         supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('teaching_slots').select('*, teaching_bookings(id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
+        supabase.from('profiles').select('id, display_name, email').not('display_name', 'is', null).order('display_name').limit(500),
       ])
       setInstructors(instRes.data ?? [])
       setTemplates(templRes.data ?? [])
       setLessons(lessRes.data ?? [])
+      setMembers(memRes.data ?? [])
     } else {
       const resRes = await supabase.from('studio_reservations').select('*').eq('room_id', roomId).not('status', 'eq', 'cancelled')
       setReservations(resRes.data ?? [])
@@ -123,7 +128,8 @@ export default function RoomCalendarPage() {
 
   function openAdd(col: number, hour: number) {
     setError('')
-    setForm({ student_name: '', student_email: '', student_phone: '', instructor_name: '', lesson_type: 'single', template_id: '' })
+    setMemberQuery('')
+    setForm({ student_name: '', student_email: '', student_phone: '', student_id: null, instructor_name: '', lesson_type: 'single', template_id: '' })
     setAddCell({ col, hour })
   }
 
@@ -170,7 +176,8 @@ export default function RoomCalendarPage() {
 
     // Her slot için booking
     const bookingRows = createdSlots.map((s: any) => ({
-      slot_id: s.id, artist_id: null, student_name: form.student_name,
+      slot_id: s.id, artist_id: null, student_id: form.student_id,
+      student_name: form.student_name,
       student_email: form.student_email || 'belirtilmedi@sahne.today', student_phone: form.student_phone || '-',
       lesson_date: s.slot_date, status: 'confirmed', booked_by: 'teacher',
     }))
@@ -337,9 +344,45 @@ export default function RoomCalendarPage() {
               )}
             </div>
 
+            {/* Üye havuzundan seç */}
+            <div className="relative">
+              <label className="label text-xs">Üye havuzundan seç</label>
+              <input
+                value={memberQuery}
+                onChange={e => setMemberQuery(e.target.value)}
+                onFocus={() => setMemberFocused(true)}
+                onBlur={() => setTimeout(() => setMemberFocused(false), 150)}
+                placeholder="Tıkla veya isim/e-posta yaz..."
+                className="input-field text-sm mt-1"
+              />
+              {memberFocused && (
+                <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
+                  {(() => {
+                    const q = memberQuery.toLowerCase()
+                    const filtered = members.filter(m =>
+                      !q || (m.display_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
+                    ).slice(0, 20)
+                    if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Üye bulunamadı</p>
+                    return filtered.map(m => (
+                      <button key={m.id} type="button"
+                        onMouseDown={() => {
+                          setForm(p => ({ ...p, student_name: m.display_name ?? '', student_email: m.email ?? '', student_id: m.id }))
+                          setMemberQuery(''); setMemberFocused(false)
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                        <div>{m.display_name}</div>
+                        <div className="text-[10px] text-text-muted">{m.email}</div>
+                      </button>
+                    ))
+                  })()}
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="label text-xs">Öğrenci Adı *</label>
-              <input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value }))} className="input-field text-sm mt-1" placeholder="Ad Soyad" />
+              <input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value, student_id: null }))} className="input-field text-sm mt-1" placeholder="Ad Soyad" />
+              {form.student_id && <p className="text-accent text-[10px] mt-1">✓ Kayıtlı üye seçildi</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
