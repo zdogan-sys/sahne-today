@@ -65,7 +65,7 @@ export default async function VenuePage({ params }: Props) {
   }
   const ownerCheck = await isOwnerCheck()
 
-  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData, coursesRes, teachingSlotsRes, instructorsRes, reviewsRes, userReviewRes] = await Promise.all([
+  const [venueRes, slotsRes, upcomingEventsRes, pastEventsRes, followData, coursesRes, teachingSlotsRes, instructorsRes, reviewsRes, userReviewRes, templatesRes] = await Promise.all([
     supabase.from('venues').select('*').eq('id', id).single(),
     ownerCheck
       ? supabase.from('slots').select('*').eq('venue_id', id).order('day_of_week')
@@ -103,11 +103,12 @@ export default async function VenuePage({ params }: Props) {
     user
       ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'venue').eq('target_id', id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from('courses').select('id, title, category, level, price_per_session').eq('venue_id', id).eq('status', 'active'),
+    supabase.from('courses').select('id, title, category, level, price_per_session, created_at, max_participants, course_sessions(session_date), course_enrollments(id, status)').eq('venue_id', id).eq('status', 'active'),
     supabase.from('teaching_slots').select('id, instrument, day_of_week, slot_date, start_time, end_time, price_per_session, lesson_type, is_online').eq('venue_id', id).eq('is_active', true),
     supabase.from('venue_instructors').select('id, name, instruments, bio, photo_url').eq('venue_id', id).eq('is_active', true),
     supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('venue_id', id).order('created_at', { ascending: false }),
     user ? supabase.from('reviews').select('*').eq('venue_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+    supabase.from('venue_lesson_templates').select('id, name, subject, weeks, hours_per_session, price_total').eq('venue_id', id).eq('is_active', true).order('created_at'),
   ])
 
   if (!venueRes.data) notFound()
@@ -115,7 +116,13 @@ export default async function VenuePage({ params }: Props) {
   const slots = (slotsRes.data ?? []) as unknown as Slot[]
   const upcomingEvents = (upcomingEventsRes.data ?? []) as any[]
   const pastEvents = (pastEventsRes.data ?? []) as any[]
-  const coursesAtVenue = (coursesRes.data ?? []) as any[]
+  const coursesAtVenue = ((coursesRes.data ?? []) as any[])
+    .map((c: any) => {
+      const dates = (c.course_sessions ?? []).map((s: any) => s.session_date).filter(Boolean).sort()
+      return { ...c, startDate: dates[0] ?? null }
+    })
+    .sort((a: any, b: any) => (b.startDate ?? b.created_at ?? '').localeCompare(a.startDate ?? a.created_at ?? ''))
+  const lessonTemplates = (templatesRes.data ?? []) as any[]
   const teachingSlotsAtVenue = (teachingSlotsRes.data ?? []) as any[]
   const venueInstructors = (instructorsRes.data ?? []) as any[]
   const venueReviews = (reviewsRes.data ?? []) as any[]
@@ -343,10 +350,37 @@ export default async function VenuePage({ params }: Props) {
           </Link>
         )}
 
-        {/* Kurslar */}
+        {/* Derslerimiz — ders teklifleri (şablonlar) */}
+        {lessonTemplates.length > 0 && (
+          <div>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'OUR LESSONS' : 'DERSLERİMİZ'}</h2>
+            <div className="space-y-2">
+              {lessonTemplates.map((tmpl) => (
+                <Link
+                  key={tmpl.id}
+                  href={`/venues/${venue.id}/lessons/${tmpl.id}`}
+                  className="card p-3 flex items-center justify-between hover:border-accent/30 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-text-primary text-sm">{tmpl.name}</p>
+                    <p className="text-text-muted text-xs mt-0.5">
+                      {tmpl.subject && `${tmpl.subject} · `}{tmpl.weeks} {isEn ? 'weeks' : 'hafta'} · {tmpl.hours_per_session} {isEn ? 'h/session' : 'saat/seans'}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    {tmpl.price_total > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.price_total}</span>}
+                    <p className="text-accent text-xs">{isEn ? 'Book →' : 'Talep Et →'}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Yeni Açılan Kurslarımız — gerçek kurslar (sondan geriye) */}
         {coursesAtVenue.length > 0 && (
           <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'COURSES' : 'KURSLAR'}</h2>
+            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'NEW COURSES' : 'YENİ AÇILAN KURSLARIMIZ'}</h2>
             <div className="space-y-2">
               {coursesAtVenue.map((course) => (
                 <Link
@@ -354,6 +388,11 @@ export default async function VenuePage({ params }: Props) {
                   href={`/courses/${course.id}`}
                   className="card p-3 hover:border-accent/30 transition-colors block"
                 >
+                  {course.startDate && (
+                    <p className="text-accent text-xs font-medium mb-1">
+                      {new Date(course.startDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
                   <p className="font-medium text-text-primary text-sm">{course.title}</p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className="text-[10px] px-2 py-0.5 rounded border border-[rgba(228,224,216,0.15)] text-text-muted">

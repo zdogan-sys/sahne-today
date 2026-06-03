@@ -25,12 +25,19 @@ export default function VenueReservationsPage() {
   const [venue, setVenue] = useState<any>(null)
   const [rooms, setRooms] = useState<any[]>([])
   const [reservations, setReservations] = useState<any[]>([])
+  const [lessonRequests, setLessonRequests] = useState<any[]>([])
+  const [instructors, setInstructors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [mainTab, setMainTab] = useState<'studio' | 'lessons'>('studio')
   const [activeTab, setActiveTab] = useState('pending')
   const [acting, setActing] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ start_time: '', duration: 2, room_id: '' })
   const [saving, setSaving] = useState(false)
+
+  // Ders talebi onay formu
+  const [assignReqId, setAssignReqId] = useState<string | null>(null)
+  const [assign, setAssign] = useState({ room_id: '', instructor_name: '', date: '', time: '10:00' })
 
   useEffect(() => { load() }, [])
 
@@ -38,10 +45,12 @@ export default function VenueReservationsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [venueRes, roomsRes, resRes] = await Promise.all([
+    const [venueRes, roomsRes, resRes, reqRes, instRes] = await Promise.all([
       supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
       supabase.from('studio_rooms').select('id, name, price_per_hour').eq('venue_id', venueId).eq('is_active', true),
       supabase.from('studio_reservations').select('*').eq('venue_id', venueId).order('reservation_date', { ascending: false }),
+      supabase.from('lesson_requests').select('*, venue_lesson_templates(name, subject, weeks, hours_per_session, price_total)').eq('venue_id', venueId).order('created_at', { ascending: false }),
+      supabase.from('venue_instructors').select('id, name').eq('venue_id', venueId).eq('is_active', true),
     ])
 
     if (!venueRes.data || venueRes.data.owner_id !== user.id) { router.push('/dashboard'); return }
@@ -49,7 +58,69 @@ export default function VenueReservationsPage() {
     setVenue(venueRes.data)
     setRooms(roomsRes.data ?? [])
     setReservations(resRes.data ?? [])
+    setLessonRequests(reqRes.data ?? [])
+    setInstructors(instRes.data ?? [])
     setLoading(false)
+  }
+
+  function startAssign(req: any) {
+    setAssign({
+      room_id: rooms[0]?.id ?? '',
+      instructor_name: req.preferred_instructor ?? '',
+      date: req.requested_date ?? new Date().toISOString().split('T')[0],
+      time: req.requested_time ? req.requested_time.slice(0, 5) : '10:00',
+    })
+    setAssignReqId(req.id)
+  }
+
+  async function approveRequest(req: any) {
+    if (!assign.room_id) { alert('Lütfen bir oda seçin.'); return }
+    setSaving(true)
+
+    const tmpl = req.venue_lesson_templates
+    const weeks = tmpl?.weeks ?? 1
+    const subject = tmpl?.name ?? 'Ders'
+    const pricePer = tmpl && tmpl.weeks > 0 ? tmpl.price_total / tmpl.weeks : (tmpl?.price_total ?? 0)
+    const startHour = parseInt(assign.time.split(':')[0])
+    const startTime = `${String(startHour).padStart(2, '0')}:00:00`
+    const endTime = `${String(startHour + 1).padStart(2, '0')}:00:00`
+    const baseDate = new Date(assign.date + 'T00:00:00')
+    const seriesId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const dStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+    const slotRows = []
+    for (let w = 0; w < weeks; w++) {
+      const d = new Date(baseDate); d.setDate(d.getDate() + w * 7)
+      slotRows.push({
+        venue_id: venueId, room_id: assign.room_id, artist_id: null,
+        instructor_name: assign.instructor_name || null, instrument: subject,
+        day_of_week: baseDate.getDay(), slot_date: dStr(d),
+        start_time: startTime, end_time: endTime,
+        price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
+        series_id: seriesId,
+      })
+    }
+
+    const { data: createdSlots, error: slotErr } = await supabase.from('teaching_slots').insert(slotRows as any).select()
+    if (slotErr || !createdSlots) { alert(slotErr?.message ?? 'Slot oluşturulamadı'); setSaving(false); return }
+
+    const bookingRows = createdSlots.map((s: any) => ({
+      slot_id: s.id, artist_id: null, student_id: req.student_id,
+      student_name: req.student_name, student_email: req.student_email, student_phone: req.student_phone,
+      lesson_date: s.slot_date, status: 'confirmed', booked_by: 'teacher',
+    }))
+    await supabase.from('teaching_bookings').insert(bookingRows as any)
+
+    await supabase.from('lesson_requests').update({ status: 'approved' }).eq('id', req.id)
+    setLessonRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r))
+    setAssignReqId(null)
+    setSaving(false)
+  }
+
+  async function rejectRequest(reqId: string) {
+    await supabase.from('lesson_requests').update({ status: 'rejected' }).eq('id', reqId)
+    setLessonRequests(prev => prev.map(r => r.id === reqId ? { ...r, status: 'rejected' } : r))
   }
 
   async function handleUpdate(id: string, status: 'confirmed' | 'cancelled') {
@@ -115,6 +186,8 @@ export default function VenueReservationsPage() {
 
   const filtered = reservations.filter(r => r.status === activeTab)
   const pendingCount = reservations.filter(r => r.status === 'pending').length
+  const pendingRequests = lessonRequests.filter(r => r.status === 'pending')
+  const pendingRequestCount = pendingRequests.length
 
   if (loading) return (
     <div className="max-w-2xl mx-auto px-4 py-12 flex justify-center">
@@ -132,6 +205,104 @@ export default function VenueReservationsPage() {
         <p className="text-text-muted text-sm mt-0.5">Rezervasyonlar</p>
       </div>
 
+      {/* Ana sekmeler: Stüdyo Rezervasyonları | Ders Talepleri */}
+      <div className="flex gap-2 border-b border-[rgba(228,224,216,0.1)]">
+        <button onClick={() => setMainTab('studio')}
+          className={cn('px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            mainTab === 'studio' ? 'text-accent border-accent' : 'text-text-muted border-transparent hover:text-text-primary')}>
+          Stüdyo Rezervasyonları
+        </button>
+        <button onClick={() => setMainTab('lessons')}
+          className={cn('px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5',
+            mainTab === 'lessons' ? 'text-accent border-accent' : 'text-text-muted border-transparent hover:text-text-primary')}>
+          Ders Talepleri
+          {pendingRequestCount > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold">{pendingRequestCount}</span>}
+        </button>
+      </div>
+
+      {/* === DERS TALEPLERİ === */}
+      {mainTab === 'lessons' && (
+        pendingRequests.length === 0 ? (
+          <div className="card p-8 text-center text-text-muted text-sm">Bekleyen ders talebi yok.</div>
+        ) : (
+          <div className="space-y-2">
+            {pendingRequests.map(req => {
+              const tmpl = req.venue_lesson_templates
+              const isAssigning = assignReqId === req.id
+              return (
+                <div key={req.id} className="card p-4 space-y-3 border-yellow-400/20">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-text-primary">{req.student_name}</p>
+                        <span className={cn('text-[10px] px-1.5 py-0.5 rounded border', req.request_type === 'private' ? 'text-accent bg-accent/10 border-accent/20' : 'text-purple-400 bg-purple-400/10 border-purple-400/20')}>
+                          {req.request_type === 'private' ? 'Özel' : 'Grup (Ön Kayıt)'}
+                        </span>
+                      </div>
+                      <p className="text-text-muted text-xs mt-0.5">{tmpl?.name ?? 'Ders'} · {tmpl?.weeks ?? 1} hafta</p>
+                      {req.requested_date && (
+                        <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
+                          <Clock size={10} /> İstenen: {new Date(req.requested_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} · {req.requested_time?.slice(0, 5)}
+                        </p>
+                      )}
+                      <p className="text-text-muted text-xs mt-0.5">{req.student_phone} · {req.student_email}</p>
+                      {req.preferred_instructor && <p className="text-text-muted text-xs mt-0.5">Eğitmen tercihi: {req.preferred_instructor}</p>}
+                      {req.notes && <p className="text-text-muted text-xs mt-1 italic">"{req.notes}"</p>}
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button onClick={() => isAssigning ? setAssignReqId(null) : startAssign(req)}
+                        className={cn('px-2.5 h-8 rounded-lg text-xs flex items-center transition-colors', isAssigning ? 'bg-accent/20 text-accent' : 'bg-success/10 text-success hover:bg-success/20')}>
+                        Onayla
+                      </button>
+                      <button onClick={() => rejectRequest(req.id)} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center"><X size={14} /></button>
+                    </div>
+                  </div>
+
+                  {/* Atama formu */}
+                  {isAssigning && (
+                    <div className="pt-3 border-t border-[rgba(228,224,216,0.08)] space-y-3">
+                      <div>
+                        <label className="label text-xs">Oda *</label>
+                        <select value={assign.room_id} onChange={e => setAssign(p => ({ ...p, room_id: e.target.value }))} className="input-field text-sm mt-1">
+                          <option value="">Oda seçin...</option>
+                          {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label text-xs">Eğitmen <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+                        <select value={assign.instructor_name} onChange={e => setAssign(p => ({ ...p, instructor_name: e.target.value }))} className="input-field text-sm mt-1">
+                          <option value="">Sonra atanacak</option>
+                          {instructors.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="label text-xs">Başlangıç Tarihi</label>
+                          <input type="date" value={assign.date} onChange={e => setAssign(p => ({ ...p, date: e.target.value }))} className="input-field text-sm mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">Saat</label>
+                          <select value={assign.time} onChange={e => setAssign(p => ({ ...p, time: e.target.value }))} className="input-field text-sm mt-1">
+                            {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <button onClick={() => approveRequest(req)} disabled={saving || !assign.room_id} className="btn-accent w-full py-2 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {saving ? <><Loader2 size={13} className="animate-spin" /> İşleniyor...</> : <><Check size={14} /> Onayla & Takvime İşle</>}
+                      </button>
+                      <p className="text-text-muted text-[10px] text-center">{tmpl?.weeks ?? 1} haftalık ders, seçilen odanın takvimine işlenecek.</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      )}
+
+      {/* === STÜDYO REZERVASYONLARI === */}
+      {mainTab === 'studio' && (
+      <>
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-lg bg-[rgba(228,224,216,0.05)] border border-[rgba(228,224,216,0.08)]">
         {STATUS_TABS.map(tab => (
@@ -269,6 +440,8 @@ export default function VenueReservationsPage() {
             )
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   )

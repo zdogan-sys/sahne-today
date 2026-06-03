@@ -192,8 +192,8 @@ export default function VenueHubPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bebas text-2xl text-text-primary">DERS ŞABLONLARı</h2>
-              <p className="text-text-muted text-xs">Mekan geneli — tüm odalarda kullanılabilir</p>
+              <h2 className="font-bebas text-2xl text-text-primary">DERSLERİMİZ</h2>
+              <p className="text-text-muted text-xs">Profilinizde yayınlanır — öğrenciler buradan grup/özel ders talebi oluşturur</p>
             </div>
             <button onClick={() => { setShowTemplateForm(!showTemplateForm); setEditingTemplateId(null); setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
               <Plus size={14} /> {showTemplateForm ? 'İptal' : 'Şablon Ekle'}
