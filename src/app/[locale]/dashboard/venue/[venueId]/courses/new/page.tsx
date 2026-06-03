@@ -229,21 +229,7 @@ export default function VenueNewCoursePage() {
             </div>
           </div>
 
-          {subcats.length > 0 && (
-            <div>
-              <label className="label mb-2">Altkaregori</label>
-              <div className="flex flex-wrap gap-1.5">
-                {subcats.map(sc => (
-                  <button key={sc} onClick={() => setSubcategory(sc)}
-                    className={cn('text-xs px-3 py-1.5 rounded border transition-colors',
-                      subcategory === sc ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                    )}>
-                    {sc}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Enstrüman/konu, seçilen Derslerimiz şablonundan gelir; chip listesi gösterilmez */}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

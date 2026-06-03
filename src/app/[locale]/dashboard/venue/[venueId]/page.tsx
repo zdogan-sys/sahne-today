@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, X, Edit2, Loader2, Eye } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { getListConfigs } from '@/app/actions/site'
+
+const FALLBACK_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
 
 export default function VenueHubPage() {
   const router = useRouter()
@@ -16,6 +19,7 @@ export default function VenueHubPage() {
   const [venue, setVenue] = useState<any>(null)
   const [rooms, setRooms] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
+  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(FALLBACK_INSTRUMENTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -59,6 +63,12 @@ export default function VenueHubPage() {
 
     setRooms(roomsRes.data ?? [])
     setTemplates(templatesRes.data ?? [])
+
+    try {
+      const configs = await getListConfigs()
+      if (configs?.instruments?.length) setInstrumentOptions(configs.instruments)
+    } catch { /* fallback */ }
+
     setLoading(false)
   }, [venueId, supabase, router])
 
@@ -207,8 +217,14 @@ export default function VenueHubPage() {
                 <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} placeholder="Klasik Gitar Kursu" className="input-field text-sm w-full mt-1" />
               </div>
               <div>
-                <label className="label text-xs">Ders Konusu</label>
-                <input value={templateForm.subject} onChange={e => setTemplateForm(p => ({ ...p, subject: e.target.value }))} placeholder="Gitar" className="input-field text-sm w-full mt-1" />
+                <label className="label text-xs">Enstrüman / Konu</label>
+                <select value={templateForm.subject} onChange={e => setTemplateForm(p => ({ ...p, subject: e.target.value }))} className="input-field text-sm w-full mt-1">
+                  <option value="">Seçin...</option>
+                  {instrumentOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {templateForm.subject && !instrumentOptions.includes(templateForm.subject) && (
+                    <option value={templateForm.subject}>{templateForm.subject}</option>
+                  )}
+                </select>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
