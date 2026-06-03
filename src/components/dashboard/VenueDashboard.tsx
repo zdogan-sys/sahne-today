@@ -375,35 +375,21 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
               const venueSlots = teachingSlotsAtVenues.filter(s => s.venues?.name === v.name)
               if (venueCourses.length === 0 && venueSlots.length === 0) return null
               return (
-                <div key={v.id} className="card p-4">
+                <Link key={v.id} href={`/dashboard/venue/${v.id}`} className="card p-4 hover:border-accent/30 transition-colors cursor-pointer">
                   <p className="font-semibold text-text-primary text-sm mb-2.5">{v.name}</p>
                   <div className="flex gap-2 flex-wrap">
                     {venueCourses.length > 0 && (
-                      <Link href={`/dashboard/venue/${v.id}/courses`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
+                      <span className="py-1.5 px-2.5 rounded-lg bg-accent/10 text-accent text-xs font-medium">
                         {venueCourses.length} {isEn ? 'Courses' : 'Kurs'}
-                      </Link>
+                      </span>
                     )}
                     {venueSlots.length > 0 && (
-                      <>
-                        <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="flex-1 text-center py-2 rounded-lg bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors">
-                          {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
-                        </Link>
-                        <button
-                          onClick={async () => {
-                            if (!confirm('Bu mekana ait tüm ders slotları silinsin mi?')) return
-                            const slotIds = venueSlots.map((s: any) => s.id)
-                            await supabase.from('teaching_slots').update({ is_active: false } as any).in('id', slotIds)
-                            setTeachingSlotsAtVenues(prev => prev.filter((s: any) => s.venues?.name !== v.name))
-                          }}
-                          className="px-2.5 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors"
-                          title="Tüm ders slotlarını sil"
-                        >
-                          <X size={12} />
-                        </button>
-                      </>
+                      <span className="py-1.5 px-2.5 rounded-lg bg-accent/10 text-accent text-xs font-medium">
+                        {venueSlots.length} {isEn ? 'Lessons' : 'Ders'}
+                      </span>
                     )}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
@@ -445,34 +431,11 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                   </button>
                 </div>
 
-                {/* Yönetim linkleri */}
+                {/* Yönetim linki */}
                 <div className="flex flex-wrap gap-2">
-                  {v.venue_type === 'studio' && (
-                    <>
-                      <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        🚪 Odalar
-                      </Link>
-                      <Link href={`/dashboard/venue/${v.id}/availability`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        🕐 Çalışma Saatleri
-                      </Link>
-                    </>
-                  )}
-                  {['dance_studio', 'music_school'].includes(v.venue_type) && (
-                    <>
-                      <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        🚪 Salonlar
-                      </Link>
-                      <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        👤 Eğitmenler
-                      </Link>
-                      <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        🕐 Ders Saatleri
-                      </Link>
-                      <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                        📚 Kurslar
-                      </Link>
-                    </>
-                  )}
+                  <Link href={`/dashboard/venue/${v.id}`} className="flex-1 text-center text-xs px-3 py-1.5 rounded border text-accent border-accent/30 bg-accent/10 hover:bg-accent/20 transition-colors font-medium">
+                    ⚙️ Yönet
+                  </Link>
                 </div>
 
                 {/* Rezervasyon özeti + link */}
