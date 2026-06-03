@@ -83,8 +83,8 @@ export function StudentDashboard({ userId, calendarToken }: { userId: string; ca
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-bebas text-2xl text-text-primary">ETKİNLİKLERİM & REZERVASYONLARIM</h2>
+      <div>
+        <h2 className="font-bebas text-2xl text-text-primary mb-3">ETKİNLİKLERİM & REZERVASYONLARIM</h2>
         {calendarToken && <PersonalCalendarSubscribe token={calendarToken} />}
       </div>
 
