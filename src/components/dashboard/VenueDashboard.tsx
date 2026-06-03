@@ -437,19 +437,6 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
                     ⚙️ Yönet
                   </Link>
                 </div>
-
-                {/* Rezervasyon özeti + link */}
-                <div className="pt-2 border-t border-[rgba(228,224,216,0.08)]">
-                  <Link href={`/dashboard/venue/${v.id}/reservations`}
-                    className="flex items-center justify-between text-sm hover:text-accent transition-colors">
-                    <span className="text-text-muted">
-                      {venueReservations.length > 0
-                        ? `${venueReservations.length} rezervasyon`
-                        : 'Rezervasyon yok'}
-                    </span>
-                    <span className="text-accent text-xs">Tümünü Gör →</span>
-                  </Link>
-                </div>
               </div>
             )
           })}
