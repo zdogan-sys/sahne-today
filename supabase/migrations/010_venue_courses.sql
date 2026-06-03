@@ -24,6 +24,10 @@ CREATE POLICY "Venue instructors are publicly readable" ON venue_instructors
 CREATE POLICY "Venue owners manage instructors" ON venue_instructors
   FOR ALL USING (auth.uid() = (SELECT owner_id FROM venues WHERE id = venue_id));
 
+-- Table-level grants (self-hosted Supabase için gerekli)
+GRANT SELECT, INSERT, UPDATE, DELETE ON venue_instructors TO authenticated;
+GRANT SELECT ON venue_instructors TO anon;
+
 -- teaching_slots RLS: artist VEYA venue owner erişimi
 DROP POLICY IF EXISTS "Artists manage own teaching slots" ON teaching_slots;
 
