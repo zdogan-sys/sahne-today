@@ -580,8 +580,21 @@ function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooki
       </div>
 
       {addBookingSlot === slot.id && (
-        <div className="pt-3 border-t border-[rgba(228,224,216,0.08)] space-y-2">
+        <div className="pt-3 border-t border-[rgba(228,224,216,0.08)] space-y-3">
+          <div className="bg-[rgba(228,224,216,0.04)] p-2.5 rounded-lg border border-[rgba(228,224,216,0.08)]">
+            <p className="text-text-muted text-[10px] uppercase tracking-wide mb-1">Ders Detayları</p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-text-primary font-medium">{slot.start_time?.slice(0, 5)} – {slot.end_time?.slice(0, 5)}</span>
+              {bookForm.lesson_date && (
+                <span className="text-text-muted text-xs">
+                  · {new Date(bookForm.lesson_date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
+              )}
+            </div>
+          </div>
+
           <p className="text-text-muted text-xs">Öğrenciye onay maili gönderilecek</p>
+
           <div className="grid grid-cols-2 gap-2">
             <input value={bookForm.student_name} onChange={e => setBookForm((p: any) => ({ ...p, student_name: e.target.value }))} placeholder="Ad Soyad *" className="input-field text-xs" />
             <input type="tel" value={bookForm.student_phone} onChange={e => setBookForm((p: any) => ({ ...p, student_phone: e.target.value }))} placeholder="Telefon *" className="input-field text-xs" />
@@ -591,6 +604,7 @@ function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooki
               {nextDates.map(d => <option key={d} value={d}>{new Date(d + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}</option>)}
             </select>
           </div>
+
           <button onClick={() => onSubmitBooking(slot.id)} disabled={saving || !bookForm.student_name || !bookForm.student_email || !bookForm.student_phone || !bookForm.lesson_date}
             className="btn-accent w-full py-2 text-xs disabled:opacity-50 flex items-center justify-center gap-1.5">
             {saving ? <><Loader2 size={11} className="animate-spin" /> Gönderiliyor...</> : 'Rezervasyon Oluştur & Mail Gönder'}
