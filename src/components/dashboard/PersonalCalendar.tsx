@@ -73,13 +73,12 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
           .limit(6),
       ])
 
-      let courseSessionsRes = { data: [] }
+      let courseSessionsRes: any = { data: [] }
       try {
-        const res = await client.from('course_sessions')
+        courseSessionsRes = await client.from('course_sessions')
           .select('id, start_time, end_time, courses(id, title, category, price_per_session, profiles(display_name), venues(name))')
           .eq('session_date', dateStr)
           .limit(6)
-        courseSessionsRes = res
       } catch (e) {
         console.warn('Course sessions skipped:', e)
       }
