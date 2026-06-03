@@ -39,12 +39,28 @@ export default function VenueCoursesPage() {
 
     const { data: coursesData } = await supabase
       .from('courses')
-      .select('id, title, category, level, price_per_session, max_participants, status')
+      .select('id, title, category, level, price_per_session, max_participants, status, created_at, course_sessions(session_date)')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
 
-    setCourses(coursesData ?? [])
+    // Başlangıç tarihini hesapla, en yeni tarihliyi en üste al (sondan geriye)
+    const withDates = (coursesData ?? []).map((c: any) => {
+      const dates = (c.course_sessions ?? []).map((s: any) => s.session_date).filter(Boolean).sort()
+      return { ...c, startDate: dates[0] ?? null, endDate: dates[dates.length - 1] ?? null }
+    })
+    withDates.sort((a: any, b: any) => {
+      const av = a.startDate ?? a.created_at ?? ''
+      const bv = b.startDate ?? b.created_at ?? ''
+      return bv.localeCompare(av)
+    })
+
+    setCourses(withDates)
     setLoading(false)
+  }
+
+  function fmtDate(d: string | null) {
+    if (!d) return null
+    return new Date(d + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
   if (loading) return (
@@ -83,6 +99,11 @@ export default function VenueCoursesPage() {
             <Link key={course.id} href={`/courses/${course.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
+                  {course.startDate && (
+                    <p className="text-accent text-xs font-medium mb-1">
+                      {fmtDate(course.startDate)}{course.endDate && course.endDate !== course.startDate ? ` – ${fmtDate(course.endDate)}` : ''}
+                    </p>
+                  )}
                   <p className="font-semibold text-text-primary">{course.title}</p>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span className="text-[10px] px-2 py-0.5 rounded border border-[rgba(228,224,216,0.15)] text-text-muted">
@@ -98,7 +119,7 @@ export default function VenueCoursesPage() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bebas text-accent text-lg">₺{course.price_per_session}</p>
-                  <p className="text-text-muted text-xs">/ seans</p>
+                  <p className="text-text-muted text-xs">toplam</p>
                 </div>
               </div>
             </Link>
