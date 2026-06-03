@@ -42,7 +42,7 @@ function toISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[]; calendarToken: string | null }) {
+export function PersonalCalendar({ entries, calendarToken, showTitle = false }: { entries: Entry[]; calendarToken: string | null; showTitle?: boolean }) {
   const today = new Date(); today.setHours(0,0,0,0)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -76,19 +76,25 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
 
   return (
     <div className="space-y-6">
-      {/* Legend + Subscribe */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex flex-wrap gap-3 text-xs text-text-muted">
-          {Object.entries(TYPE_ICON).map(([type, icon]) => (
-            <span key={type} className="flex items-center gap-1">{icon} {TYPE_LABEL[type]}</span>
-          ))}
+      {/* Title + Subscribe (if showTitle) */}
+      {showTitle ? (
+        <div className="flex items-center justify-between">
+          <h1 className="font-bebas text-4xl text-text-primary">KİŞİSEL TAKVİM</h1>
+          {calendarToken && <PersonalCalendarSubscribe token={calendarToken} />}
         </div>
-        {calendarToken && (
-          <div className="relative">
-            <button onClick={() => setShowSubscribe(o => !o)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors">
-              <CalendarPlus size={13} /> Takvime Ekle
-            </button>
+      ) : (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 text-xs text-text-muted">
+            {Object.entries(TYPE_ICON).map(([type, icon]) => (
+              <span key={type} className="flex items-center gap-1">{icon} {TYPE_LABEL[type]}</span>
+            ))}
+          </div>
+          {calendarToken && (
+            <div className="relative">
+              <button onClick={() => setShowSubscribe(o => !o)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 transition-colors">
+                <CalendarPlus size={13} /> Takvime Ekle
+              </button>
             {showSubscribe && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowSubscribe(false)} />
@@ -114,10 +120,11 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
                   </div>
                 </div>
               </>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
         {/* Takvim */}

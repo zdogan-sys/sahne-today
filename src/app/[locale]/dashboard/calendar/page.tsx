@@ -82,15 +82,14 @@ export default async function PersonalCalendarPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-2 hover:text-text-primary w-fit">
-            <ArrowLeft size={16} /> Dashboard
-          </Link>
-          <h1 className="font-bebas text-4xl text-text-primary">KİŞİSEL TAKVİM</h1>
-        </div>
-      </div>
-      <PersonalCalendar entries={entries} calendarToken={(profile as any)?.calendar_token ?? null} />
+      <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
+        <ArrowLeft size={16} /> Dashboard
+      </Link>
+      <PersonalCalendar
+        entries={entries}
+        calendarToken={(profile as any)?.calendar_token ?? null}
+        showTitle={true}
+      />
     </div>
   )
 }
