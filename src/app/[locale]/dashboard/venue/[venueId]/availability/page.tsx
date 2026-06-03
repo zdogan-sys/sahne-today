@@ -106,7 +106,8 @@ export default function VenueAvailabilityPage() {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-400/50 flex-shrink-0" /><span className="text-text-muted">Mavi — Slot tanımsız, rezervasyon alınabilir</span></div>
           <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-success/50 flex-shrink-0" /><span className="text-text-muted">Yeşil — Açık slot tanımlanmış, boş</span></div>
-          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-orange-400/50 flex-shrink-0" /><span className="text-text-muted">Turuncu — Rezervasyon alınmış</span></div>
+          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-yellow-400/50 flex-shrink-0" /><span className="text-text-muted">Sarı — Onay bekleyen rezervasyon</span></div>
+          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-orange-400/50 flex-shrink-0" /><span className="text-text-muted">Turuncu — Onaylanan rezervasyon</span></div>
           <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500/50 flex-shrink-0" /><span className="text-text-muted">Kırmızı — Kapalı, rezervasyon alınmaz</span></div>
         </div>
       </div>

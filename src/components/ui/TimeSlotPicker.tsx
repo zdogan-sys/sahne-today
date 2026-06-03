@@ -6,17 +6,19 @@ import { cn } from '@/lib/utils'
 
 const HOURS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`)
 
-interface Reservation { start_time: string; end_time: string }
+interface Reservation { start_time: string; end_time: string; status: string }
 interface AvailRule { start_time: string; end_time: string; type: 'open' | 'closed' }
 
-type HourStatus = 'open_slot' | 'default_open' | 'reserved' | 'closed'
+type HourStatus = 'open_slot' | 'default_open' | 'reserved' | 'pending' | 'closed'
 
 function getStatus(hour: string, reservations: Reservation[], rules: AvailRule[]): HourStatus {
-  // Rezervasyon var mı?
+  // Onaylanan rezervasyon var mı?
   for (const r of reservations) {
     const rs = r.start_time.slice(0, 5)
     const re = r.end_time.slice(0, 5)
-    if (rs <= hour && re > hour) return 'reserved'
+    if (rs <= hour && re > hour) {
+      return r.status === 'confirmed' ? 'reserved' : 'pending'
+    }
   }
   // Kapalı kural var mı?
   for (const r of rules) {
@@ -41,6 +43,7 @@ const STATUS_STYLE: Record<HourStatus, string> = {
   open_slot:    'bg-success/10 text-success border-success/25 hover:bg-success/20',
   default_open: 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20',
   reserved:     'bg-orange-500/15 text-orange-400 border-orange-500/20 cursor-not-allowed',
+  pending:      'bg-yellow-400/15 text-yellow-400 border-yellow-400/20 cursor-not-allowed',
   closed:       'bg-red-500/15 text-red-400 border-red-500/20 cursor-not-allowed line-through',
 }
 
@@ -70,7 +73,7 @@ export function TimeSlotPicker({ venueId, date, roomId, excludeReservationId, se
 
     let resQuery = supabase
       .from('studio_reservations')
-      .select('start_time, end_time')
+      .select('start_time, end_time, status')
       .eq('venue_id', venueId)
       .eq('reservation_date', date)
       .in('status', ['confirmed', 'pending'])
@@ -104,7 +107,7 @@ export function TimeSlotPicker({ venueId, date, roomId, excludeReservationId, se
     for (let i = si; i < si + dur; i++) {
       if (i >= HOURS.length) return false
       const s = statuses[HOURS[i]]
-      if (s === 'reserved' || s === 'closed') return false
+      if (s === 'reserved' || s === 'pending' || s === 'closed') return false
     }
     return true
   }
@@ -123,7 +126,7 @@ export function TimeSlotPicker({ venueId, date, roomId, excludeReservationId, se
           {HOURS.map(h => {
             const status = statuses[h] ?? 'default_open'
             const isSelected = h === selectedStart
-            const disabled = status === 'reserved' || status === 'closed'
+            const disabled = status === 'reserved' || status === 'pending' || status === 'closed'
             return (
               <button key={h} type="button" disabled={disabled}
                 onClick={() => onSelectStart(h)}
@@ -141,7 +144,8 @@ export function TimeSlotPicker({ venueId, date, roomId, excludeReservationId, se
         <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-text-muted">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success/60 inline-block" /> Açık slot</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400/60 inline-block" /> Müsait</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400/60 inline-block" /> Rezerve</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400/60 inline-block" /> Onay bekliyor</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400/60 inline-block" /> Onaylandı</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500/60 inline-block" /> Kapalı</span>
         </div>
       </div>
