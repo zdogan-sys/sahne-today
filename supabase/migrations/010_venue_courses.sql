@@ -18,9 +18,11 @@ CREATE TABLE IF NOT EXISTS venue_instructors (
 
 ALTER TABLE venue_instructors ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Venue instructors are publicly readable" ON venue_instructors;
 CREATE POLICY "Venue instructors are publicly readable" ON venue_instructors
   FOR SELECT USING (is_active = true OR auth.uid() = (SELECT owner_id FROM venues WHERE id = venue_id));
 
+DROP POLICY IF EXISTS "Venue owners manage instructors" ON venue_instructors;
 CREATE POLICY "Venue owners manage instructors" ON venue_instructors
   FOR ALL USING (auth.uid() = (SELECT owner_id FROM venues WHERE id = venue_id));
 
