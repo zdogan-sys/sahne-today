@@ -551,25 +551,31 @@ function SlotCard({ slot, onDelete, onTogglePayment, togglingPayment, onAddBooki
   const nextDates = isOnetime ? [slot.slot_date] : getNextDates(slot.day_of_week, slot.recurrence)
 
   return (
-    <div className="card p-3 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0">
+    <div className="card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0 space-y-2">
+          {/* Başlık satırı: Eğitmen, Gün, Saat */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[#d4a820] text-xs font-semibold">{slot.instructor_name}</span>
+            <span className="text-[#d4a820] font-semibold text-sm">{slot.instructor_name}</span>
+            <span className="text-text-muted text-xs">·</span>
             <span className="text-text-primary text-sm">{dayLabel}</span>
-            <span className="text-text-muted text-xs flex items-center gap-0.5"><Clock size={9} />{slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}</span>
+            <span className="text-text-muted text-xs">·</span>
+            <span className="text-text-muted text-xs flex items-center gap-0.5"><Clock size={10} />{slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}</span>
           </div>
-          <p className="text-text-muted text-xs mt-0.5">₺{slot.price_per_session}</p>
+          {/* Fiyat */}
+          <div className="text-sm font-bebas text-accent">₺{slot.price_per_session}/seans</div>
         </div>
+
+        {/* Butonlar: Ödeme, Öğrenci, Sil */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button onClick={() => onTogglePayment(slot.id, slot.payment_enabled)} disabled={togglingPayment === slot.id}
-            className={cn('text-[10px] px-2 py-1 rounded border transition-colors disabled:opacity-40',
-              slot.payment_enabled ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+            className={cn('text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-40 font-medium',
+              slot.payment_enabled ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:border-accent/30'
             )}>
-            {slot.payment_enabled ? '₺ Açık' : '₺ Kapalı'}
+            {slot.payment_enabled ? '₺' : '₺'}
           </button>
-          <button onClick={() => onAddBooking(slot.id)} className="text-[10px] px-2 py-1 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">+ Öğrenci</button>
-          <button onClick={() => onDelete(slot.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors"><X size={13} /></button>
+          <button onClick={() => onAddBooking(slot.id)} className="text-[10px] px-3 py-1.5 rounded-lg border bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.15)] hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors font-medium">+ Ders</button>
+          <button onClick={() => onDelete(slot.id)} className="p-1.5 text-text-muted hover:text-red-400 hover:bg-red-400/5 rounded-lg transition-colors"><X size={14} /></button>
         </div>
       </div>
 
