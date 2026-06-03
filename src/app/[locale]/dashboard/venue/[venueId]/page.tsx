@@ -250,12 +250,27 @@ export default function VenueHubPage() {
 
           {showTemplateForm && (
             <div className="card p-4 space-y-3">
-              <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} placeholder="Şablon Adı (Klasik Gitar Kursu) *" className="input-field text-sm w-full" />
-              <input value={templateForm.subject} onChange={e => setTemplateForm(p => ({ ...p, subject: e.target.value }))} placeholder="Ders Konusu (Gitar)" className="input-field text-sm w-full" />
+              <div>
+                <label className="label text-xs">Şablon Adı *</label>
+                <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} placeholder="Klasik Gitar Kursu" className="input-field text-sm w-full mt-1" />
+              </div>
+              <div>
+                <label className="label text-xs">Ders Konusu</label>
+                <input value={templateForm.subject} onChange={e => setTemplateForm(p => ({ ...p, subject: e.target.value }))} placeholder="Gitar" className="input-field text-sm w-full mt-1" />
+              </div>
               <div className="grid grid-cols-3 gap-3">
-                <input type="number" min={1} value={templateForm.weeks} onChange={e => setTemplateForm(p => ({ ...p, weeks: parseInt(e.target.value) }))} placeholder="Hafta Sayısı" className="input-field text-sm" />
-                <input type="number" min={0.5} step={0.5} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} placeholder="Saat/Seans" className="input-field text-sm" />
-                <input type="number" min={0} value={templateForm.price_total} onChange={e => setTemplateForm(p => ({ ...p, price_total: parseFloat(e.target.value) }))} placeholder="Toplam Ücret" className="input-field text-sm" />
+                <div>
+                  <label className="label text-xs">Hafta Sayısı</label>
+                  <input type="number" min={1} value={templateForm.weeks} onChange={e => setTemplateForm(p => ({ ...p, weeks: parseInt(e.target.value) }))} className="input-field text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="label text-xs">Saat / Seans</label>
+                  <input type="number" min={0.5} step={0.5} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="label text-xs">Toplam Ücret (₺)</label>
+                  <input type="number" min={0} value={templateForm.price_total} onChange={e => setTemplateForm(p => ({ ...p, price_total: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
+                </div>
               </div>
               {error && <p className="text-red-400 text-xs">{error}</p>}
               <button onClick={saveTemplate} disabled={saving} className="btn-accent w-full py-2 text-sm disabled:opacity-50">
