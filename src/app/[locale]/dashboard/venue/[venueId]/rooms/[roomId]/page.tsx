@@ -30,8 +30,22 @@ export default function RoomCalendarPage() {
   const router = useRouter()
   const params = useParams()
   const venueId = params.venueId as string
-  const roomId = params.roomId as string
   const supabase = createClient()
+
+  // Aktif oda — sekme tıklamasıyla client-side değişir (tam sayfa yönlendirme yok)
+  const [activeRoomId, setActiveRoomId] = useState(params.roomId as string)
+
+  // URL'i sessizce güncelle (yenileme/paylaşım için)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const seg = window.location.pathname.split('/')
+      seg[seg.length - 1] = activeRoomId
+      window.history.replaceState(null, '', seg.join('/'))
+    }
+  }, [activeRoomId])
+
+  // Oda değişince açık modalları kapat
+  useEffect(() => { setDetailItem(null); setAddCell(null); setPendingMove(null); setPendingRoomMove(null); setError('') }, [activeRoomId])
 
   const [venue, setVenue] = useState<any>(null)
   const [room, setRoom] = useState<any>(null)
@@ -78,7 +92,7 @@ export default function RoomCalendarPage() {
     if (!venueData || venueData.owner_id !== user.id) { router.push('/dashboard'); return }
 
     const { data: allRooms } = await supabase.from('studio_rooms').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at')
-    const roomData = (allRooms ?? []).find((r: any) => r.id === roomId)
+    const roomData = (allRooms ?? []).find((r: any) => r.id === activeRoomId)
     if (!roomData) { router.push(`/dashboard/venue/${venueId}`); return }
 
     setVenue(venueData)
@@ -91,7 +105,7 @@ export default function RoomCalendarPage() {
       const [instRes, templRes, lessRes, memRes] = await Promise.all([
         supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true),
-        supabase.from('teaching_slots').select('*, teaching_bookings(id, student_id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
+        supabase.from('teaching_slots').select('*, teaching_bookings(id, student_id, student_name, student_email, student_phone, status)').eq('room_id', activeRoomId).eq('is_active', true),
         supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
       ])
       const slotsData = lessRes.data ?? []
@@ -116,12 +130,12 @@ export default function RoomCalendarPage() {
       setLessons(slotsData)
       setMembers(memRes.data ?? [])
     } else {
-      const resRes = await supabase.from('studio_reservations').select('*').eq('room_id', roomId).not('status', 'eq', 'cancelled')
+      const resRes = await supabase.from('studio_reservations').select('*').eq('room_id', activeRoomId).not('status', 'eq', 'cancelled')
       setReservations(resRes.data ?? [])
     }
 
     setLoading(false)
-  }, [venueId, roomId, supabase, router])
+  }, [venueId, activeRoomId, supabase, router])
 
   useEffect(() => { load() }, [load])
 
@@ -203,7 +217,7 @@ export default function RoomCalendarPage() {
       const d = new Date(baseDate)
       d.setDate(d.getDate() + w * 7)
       slotRows.push({
-        venue_id: venueId, room_id: roomId, artist_id: null,
+        venue_id: venueId, room_id: activeRoomId, artist_id: null,
         instructor_name: form.instructor_name, instrument: subject,
         day_of_week: colDayOfWeek, slot_date: dateStr(d),
         start_time: startTime, end_time: endTime,
@@ -309,7 +323,7 @@ export default function RoomCalendarPage() {
     // Oda sekmesine bırakıldı → başka odaya taşı
     if (overId.startsWith('room-')) {
       const targetRoomId = overId.slice(5)
-      if (targetRoomId === roomId) return
+      if (targetRoomId === activeRoomId) return
       const target = rooms.find(r => r.id === targetRoomId)
       if (!target) return
       if (seriesCount > 1) {
@@ -408,8 +422,9 @@ export default function RoomCalendarPage() {
     ))
     setPendingRoomMove(null)
     setDetailItem(null)
-    await load()
     setSaving(false)
+    // Hedef odayı aç — kullanıcı istediği gün/saate yerleştirebilsin (load activeRoomId değişince tetiklenir)
+    setActiveRoomId(targetRoomId)
   }
 
   if (loading) return <div className="max-w-7xl mx-auto px-4 py-12 flex justify-center"><Loader2 size={24} className="animate-spin text-accent" /></div>
@@ -444,7 +459,7 @@ export default function RoomCalendarPage() {
         {rooms.length > 1 && (
           <div className="flex gap-2 flex-wrap items-center mb-5">
             {rooms.map(r => (
-              <RoomTab key={r.id} room={r} venueId={venueId} isCurrent={r.id === roomId} />
+              <RoomTab key={r.id} room={r} isCurrent={r.id === activeRoomId} onSelect={() => setActiveRoomId(r.id)} />
             ))}
             <span className="text-text-muted text-[10px] ml-1">← dersi başka oda sekmesine sürükleyerek taşı</span>
           </div>
@@ -715,7 +730,7 @@ export default function RoomCalendarPage() {
                     }
                   }} className="input-field text-sm mt-1">
                     <option value="">Oda seçin...</option>
-                    {rooms.filter(r => r.id !== roomId).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    {rooms.filter(r => r.id !== activeRoomId).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
               )}
@@ -811,21 +826,19 @@ export default function RoomCalendarPage() {
   )
 }
 
-function RoomTab({ room, venueId, isCurrent }: { room: any; venueId: string; isCurrent: boolean }) {
+function RoomTab({ room, isCurrent, onSelect }: { room: any; isCurrent: boolean; onSelect: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: `room-${room.id}`, disabled: isCurrent })
   return (
-    <div ref={setNodeRef} className={isOver ? 'ring-2 ring-accent rounded-lg' : ''}>
-      <Link href={`/dashboard/venue/${venueId}/rooms/${room.id}`}
-        className={`block px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-          isCurrent
-            ? 'bg-accent/10 text-accent border-accent/30 font-medium'
-            : isOver
-              ? 'bg-accent/20 text-accent border-accent/50'
-              : 'text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary hover:border-[rgba(228,224,216,0.25)]'
-        }`}>
-        {room.name}
-      </Link>
-    </div>
+    <button ref={setNodeRef} onClick={onSelect}
+      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+        isCurrent
+          ? 'bg-accent/10 text-accent border-accent/30 font-medium'
+          : isOver
+            ? 'bg-accent/20 text-accent border-accent/50 ring-2 ring-accent'
+            : 'text-text-muted border-[rgba(228,224,216,0.12)] hover:text-text-primary hover:border-[rgba(228,224,216,0.25)]'
+      }`}>
+      {room.name}
+    </button>
   )
 }
 
