@@ -78,8 +78,8 @@ export default function VenueReservationsPage() {
     setSaving(true)
 
     const tmpl = req.venue_lesson_templates
-    const weeks = tmpl?.weeks ?? 1
-    const subject = tmpl?.name ?? 'Ders'
+    const weeks = tmpl?.weeks ?? req.weeks ?? 1
+    const subject = tmpl?.name ?? req.subject ?? 'Özel Ders'
     const pricePer = tmpl && tmpl.weeks > 0 ? tmpl.price_total / tmpl.weeks : (tmpl?.price_total ?? 0)
     const startHour = parseInt(assign.time.split(':')[0])
     const startTime = `${String(startHour).padStart(2, '0')}:00:00`
@@ -239,7 +239,7 @@ export default function VenueReservationsPage() {
                           {req.request_type === 'private' ? 'Özel' : 'Grup (Ön Kayıt)'}
                         </span>
                       </div>
-                      <p className="text-text-muted text-xs mt-0.5">{tmpl?.name ?? 'Ders'} · {tmpl?.weeks ?? 1} hafta</p>
+                      <p className="text-text-muted text-xs mt-0.5">{tmpl?.name ?? req.subject ?? 'Özel Ders'} · {tmpl?.weeks ?? req.weeks ?? 1} hafta{req.hours_per_session ? ` · ${req.hours_per_session} saat/seans` : ''}</p>
                       {req.requested_date && (
                         <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
                           <Clock size={10} /> İstenen: {new Date(req.requested_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} · {req.requested_time?.slice(0, 5)}

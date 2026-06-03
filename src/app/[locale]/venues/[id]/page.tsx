@@ -350,8 +350,8 @@ export default async function VenuePage({ params }: Props) {
           </Link>
         )}
 
-        {/* Derslerimiz — ders teklifleri (şablonlar) */}
-        {lessonTemplates.length > 0 && (
+        {/* Derslerimiz — ders teklifleri (şablonlar) + özel ders */}
+        {(lessonTemplates.length > 0 || ['dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
           <div>
             <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'OUR LESSONS' : 'DERSLERİMİZ'}</h2>
             <div className="space-y-2">
@@ -373,6 +373,20 @@ export default async function VenuePage({ params }: Props) {
                   </div>
                 </Link>
               ))}
+
+              {/* Özel ders — öğrenci enstrüman/hafta/saat/zaman seçer */}
+              {['dance_studio', 'music_school'].includes((venue as any).venue_type) && (
+                <Link
+                  href={`/venues/${venue.id}/lessons/custom`}
+                  className="card p-3 flex items-center justify-between hover:border-accent/30 transition-colors border-dashed border-accent/30"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-accent text-sm">{isEn ? 'Custom Lesson' : '+ Özel Ders Talebi'}</p>
+                    <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Pick your instrument, weeks, hours and time' : 'Enstrüman, hafta, saat ve zamanı sen belirle'}</p>
+                  </div>
+                  <span className="text-accent text-xs flex-shrink-0 ml-3">{isEn ? 'Request →' : 'Talep Et →'}</span>
+                </Link>
+              )}
             </div>
           </div>
         )}
