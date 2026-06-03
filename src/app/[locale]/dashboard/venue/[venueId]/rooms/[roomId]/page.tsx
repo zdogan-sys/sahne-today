@@ -449,7 +449,7 @@ export default function RoomCalendarPage() {
 
       {/* Takvim — açık tema */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto rounded-2xl p-3" style={{ background: '#f8f9fb' }}>
+        <div className="overflow-x-auto rounded-2xl p-3" style={{ background: 'transparent' }}>
           <div className="grid gap-1.5" style={{ gridTemplateColumns: '64px repeat(7, minmax(120px, 1fr))', minWidth: '900px' }}>
             {/* Köşe boş */}
             <div />
@@ -808,7 +808,7 @@ function Cell({ id, hasItem, dayLight, isLesson, onAdd, children }: { id: string
       className="rounded-xl transition-colors relative group"
       style={{
         minHeight: '56px',
-        background: hasItem ? 'transparent' : (isOver ? dayLight : '#eef0f4'),
+        background: hasItem ? 'transparent' : (isOver ? dayLight : 'rgba(228,224,216,0.05)'),
         outline: isOver ? `2px dashed ${dayLight}` : 'none',
       }}>
       {children}
