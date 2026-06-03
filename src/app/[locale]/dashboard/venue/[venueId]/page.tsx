@@ -337,15 +337,16 @@ export default function VenueHubPage() {
         </div>
       )}
 
-      {/* Diğer */}
-      <div className="card p-4 space-y-2 text-sm">
-        <Link href={`/dashboard/venue/${venueId}/reservations`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
-          <span className="text-text-muted">Rezervasyonlar</span>
+      {/* Rezervasyonlar */}
+      <div className="space-y-4">
+        <h2 className="font-bebas text-2xl text-text-primary">REZERVASYONLAR</h2>
+        <Link href={`/dashboard/venue/${venueId}/reservations`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+          <span className="text-text-muted text-sm">Rezervasyonları görüntüle ve yönet</span>
           <span className="text-accent">→</span>
         </Link>
         {!isLesson && (
-          <Link href={`/dashboard/venue/${venueId}/availability`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
-            <span className="text-text-muted">Çalışma Saatleri</span>
+          <Link href={`/dashboard/venue/${venueId}/availability`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+            <span className="text-text-muted text-sm">Çalışma Saatleri</span>
             <span className="text-accent">→</span>
           </Link>
         )}
