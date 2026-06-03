@@ -194,17 +194,6 @@ export default function StudioDetailPage() {
         <p className="text-text-muted text-sm leading-relaxed mb-4">{studio.description}</p>
       )}
 
-      {studio.equipment && studio.equipment.length > 0 && (
-        <div className="mb-6">
-          <p className="label mb-2">Ekipman</p>
-          <div className="flex flex-wrap gap-1.5">
-            {studio.equipment.map((eq: string) => (
-              <span key={eq} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">{eq}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Rezervasyon formu */}
       <div className="card p-5">
         <h2 className="font-bebas text-2xl text-text-primary mb-4">REZERVASYON YAP</h2>
@@ -227,6 +216,21 @@ export default function StudioDetailPage() {
               </div>
             </div>
           )}
+
+          {form.room_id && (() => {
+            const selectedRoom = rooms.find(r => r.id === form.room_id)
+            return selectedRoom?.equipment?.length > 0 ? (
+              <div className="bg-[rgba(228,224,216,0.04)] p-3 rounded-lg border border-[rgba(228,224,216,0.08)]">
+                <p className="text-text-muted text-xs uppercase tracking-wide mb-2">Oda Ekipmanı</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedRoom.equipment.map((eq: string) => (
+                    <span key={eq} className="text-[10px] px-2 py-1 rounded bg-[rgba(228,224,216,0.1)] text-text-muted border border-[rgba(228,224,216,0.15)]">{eq}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null
+          })()}
+
           <div>
             <label className="label">Tarih *</label>
             <div className="relative">
