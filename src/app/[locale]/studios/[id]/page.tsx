@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { Link, useRouter } from '@/i18n/navigation'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Loader2, CalendarDays } from 'lucide-react'
+import { ArrowLeft, MapPin, Loader2, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { TimeSlotPicker } from '@/components/ui/TimeSlotPicker'
 
 const HOURS = Array.from({ length: 14 }, (_, i) => {
   const h = 8 + i
@@ -233,55 +234,37 @@ export default function StudioDetailPage() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Tarih *</label>
-              <div className="relative">
-                <input
-                  ref={dateRef}
-                  type="date"
-                  min={new Date().toISOString().split('T')[0]}
-                  value={form.reservation_date}
-                  onChange={(e) => setForm({ ...form, reservation_date: e.target.value })}
-                  className="input-field text-sm pr-9 cursor-pointer"
-                  required
-                  onClick={() => dateRef.current?.showPicker?.()}
-                />
-                <CalendarDays
-                  size={15}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="label">Başlangıç Saati</label>
-              <select
-                value={form.start_time}
-                onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                className="input-field text-sm"
-              >
-                {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
-              </select>
+          <div>
+            <label className="label">Tarih *</label>
+            <div className="relative">
+              <input
+                ref={dateRef}
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
+                value={form.reservation_date}
+                onChange={(e) => setForm({ ...form, reservation_date: e.target.value })}
+                className="input-field text-sm pr-9 cursor-pointer"
+                required
+                onClick={() => dateRef.current?.showPicker?.()}
+              />
+              <CalendarDays
+                size={15}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+              />
             </div>
           </div>
 
-          <div>
-            <label className="label">Süre (saat)</label>
-            <select
-              value={form.duration}
-              onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}
-              className="input-field text-sm"
-            >
-              {[1, 2, 3, 4, 5, 6, 8].map((h) => (
-                <option key={h} value={h}>{h} saat</option>
-              ))}
-            </select>
-            {endTime && (
-              <p className="text-text-muted text-xs mt-1 flex items-center gap-1">
-                <Clock size={10} /> {form.start_time} – {endTime}
-              </p>
-            )}
-          </div>
+          {form.reservation_date && (
+            <TimeSlotPicker
+              venueId={id}
+              date={form.reservation_date}
+              roomId={form.room_id || undefined}
+              selectedStart={form.start_time}
+              duration={form.duration}
+              onSelectStart={h => setForm(p => ({ ...p, start_time: h }))}
+              onSelectDuration={d => setForm(p => ({ ...p, duration: d }))}
+            />
+          )}
 
           <div>
             <label className="label">Ad Soyad *</label>

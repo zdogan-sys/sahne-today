@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation'
 import { ArrowLeft, Check, X, Loader2, Clock, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { TimeSlotPicker } from '@/components/ui/TimeSlotPicker'
 
 const STATUS_TABS = [
   { key: 'pending', label: 'Bekleyen' },
@@ -226,25 +227,18 @@ export default function VenueReservationsPage() {
                         </div>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="label text-xs mb-1">Başlangıç Saati</label>
-                        <select value={editForm.start_time} onChange={e => setEditForm(p => ({ ...p, start_time: e.target.value }))} className="input-field text-sm">
-                          {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="label text-xs mb-1">Süre</label>
-                        <select value={editForm.duration} onChange={e => setEditForm(p => ({ ...p, duration: Number(e.target.value) }))} className="input-field text-sm">
-                          {[1, 2, 3, 4, 5, 6, 8].map(h => <option key={h} value={h}>{h} saat</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    {(() => {
-                      const idx = HOURS.indexOf(editForm.start_time)
-                      const end = HOURS[idx + editForm.duration]
-                      return end ? <p className="text-text-muted text-xs">{editForm.start_time} – {end}</p> : null
-                    })()}
+
+                    <TimeSlotPicker
+                      venueId={venueId}
+                      date={res.reservation_date}
+                      roomId={editForm.room_id || undefined}
+                      excludeReservationId={res.id}
+                      selectedStart={editForm.start_time}
+                      duration={editForm.duration}
+                      onSelectStart={h => setEditForm(p => ({ ...p, start_time: h }))}
+                      onSelectDuration={d => setEditForm(p => ({ ...p, duration: d }))}
+                    />
+
                     <button onClick={() => saveEdit(res)} disabled={saving}
                       className="btn-accent w-full py-2 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
                       {saving ? <><Loader2 size={13} className="animate-spin" /> Kaydediliyor...</> : 'Kaydet'}
