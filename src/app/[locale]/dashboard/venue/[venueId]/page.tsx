@@ -307,25 +307,45 @@ export default function VenueHubPage() {
         )}
       </div>
 
-      {/* Diğer Linkler */}
-      <div className="card p-4 border-t border-[rgba(228,224,216,0.1)] space-y-2 text-sm">
-        <Link href={`/dashboard/venue/${venueId}/instructors`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
-          <span className="text-text-muted">Eğitmenler</span>
+      {/* Eğitmenler */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bebas text-2xl text-text-primary">EĞİTMENLER</h2>
+          <Link href={`/dashboard/venue/${venueId}/instructors`} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+            <Plus size={14} /> Eğitmen Ekle
+          </Link>
+        </div>
+        <Link href={`/dashboard/venue/${venueId}/instructors`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+          <span className="text-text-muted text-sm">Eğitmenleri görüntüle ve yönet</span>
+          <span className="text-accent">→</span>
+        </Link>
+      </div>
+
+      {/* Kurslar (sadece dans/müzik okulu) */}
+      {isLesson && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bebas text-2xl text-text-primary">KURSLAR</h2>
+            <Link href={`/dashboard/venue/${venueId}/courses/new`} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+              <Plus size={14} /> Yeni Kurs
+            </Link>
+          </div>
+          <Link href={`/dashboard/venue/${venueId}/courses`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+            <span className="text-text-muted text-sm">Kursları görüntüle ve yönet</span>
+            <span className="text-accent">→</span>
+          </Link>
+        </div>
+      )}
+
+      {/* Diğer */}
+      <div className="card p-4 space-y-2 text-sm">
+        <Link href={`/dashboard/venue/${venueId}/reservations`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
+          <span className="text-text-muted">Rezervasyonlar</span>
           <span className="text-accent">→</span>
         </Link>
         {!isLesson && (
           <Link href={`/dashboard/venue/${venueId}/availability`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
             <span className="text-text-muted">Çalışma Saatleri</span>
-            <span className="text-accent">→</span>
-          </Link>
-        )}
-        <Link href={`/dashboard/venue/${venueId}/reservations`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
-          <span className="text-text-muted">Rezervasyonlar</span>
-          <span className="text-accent">→</span>
-        </Link>
-        {isLesson && (
-          <Link href={`/dashboard/venue/${venueId}/courses`} className="flex items-center justify-between p-2 hover:bg-[rgba(228,224,216,0.04)] rounded">
-            <span className="text-text-muted">Kurslar</span>
             <span className="text-accent">→</span>
           </Link>
         )}
