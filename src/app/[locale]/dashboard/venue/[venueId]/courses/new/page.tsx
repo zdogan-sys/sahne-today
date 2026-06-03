@@ -39,6 +39,7 @@ export default function VenueNewCoursePage() {
   const supabase = createClient()
 
   const [venue, setVenue] = useState<any>(null)
+  const [templates, setTemplates] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -49,6 +50,8 @@ export default function VenueNewCoursePage() {
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (user?.id !== data.owner_id) { router.push('/dashboard'); return }
         setVenue(data)
+        supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at')
+          .then(({ data: t }) => setTemplates(t ?? []))
         setLoading(false)
       })
     })
@@ -57,6 +60,7 @@ export default function VenueNewCoursePage() {
 
   // Temel bilgiler
   const [title, setTitle] = useState('')
+  const [templateId, setTemplateId] = useState('')
   const [category, setCategory] = useState('music')
   const [subcategory, setSubcategory] = useState('')
   const [level, setLevel] = useState('beginner')
@@ -166,7 +170,35 @@ export default function VenueNewCoursePage() {
         {/* Temel Bilgiler */}
         <div className="card p-5 space-y-4">
           <h2 className="font-bebas text-xl text-text-primary">Temel Bilgiler</h2>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Kurs adı *" className="input-field" />
+
+          {/* Derslerimiz'den seç → ad/hafta/ücret otomatik dolar */}
+          {templates.length > 0 && (
+            <div>
+              <label className="label">Derslerimiz'den Seç <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+              <select
+                value={templateId}
+                onChange={e => {
+                  const t = templates.find(x => x.id === e.target.value)
+                  setTemplateId(e.target.value)
+                  if (t) {
+                    setTitle(t.name)
+                    if (t.subject) setSubcategory(t.subject)
+                    if (t.weeks) setWeeks(t.weeks)
+                    if (t.price_total) setCoursePrice(String(t.price_total))
+                  }
+                }}
+                className="input-field text-sm">
+                <option value="">Sıfırdan oluştur...</option>
+                {templates.map(t => <option key={t.id} value={t.id}>{t.name} — {t.weeks} hafta · ₺{t.price_total}</option>)}
+              </select>
+              <p className="text-text-muted text-xs mt-1">Bir ders seçersen ad, hafta ve ücret otomatik dolar; düzenleyebilirsin.</p>
+            </div>
+          )}
+
+          <div>
+            <label className="label">Kurs Adı *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Kurs adı" className="input-field mt-1" />
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
