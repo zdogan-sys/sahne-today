@@ -415,63 +415,75 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
         <div>
           <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'STUDIO MANAGEMENT' : 'STÜDYO YÖNETİMİ'}</h2>
 
-          {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => (
-            <div key={v.id} className="card p-4 mb-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-text-primary text-sm font-semibold">{v.name}</p>
-                <button
-                  onClick={async () => {
-                    const newVal = !v.studio_payment_enabled
-                    await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
-                    setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
-                  }}
-                  className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
-                    ? 'bg-accent/10 text-accent border-accent/30'
-                    : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                  )}
-                >
-                  {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {v.venue_type === 'studio' && (
-                  <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                    🚪 Odalar
-                  </Link>
-                )}
-                {['dance_studio', 'music_school'].includes(v.venue_type) && (
-                  <>
-                    <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                      🚪 Salonlar
-                    </Link>
-                    <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                      👤 Eğitmenler
-                    </Link>
-                    <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                      🕐 Ders Saatleri
-                    </Link>
-                    <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
-                      📚 Kurslar
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+          {venues.filter(v => ['studio', 'dance_studio', 'music_school'].includes(v.venue_type)).map(v => {
+            const venueReservations = studioReservations.filter((r: any) => r.venue_id === v.id)
+            const pendingCount = venueReservations.filter((r: any) => r.status === 'pending').length
+            return (
+              <div key={v.id} className="card p-4 mb-3 space-y-3">
+                {/* Başlık + ödeme toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <p className="text-text-primary text-sm font-semibold">{v.name}</p>
+                    {pendingCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-400 border border-yellow-400/20 font-semibold">
+                        {pendingCount} bekliyor
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const newVal = !v.studio_payment_enabled
+                      await supabase.from('venues').update({ studio_payment_enabled: newVal } as any).eq('id', v.id)
+                      setVenues(prev => prev.map(x => x.id === v.id ? { ...x, studio_payment_enabled: newVal } : x))
+                    }}
+                    className={cn('text-xs px-2.5 py-1.5 rounded border transition-colors', v.studio_payment_enabled
+                      ? 'bg-accent/10 text-accent border-accent/30'
+                      : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                    )}
+                  >
+                    {v.studio_payment_enabled ? '₺ Ödeme Açık' : '₺ Ödeme Kapalı'}
+                  </button>
+                </div>
 
-          {studioReservations.length > 0 && (
-            <>
-              <p className="text-text-muted text-xs mb-3">{isEn ? 'Incoming reservation requests' : 'Gelen rezervasyon talepleri'}</p>
-              <div className="space-y-3">
-                {studioReservations.map((res: any) => (
-                  <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
-                    setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-                    supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
-                  }} />
-                ))}
+                {/* Yönetim linkleri */}
+                <div className="flex flex-wrap gap-2">
+                  {v.venue_type === 'studio' && (
+                    <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                      🚪 Odalar
+                    </Link>
+                  )}
+                  {['dance_studio', 'music_school'].includes(v.venue_type) && (
+                    <>
+                      <Link href={`/dashboard/venue/${v.id}/rooms`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        🚪 Salonlar
+                      </Link>
+                      <Link href={`/dashboard/venue/${v.id}/instructors`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        👤 Eğitmenler
+                      </Link>
+                      <Link href={`/dashboard/venue/${v.id}/teaching-slots`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        🕐 Ders Saatleri
+                      </Link>
+                      <Link href={`/dashboard/venue/${v.id}/courses`} className="text-xs px-3 py-1.5 rounded border text-text-muted border-[rgba(228,224,216,0.1)] hover:text-accent hover:border-accent/30 transition-colors">
+                        📚 Kurslar
+                      </Link>
+                    </>
+                  )}
+                </div>
+
+                {/* Bu mekana ait rezervasyonlar */}
+                {venueReservations.length > 0 && (
+                  <div className="pt-2 border-t border-[rgba(228,224,216,0.08)] space-y-2">
+                    {venueReservations.map((res: any) => (
+                      <StudioReservationCard key={res.id} reservation={res} isEn={isEn} onUpdate={(id, status) => {
+                        setStudioReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+                        supabase.from('studio_reservations').update({ status } as any).eq('id', id).then(() => {})
+                      }} />
+                    ))}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            )
+          })}
         </div>
       )}
 
