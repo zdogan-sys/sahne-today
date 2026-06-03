@@ -80,6 +80,28 @@ export default async function PersonalCalendarPage() {
     }
   }
 
+  // Eğitmen olarak verdiğim dersler (venue_instructors → artist profili bu kullanıcı)
+  const { data: myArtists } = await supabase.from('artists').select('id').eq('profile_id', user.id)
+  const artistIds = (myArtists ?? []).map((a: any) => a.id)
+  if (artistIds.length > 0) {
+    const { data: vi } = await supabase.from('venue_instructors').select('name, venue_id').in('artist_id', artistIds).eq('is_active', true)
+    const names = Array.from(new Set((vi ?? []).map((v: any) => v.name)))
+    const venueIds = Array.from(new Set((vi ?? []).map((v: any) => v.venue_id)))
+    if (names.length > 0 && venueIds.length > 0) {
+      const { data: teach } = await supabase
+        .from('teaching_slots')
+        .select('id, instrument, slot_date, start_time, end_time, venues(name)')
+        .in('venue_id', venueIds)
+        .in('instructor_name', names)
+        .eq('is_active', true)
+        .not('slot_date', 'is', null)
+        .gte('slot_date', today)
+      for (const l of teach ?? []) {
+        entries.push({ type: 'lesson', date: (l as any).slot_date, title: `${(l as any).instrument ?? 'Ders'} (eğitmen)`, start_time: (l as any).start_time, end_time: (l as any).end_time, subtitle: (l as any).venues?.name, color: 'purple', id: `teach-${(l as any).id}` })
+      }
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
