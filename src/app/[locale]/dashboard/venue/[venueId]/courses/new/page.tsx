@@ -41,6 +41,8 @@ export default function VenueNewCoursePage() {
   const [venue, setVenue] = useState<any>(null)
   const [templates, setTemplates] = useState<any[]>([])
   const [rooms, setRooms] = useState<any[]>([])
+  const [instructors, setInstructors] = useState<any[]>([])
+  const [instructorName, setInstructorName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -55,6 +57,8 @@ export default function VenueNewCoursePage() {
           .then(({ data: t }) => setTemplates(t ?? []))
         supabase.from('studio_rooms').select('id, name').eq('venue_id', venueId).eq('is_active', true).order('created_at')
           .then(({ data: r }) => setRooms(r ?? []))
+        supabase.from('venue_instructors').select('id, name').eq('venue_id', venueId).eq('is_active', true)
+          .then(({ data: i }) => setInstructors(i ?? []))
         setLoading(false)
       })
     })
@@ -117,6 +121,7 @@ export default function VenueNewCoursePage() {
       .from('courses')
       .insert({
         instructor_id: user.id,
+        instructor_name: instructorName || null,
         venue_id: venueId,
         title,
         category,
@@ -256,6 +261,19 @@ export default function VenueNewCoursePage() {
                 <span>Online</span>
               </label>
             </div>
+          </div>
+
+          {/* Eğitmen */}
+          <div>
+            <label className="label">Eğitmen <span className="text-text-muted font-normal">(opsiyonel)</span></label>
+            {instructors.length > 0 ? (
+              <select value={instructorName} onChange={e => setInstructorName(e.target.value)} className="input-field text-sm mt-1">
+                <option value="">Eğitmen seç...</option>
+                {instructors.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
+              </select>
+            ) : (
+              <input value={instructorName} onChange={e => setInstructorName(e.target.value)} placeholder="Eğitmen adı" className="input-field mt-1" />
+            )}
           </div>
 
           {!isOnline && (

@@ -35,7 +35,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const { data: course } = await supabase
     .from('courses')
-    .select('*, profiles(id, display_name, avatar_url, bio), venues(id, name, city, owner_id), course_sessions(id, session_date, start_time, end_time, status), course_enrollments(id, gender, status)')
+    .select('*, instructor_name, profiles(id, display_name, avatar_url, bio), venues(id, name, city, owner_id), course_sessions(id, session_date, start_time, end_time, status), course_enrollments(id, gender, status)')
     .eq('id', id)
     .in('status', ['active', 'full'])
     .single()
@@ -98,25 +98,30 @@ export default async function CourseDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* Eğitmen kartı */}
-      {instructor && (
-        <div className="card p-4 flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 rounded-full bg-accent/10 flex-shrink-0 overflow-hidden flex items-center justify-center text-accent font-bold text-lg">
-            {instructor.avatar_url ? (
-              <Image src={instructor.avatar_url} alt={instructor.display_name} width={56} height={56} className="object-cover w-full h-full" />
-            ) : (
-              instructor.display_name?.[0]?.toUpperCase() ?? '?'
-            )}
+      {/* Eğitmen kartı — kursun atanmış eğitmeni varsa onu göster, yoksa mekan profili */}
+      {(() => {
+        const instructorName = (course as any).instructor_name || instructor?.display_name
+        if (!instructorName) return null
+        const useProfile = !(course as any).instructor_name && instructor
+        return (
+          <div className="card p-4 flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-full bg-accent/10 flex-shrink-0 overflow-hidden flex items-center justify-center text-accent font-bold text-lg">
+              {useProfile && instructor.avatar_url ? (
+                <Image src={instructor.avatar_url} alt={instructorName} width={56} height={56} className="object-cover w-full h-full" />
+              ) : (
+                instructorName?.[0]?.toUpperCase() ?? '?'
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-text-primary">{instructorName}</p>
+              <p className="text-text-muted text-xs mt-0.5">Eğitmen</p>
+              {useProfile && instructor.bio && (
+                <p className="text-text-muted text-xs mt-1 line-clamp-2">{instructor.bio}</p>
+              )}
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-text-primary">{instructor.display_name}</p>
-            <p className="text-text-muted text-xs mt-0.5">Eğitmen</p>
-            {instructor.bio && (
-              <p className="text-text-muted text-xs mt-1 line-clamp-2">{instructor.bio}</p>
-            )}
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Kurs bilgileri */}
       <div className="card p-4 space-y-3 mb-6">
