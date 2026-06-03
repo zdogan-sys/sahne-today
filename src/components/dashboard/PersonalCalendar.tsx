@@ -53,43 +53,45 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
   const [discoveries, setDiscoveries] = useState<any>(null)
   const [discovering, setDiscovering] = useState(false)
 
-  const fetchDiscoveries = useCallback(async (dateStr: string) => {
-    setDiscovering(true)
-    setDiscoveries(null)
-    const dayOfWeek = new Date(dateStr + 'T00:00:00').getDay()
+  const fetchDiscoveries = async (dateStr: string) => {
+    try {
+      setDiscovering(true)
+      setDiscoveries(null)
+      const client = createClient()
+      const dayOfWeek = new Date(dateStr + 'T00:00:00').getDay()
 
-    const [eventsRes, coursesRes, slotsRes] = await Promise.all([
-      supabase.from('events')
-        .select('id, title, start_time, end_time, venues(name, city)')
-        .eq('event_date', dateStr)
-        .eq('status', 'confirmed')
-        .limit(8),
-      supabase.from('courses')
-        .select('id, title, category, level, price_per_session, profiles(display_name), venues(name)')
-        .in('status', ['active'])
-        .limit(6),
-      supabase.from('teaching_slots')
-        .select('id, instrument, instructor_name, start_time, end_time, price_per_session, artists(id, stage_name), venues(id, name)')
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true)
-        .limit(6),
-    ])
+      const [eventsRes, slotsRes, courseSessionsRes] = await Promise.all([
+        client.from('events')
+          .select('id, title, start_time, end_time, venues(name, city)')
+          .eq('event_date', dateStr)
+          .eq('status', 'confirmed')
+          .limit(8),
+        client.from('teaching_slots')
+          .select('id, instrument, instructor_name, start_time, end_time, price_per_session, artists(id, stage_name), venues(id, name)')
+          .eq('day_of_week', dayOfWeek)
+          .eq('is_active', true)
+          .limit(6),
+        client.from('course_sessions')
+          .select('id, start_time, end_time, courses(id, title, category, price_per_session, profiles(display_name), venues(name))')
+          .eq('session_date', dateStr)
+          .limit(6),
+      ])
 
-    // Kurs seansı o gün olanlar
-    const { data: courseSessions } = await supabase
-      .from('course_sessions')
-      .select('id, course_id, start_time, end_time, courses(id, title, category, price_per_session, profiles(display_name), venues(name))')
-      .eq('session_date', dateStr)
-      .eq('status', 'available')
-      .limit(6)
+      if (eventsRes.error) console.error('Events error:', eventsRes.error)
+      if (slotsRes.error) console.error('Slots error:', slotsRes.error)
+      if (courseSessionsRes.error) console.error('Course sessions error:', courseSessionsRes.error)
 
-    setDiscoveries({
-      events: eventsRes.data ?? [],
-      courseSessions: courseSessions ?? [],
-      slots: slotsRes.data ?? [],
-    })
-    setDiscovering(false)
-  }, [])
+      setDiscoveries({
+        events: eventsRes.data ?? [],
+        slots: slotsRes.data ?? [],
+        courseSessions: courseSessionsRes.data ?? [],
+      })
+    } catch (err) {
+      console.error('Discovery fetch failed:', err)
+    } finally {
+      setDiscovering(false)
+    }
+  }
 
   function prevMonth() { if (month === 0) { setYear(y => y-1); setMonth(11) } else setMonth(m => m-1); setSelected(null) }
   function nextMonth() { if (month === 11) { setYear(y => y+1); setMonth(0) } else setMonth(m => m+1); setSelected(null) }
@@ -191,8 +193,8 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
                 <button key={dateStr} onClick={() => {
                   const next = isSelected ? null : dateStr
                   setSelected(next)
-                  if (next && dayEntries.length === 0 && date >= today) {
-                    fetchDiscoveries(next)
+                  if (next) {
+                    if (dayEntries.length === 0) fetchDiscoveries(next)
                   } else {
                     setDiscoveries(null)
                   }
