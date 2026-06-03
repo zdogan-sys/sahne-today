@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CalendarPlus, Search, Loader2, BookOpen, Music, GraduationCap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 
 interface Entry {
   type: string
@@ -44,59 +43,11 @@ function toISO(d: Date) {
 }
 
 export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[]; calendarToken: string | null }) {
-  const supabase = createClient()
   const today = new Date(); today.setHours(0,0,0,0)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selected, setSelected] = useState<string | null>(null)
   const [showSubscribe, setShowSubscribe] = useState(false)
-  const [discoveries, setDiscoveries] = useState<any>(null)
-  const [discovering, setDiscovering] = useState(false)
-
-  const fetchDiscoveries = async (dateStr: string) => {
-    try {
-      setDiscovering(true)
-      setDiscoveries(null)
-      const client = createClient()
-      const dayOfWeek = new Date(dateStr + 'T00:00:00').getDay()
-
-      const [eventsRes, slotsRes] = await Promise.all([
-        client.from('events')
-          .select('id, title, start_time, end_time, venues(name, city)')
-          .eq('event_date', dateStr)
-          .eq('status', 'confirmed')
-          .limit(8),
-        client.from('teaching_slots')
-          .select('id, instrument, instructor_name, start_time, end_time, price_per_session, artists(id, stage_name), venues(id, name)')
-          .eq('day_of_week', dayOfWeek)
-          .eq('is_active', true)
-          .limit(6),
-      ])
-
-      let courseSessionsRes: any = { data: [] }
-      try {
-        courseSessionsRes = await client.from('course_sessions')
-          .select('id, start_time, end_time, courses(id, title, category, price_per_session, profiles(display_name), venues(name))')
-          .eq('session_date', dateStr)
-          .limit(6)
-      } catch (e) {
-        console.warn('Course sessions skipped:', e)
-      }
-
-      if (eventsRes.error) console.error('Events error:', eventsRes.error)
-      if (slotsRes.error) console.error('Slots error:', slotsRes.error)
-
-      setDiscoveries({
-        events: eventsRes.data ?? [],
-        slots: slotsRes.data ?? [],
-        courseSessions: courseSessionsRes.data ?? [],
-      })
-    } catch (err) {
-      console.error('Discovery fetch failed:', err)
-    } finally {
-      setDiscovering(false)
-    }
-  }
 
   function prevMonth() { if (month === 0) { setYear(y => y-1); setMonth(11) } else setMonth(m => m-1); setSelected(null) }
   function nextMonth() { if (month === 11) { setYear(y => y+1); setMonth(0) } else setMonth(m => m+1); setSelected(null) }
@@ -195,15 +146,7 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
               const isSelected = dateStr === selected
 
               return (
-                <button key={dateStr} onClick={() => {
-                  const next = isSelected ? null : dateStr
-                  setSelected(next)
-                  if (next) {
-                    if (dayEntries.length === 0) fetchDiscoveries(next)
-                  } else {
-                    setDiscoveries(null)
-                  }
-                }}
+                <button key={dateStr} onClick={() => setSelected(isSelected ? null : dateStr)}
                   className={cn(
                     'h-14 sm:h-16 rounded-lg flex flex-col items-center pt-1.5 gap-0.5 text-sm transition-colors relative overflow-hidden',
                     isSelected ? 'bg-accent text-white' :
@@ -234,68 +177,7 @@ export function PersonalCalendar({ entries, calendarToken }: { entries: Entry[];
                 {new Date(selected + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
               {selectedEntries.length === 0 ? (
-                <>
-                  {discovering && (
-                    <div className="flex items-center gap-2 text-text-muted text-sm py-2">
-                      <Loader2 size={14} className="animate-spin" /> Aranıyor...
-                    </div>
-                  )}
-                  {discoveries && !discovering && (
-                    <div className="space-y-4">
-                      {discoveries.events.length > 0 && (
-                        <div>
-                          <p className="text-xs text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5"><Music size={10} /> Etkinlikler</p>
-                          <div className="space-y-1.5">
-                            {discoveries.events.map((ev: any) => (
-                              <Link key={ev.id} href={`/events/${ev.id}`} className="block p-2.5 rounded-lg bg-accent/5 border border-accent/15 hover:bg-accent/10 transition-colors">
-                                <p className="text-text-primary text-sm font-medium">{ev.title}</p>
-                                <p className="text-text-muted text-xs mt-0.5">{ev.start_time?.slice(0,5)}{ev.venues?.name ? ` · ${ev.venues.name}` : ''}</p>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {discoveries.courseSessions.length > 0 && (
-                        <div>
-                          <p className="text-xs text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5"><BookOpen size={10} /> Kurs Seansları</p>
-                          <div className="space-y-1.5">
-                            {discoveries.courseSessions.map((s: any) => {
-                              const c = s.courses
-                              return (
-                                <Link key={s.id} href={`/courses/${c?.id}/enroll?session=${s.id}`} className="block p-2.5 rounded-lg bg-orange-500/5 border border-orange-500/15 hover:bg-orange-500/10 transition-colors">
-                                  <p className="text-text-primary text-sm font-medium">{c?.title}</p>
-                                  <p className="text-text-muted text-xs mt-0.5">{s.start_time?.slice(0,5)} · {c?.venues?.name ?? c?.profiles?.display_name} · ₺{c?.price_per_session}</p>
-                                </Link>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {discoveries.slots.length > 0 && (
-                        <div>
-                          <p className="text-xs text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5"><GraduationCap size={10} /> Özel Ders Saatleri</p>
-                          <div className="space-y-1.5">
-                            {discoveries.slots.map((s: any) => {
-                              const href = s.venues ? `/venues/${s.venues.id}/book/${s.id}` : `/artists/${s.artists?.id}/book/${s.id}`
-                              return (
-                                <Link key={s.id} href={href} className="block p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/15 hover:bg-purple-500/10 transition-colors">
-                                  <p className="text-text-primary text-sm font-medium">{s.instrument} — {s.instructor_name ?? s.artists?.stage_name}</p>
-                                  <p className="text-text-muted text-xs mt-0.5">{s.start_time?.slice(0,5)}–{s.end_time?.slice(0,5)} · {s.venues?.name ?? ''} · ₺{s.price_per_session}</p>
-                                </Link>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {discoveries.events.length === 0 && discoveries.courseSessions.length === 0 && discoveries.slots.length === 0 && (
-                        <p className="text-text-muted text-sm">Bu güne uygun etkinlik/kurs/ders bulunamadı.</p>
-                      )}
-                    </div>
-                  )}
-                  {!discovering && !discoveries && (
-                    <p className="text-text-muted text-sm">Bu günde programın yok. Tıklayınca ne var bakıyorum...</p>
-                  )}
-                </>
+                <p className="text-text-muted text-sm">Bu günde etkinlik yok.</p>
               ) : (
                 <div className="space-y-2">
                   {selectedEntries.sort((a, b) => (a.start_time ?? '').localeCompare(b.start_time ?? '')).map((e, i) => {
