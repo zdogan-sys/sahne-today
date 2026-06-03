@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, GraduationCap, Clock, Building2 } from 'lucide-react'
+import { BookOpen, GraduationCap, Clock, Building2, Ticket, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -18,6 +18,8 @@ export function StudentDashboard({ userId }: { userId: string }) {
   const [bookings, setBookings] = useState<any[]>([])
   const [enrollments, setEnrollments] = useState<any[]>([])
   const [studioReservations, setStudioReservations] = useState<any[]>([])
+  const [tickets, setTickets] = useState<any[]>([])
+  const [interested, setInterested] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,7 +27,9 @@ export function StudentDashboard({ userId }: { userId: string }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [bookingsRes, enrollmentsRes, studioRes] = await Promise.all([
+      const today = new Date().toISOString().split('T')[0]
+
+      const [bookingsRes, enrollmentsRes, studioRes, ticketsRes, interestedRes] = await Promise.all([
         supabase
           .from('teaching_bookings')
           .select('id, lesson_date, status, teaching_slots(instrument, instructor_name, start_time, end_time, artists(stage_name), venues(name))')
@@ -47,11 +51,27 @@ export function StudentDashboard({ userId }: { userId: string }) {
           .not('status', 'eq', 'cancelled')
           .order('reservation_date', { ascending: true })
           .limit(10),
+        supabase
+          .from('tickets')
+          .select('id, status, quantity, total_price, created_at, events(id, title, event_date, start_time, venues(name))')
+          .eq('buyer_email', user.email ?? '')
+          .not('status', 'eq', 'cancelled')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('event_attendance')
+          .select('id, status, events(id, title, event_date, start_time, venues(name))')
+          .eq('user_id', user.id)
+          .gte('events.event_date', today)
+          .order('created_at', { ascending: false })
+          .limit(10),
       ])
 
       setBookings(bookingsRes.data ?? [])
       setEnrollments(enrollmentsRes.data ?? [])
       setStudioReservations(studioRes.data ?? [])
+      setTickets(ticketsRes.data ?? [])
+      setInterested((interestedRes.data ?? []).filter((a: any) => a.events))
       setLoading(false)
     }
     load()
@@ -59,11 +79,79 @@ export function StudentDashboard({ userId }: { userId: string }) {
   }, [userId])
 
   if (loading) return null
-  if (bookings.length === 0 && enrollments.length === 0 && studioReservations.length === 0) return null
+  if (bookings.length === 0 && enrollments.length === 0 && studioReservations.length === 0 && tickets.length === 0 && interested.length === 0) return null
 
   return (
     <div className="space-y-6">
-      <h2 className="font-bebas text-2xl text-text-primary">DERSLERİM, KURSLARIM & REZERVASYONLARlM</h2>
+      <h2 className="font-bebas text-2xl text-text-primary">ETKİNLİKLERİM & REZERVASYONLARIM</h2>
+
+      {tickets.length > 0 && (
+        <div>
+          <h3 className="text-text-muted text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Ticket size={12} /> Biletlerim
+          </h3>
+          <div className="space-y-2">
+            {tickets.map(t => {
+              const ev = t.events
+              const dateStr = ev?.event_date
+                ? new Date(ev.event_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+                : '—'
+              const statusColor = t.status === 'confirmed' || t.status === 'used'
+                ? 'text-success bg-success/10 border-success/20'
+                : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
+              const statusLabel = t.status === 'used' ? 'Kullanıldı' : t.status === 'confirmed' ? 'Onaylandı' : 'Bekliyor'
+              return (
+                <Link key={t.id} href={`/events/${ev?.id}`} className="card p-3 flex items-center gap-3 hover:border-accent/30 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium">{ev?.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
+                      <Clock size={9} /> {dateStr} · {ev?.start_time?.slice(0, 5)}
+                      {ev?.venues?.name && <span className="ml-1">· {ev.venues.name}</span>}
+                      {t.quantity > 1 && <span className="ml-1">· {t.quantity} bilet</span>}
+                      {t.total_price > 0 && <span className="ml-1 text-accent font-bebas">₺{t.total_price}</span>}
+                    </p>
+                  </div>
+                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0', statusColor)}>
+                    {statusLabel}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {interested.length > 0 && (
+        <div>
+          <h3 className="text-text-muted text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Star size={12} /> Gitmeyi Düşündüklerim
+          </h3>
+          <div className="space-y-2">
+            {interested.map(a => {
+              const ev = a.events
+              const dateStr = ev?.event_date
+                ? new Date(ev.event_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+                : '—'
+              return (
+                <Link key={a.id} href={`/events/${ev?.id}`} className="card p-3 flex items-center gap-3 hover:border-accent/30 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium">{ev?.title}</p>
+                    <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
+                      <Clock size={9} /> {dateStr} · {ev?.start_time?.slice(0, 5)}
+                      {ev?.venues?.name && <span className="ml-1">· {ev.venues.name}</span>}
+                    </p>
+                  </div>
+                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0',
+                    a.status === 'going' ? 'text-accent bg-accent/10 border-accent/20' : 'text-text-muted bg-[rgba(228,224,216,0.06)] border-[rgba(228,224,216,0.1)]'
+                  )}>
+                    {a.status === 'going' ? 'Gidiyorum' : 'İlgileniyor'}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {studioReservations.length > 0 && (
         <div>
