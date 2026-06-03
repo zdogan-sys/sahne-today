@@ -86,7 +86,7 @@ export default function RoomCalendarPage() {
       const [instRes, templRes, lessRes, memRes] = await Promise.all([
         supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true),
-        supabase.from('teaching_slots').select('*, teaching_bookings(id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
+        supabase.from('teaching_slots').select('*, teaching_bookings(id, student_id, student_name, student_email, student_phone, status)').eq('room_id', roomId).eq('is_active', true),
         supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
       ])
       setInstructors(instRes.data ?? [])
@@ -221,18 +221,34 @@ export default function RoomCalendarPage() {
     setSaving(true)
     setError('')
 
-    // Seri varsa tüm haftalara, yoksa sadece bu derse ekle
+    // Kursun tüm haftalarını bul: series_id varsa onunla, yoksa eşleşen özelliklerle
     const targetSlots = detailItem.series_id
-      ? lessons.filter(l => l.series_id === detailItem.series_id)
-      : [detailItem]
+      ? lessons.filter(l => l.series_id && l.series_id === detailItem.series_id)
+      : lessons.filter(l =>
+          l.instrument === detailItem.instrument &&
+          l.instructor_name === detailItem.instructor_name &&
+          l.start_time === detailItem.start_time &&
+          l.day_of_week === detailItem.day_of_week
+        )
 
-    const rows = targetSlots.map(s => ({
-      slot_id: s.id, artist_id: null, student_id: stuForm.student_id,
-      student_name: stuForm.student_name,
-      student_email: stuForm.student_email || 'belirtilmedi@sahne.today',
-      student_phone: stuForm.student_phone || '-',
-      lesson_date: s.slot_date, status: 'confirmed', booked_by: 'teacher',
-    }))
+    // Zaten ekli olanları atla (mükerrer önleme)
+    const rows = targetSlots
+      .filter(s => {
+        const bookings = (s.teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled')
+        return !bookings.some((b: any) =>
+          stuForm.student_id ? b.student_id === stuForm.student_id
+            : b.student_name?.toLowerCase().trim() === stuForm.student_name.toLowerCase().trim()
+        )
+      })
+      .map(s => ({
+        slot_id: s.id, artist_id: null, student_id: stuForm.student_id,
+        student_name: stuForm.student_name,
+        student_email: stuForm.student_email || 'belirtilmedi@sahne.today',
+        student_phone: stuForm.student_phone || '-',
+        lesson_date: s.slot_date, status: 'confirmed', booked_by: 'teacher',
+      }))
+
+    if (rows.length === 0) { setError('Bu öğrenci tüm haftalara zaten ekli'); setSaving(false); return }
 
     const { error: err } = await supabase.from('teaching_bookings').insert(rows as any)
     if (err) { setError(err.message); setSaving(false); return }
@@ -507,9 +523,7 @@ export default function RoomCalendarPage() {
               {/* Öğrenci ekleme formu */}
               {showAddStudent && (
                 <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 space-y-2">
-                  {detailItem.series_id && (
-                    <p className="text-accent text-[11px]">Bu kursun tüm haftalarına eklenecek.</p>
-                  )}
+                  <p className="text-accent text-[11px]">Öğrenci, aynı gün/saatteki tüm hafta derslerine eklenir.</p>
                   {/* Üye havuzundan seç */}
                   <div className="relative">
                     <input
