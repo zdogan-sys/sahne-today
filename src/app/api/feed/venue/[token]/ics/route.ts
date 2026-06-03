@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 function pad(n: number) { return String(n).padStart(2, '0') }
 function toICSDate(dateStr: string, timeStr: string) {
   const d = new Date(`${dateStr}T${timeStr}`)
@@ -39,6 +41,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     .gte('event_date', today)
     .order('event_date', { ascending: true })
 
+  // Dersler (teaching_slots) — dersane takvimi
+  const { data: lessons } = await admin
+    .from('teaching_slots')
+    .select('id, instrument, slot_date, start_time, end_time, instructor_name, studio_rooms(name), venues(name, address, district, city), teaching_bookings(student_name, status)')
+    .in('venue_id', venueIds)
+    .eq('is_active', true)
+    .not('slot_date', 'is', null)
+    .gte('slot_date', today)
+
   const veventBlocks = (events ?? []).map((ev: any) => {
     const venue = ev.venues
     const location = venue ? [venue.name, venue.address, venue.district, venue.city].filter(Boolean).join(', ') : ''
@@ -58,6 +69,29 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
       'END:VEVENT',
     ].filter(Boolean).join('\r\n')
   })
+
+  const lessonBlocks = (lessons ?? []).map((l: any) => {
+    const room = l.studio_rooms?.name
+    const venueName = l.venues?.name
+    const location = [venueName, room, l.venues?.city].filter(Boolean).join(' · ')
+    const students = (l.teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled').map((b: any) => b.student_name)
+    const desc = [
+      l.instructor_name ? `Eğitmen: ${l.instructor_name}` : 'Eğitmen atanmadı',
+      students.length ? `Öğrenci: ${students.join(', ')}` : '',
+    ].filter(Boolean).join('\n')
+    return [
+      'BEGIN:VEVENT',
+      `UID:lesson-${l.id}@sahne.today`,
+      `DTSTART:${toICSDate(l.slot_date, l.start_time)}`,
+      `DTEND:${toICSDate(l.slot_date, l.end_time)}`,
+      `SUMMARY:🎓 ${escapeICS(l.instrument ?? 'Ders')}${l.instructor_name ? ` — ${escapeICS(l.instructor_name)}` : ''}`,
+      location ? `LOCATION:${escapeICS(location)}` : '',
+      desc ? `DESCRIPTION:${escapeICS(desc)}` : '',
+      'END:VEVENT',
+    ].filter(Boolean).join('\r\n')
+  })
+
+  veventBlocks.push(...lessonBlocks)
 
   const calName = (profile as any).display_name ?? 'Mekan'
   const ics = [

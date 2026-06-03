@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 function pad(n: number) { return String(n).padStart(2, '0') }
 function toICSDate(dateStr: string, timeStr: string) {
   const d = new Date(`${dateStr}T${timeStr}`)
@@ -98,7 +100,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     ].filter(Boolean).join('\r\n'))
   }
 
-  // Özel dersler
+  // Özel dersler (öğrenci olarak)
   for (const b of bookingsRes.data ?? []) {
     const slot = (b as any).teaching_slots
     if (!b.lesson_date || !slot) continue
@@ -113,6 +115,39 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
       loc ? `LOCATION:${escapeICS(loc)}` : '',
       'END:VEVENT',
     ].filter(Boolean).join('\r\n'))
+  }
+
+  // Eğitmen olarak verdiğim dersler (venue_instructors → artist profili bu kullanıcı)
+  const { data: myArtists } = await admin.from('artists').select('id').eq('profile_id', userId)
+  const artistIds = (myArtists ?? []).map((a: any) => a.id)
+  if (artistIds.length > 0) {
+    const { data: vi } = await admin.from('venue_instructors').select('name, venue_id').in('artist_id', artistIds).eq('is_active', true)
+    const names = Array.from(new Set((vi ?? []).map((v: any) => v.name)))
+    const venueIds = Array.from(new Set((vi ?? []).map((v: any) => v.venue_id)))
+    if (names.length > 0 && venueIds.length > 0) {
+      const { data: teachSlots } = await admin
+        .from('teaching_slots')
+        .select('id, instrument, slot_date, start_time, end_time, venues(name, city), studio_rooms(name), teaching_bookings(student_name, status)')
+        .in('venue_id', venueIds)
+        .in('instructor_name', names)
+        .eq('is_active', true)
+        .not('slot_date', 'is', null)
+        .gte('slot_date', today)
+      for (const l of teachSlots ?? []) {
+        const loc = [(l as any).venues?.name, (l as any).studio_rooms?.name].filter(Boolean).join(' · ')
+        const students = ((l as any).teaching_bookings ?? []).filter((b: any) => b.status !== 'cancelled').map((b: any) => b.student_name)
+        vevents.push([
+          'BEGIN:VEVENT',
+          `UID:teach-${(l as any).id}@sahne.today`,
+          `DTSTART:${toICSDate((l as any).slot_date, (l as any).start_time)}`,
+          `DTEND:${toICSDate((l as any).slot_date, (l as any).end_time)}`,
+          `SUMMARY:👨‍🏫 ${escapeICS((l as any).instrument ?? 'Ders')} (eğitmen)`,
+          loc ? `LOCATION:${escapeICS(loc)}` : '',
+          students.length ? `DESCRIPTION:${escapeICS('Öğrenci: ' + students.join(', '))}` : '',
+          'END:VEVENT',
+        ].filter(Boolean).join('\r\n'))
+      }
+    }
   }
 
   const displayName = (profile as any).display_name ?? 'Kişisel'
