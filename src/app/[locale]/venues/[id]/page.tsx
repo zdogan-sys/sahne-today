@@ -409,45 +409,6 @@ export default async function VenuePage({ params }: Props) {
           </div>
         )}
 
-        {/* Özel Ders Saatleri */}
-        {teachingSlotsAtVenue.length > 0 && (
-          <div>
-            <h2 className="font-bebas text-2xl text-text-primary mb-3">{isEn ? 'LESSONS' : 'ÖZEL DERSLER'}</h2>
-            <div className="space-y-2">
-              {teachingSlotsAtVenue.map((slot) => {
-                const dayLabel = slot.slot_date
-                  ? new Date(slot.slot_date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
-                  : ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'][slot.day_of_week]
-                return (
-                  <Link
-                    key={slot.id}
-                    href={`/venues/${venue.id}/book/${slot.id}`}
-                    className="card p-3 hover:border-accent/30 transition-colors block"
-                  >
-                    <p className="font-medium text-text-primary text-sm">
-                      {slot.instrument}
-                      {slot.lesson_type === 'group' && (
-                        <span className="text-[9px] ml-2 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
-                          {isEn ? 'Group' : 'Grup'}
-                        </span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1 text-text-muted text-xs">
-                      <span>{dayLabel} · {slot.start_time?.slice(0, 5)}–{slot.end_time?.slice(0, 5)}</span>
-                      {slot.is_online && (
-                        <span className="ml-auto px-1.5 py-0.5 rounded bg-[rgba(212,168,32,0.1)] text-yellow-400 text-[9px]">
-                          Online
-                        </span>
-                      )}
-                      <span className="ml-auto font-bebas text-accent">₺{slot.price_per_session}</span>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Photo album link */}
         <Link
           href={`/venues/${venue.id}/photos`}
