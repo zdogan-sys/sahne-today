@@ -282,24 +282,24 @@ export default function VenueHubPage() {
           )}
 
           {!showTemplateForm && (templates.length > 0 ? (
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {templates.map(tmpl => (
-                <div key={tmpl.id} className="card p-3 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-text-primary font-medium text-sm">{tmpl.name}</p>
-                    <p className="text-text-muted text-xs mt-0.5">
-                      {tmpl.billing_type === 'monthly'
-                        ? `Aylık · haftada ${tmpl.days_per_week ?? 1} gün · ${tmpl.hours_per_session}h/gün`
-                        : `${tmpl.weeks} hafta · ${tmpl.hours_per_session}h/seans`}
-                      {tmpl.subject && ` · ${tmpl.subject}`}
-                    </p>
+                <div key={tmpl.id} className="card p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-text-primary font-medium text-sm flex-1 min-w-0">{tmpl.name}</p>
+                    <div className="flex gap-1 flex-shrink-0 ml-2">
+                      <button onClick={() => { setEditingTemplateId(tmpl.id); setTemplateForm(tmpl); setShowTemplateForm(true) }} className="p-1 text-text-muted hover:text-accent"><Edit2 size={13} /></button>
+                      <button onClick={() => deleteTemplate(tmpl.id)} className="p-1 text-text-muted hover:text-red-400"><X size={13} /></button>
+                    </div>
                   </div>
-                  <div className="text-accent font-bebas text-lg">
+                  <p className="text-text-muted text-xs">
+                    {tmpl.billing_type === 'monthly'
+                      ? `Aylık · haftada ${tmpl.days_per_week ?? 1} gün · ${tmpl.hours_per_session}h/gün`
+                      : `${tmpl.weeks} hafta · ${tmpl.hours_per_session}h/seans`}
+                    {tmpl.subject && ` · ${tmpl.subject}`}
+                  </p>
+                  <div className="text-accent font-bebas text-lg mt-2">
                     {tmpl.billing_type === 'monthly' ? <>₺{tmpl.monthly_price}<span className="text-[10px] font-sans text-text-muted">/ay</span></> : <>₺{tmpl.price_total}</>}
-                  </div>
-                  <div className="flex gap-1 ml-3">
-                    <button onClick={() => { setEditingTemplateId(tmpl.id); setTemplateForm(tmpl); setShowTemplateForm(true) }} className="p-1 text-text-muted hover:text-accent"><Edit2 size={13} /></button>
-                    <button onClick={() => deleteTemplate(tmpl.id)} className="p-1 text-text-muted hover:text-red-400"><X size={13} /></button>
                   </div>
                 </div>
               ))}
