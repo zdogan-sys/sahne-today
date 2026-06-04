@@ -392,12 +392,33 @@ export default function RoomCalendarPage() {
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
-    if (!over || !isLesson) return
+    if (!over) return
+    const overId = over.id as string
+    setError('')
+
+    // Stüdyo rezervasyonu taşıma
+    if (!isLesson) {
+      const res = reservations.find(r => r.id === active.id)
+      if (!res) return
+      if (overId.startsWith('room-')) return // rezervasyon oda değiştirmez (şimdilik)
+      const [newCol, newHour] = overId.split('-').map(Number)
+      const newDate = dateStr(weekDates[newCol])
+      const dur = res.duration_hours ?? 1
+      if (newDate === res.reservation_date && newHour === parseInt(res.start_time.split(':')[0])) return
+      setSaving(true)
+      await supabase.from('studio_reservations').update({
+        reservation_date: newDate,
+        start_time: `${pad(newHour)}:00:00`,
+        end_time: `${pad(newHour + dur)}:00:00`,
+      }).eq('id', res.id)
+      await load()
+      setSaving(false)
+      return
+    }
+
     const lesson = lessons.find(l => l.id === active.id)
     if (!lesson) return
 
-    const overId = over.id as string
-    setError('')
     const seriesCount = lesson.series_id ? lessons.filter(l => l.series_id === lesson.series_id).length : 1
 
     // Oda sekmesine bırakıldı → başka odaya taşı
@@ -981,9 +1002,11 @@ function LessonChip({ lesson, color, light, onClick }: { lesson: any; color: str
 }
 
 function ReservationChip({ res, onClick }: { res: any; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: res.id })
   return (
-    <button onClick={onClick} className="w-full h-full rounded-xl p-1.5 text-left transition-opacity overflow-hidden"
-      style={{ background: '#dbeafe', borderLeft: '3px solid #3b82f6', minHeight: '56px' }}>
+    <button ref={setNodeRef} {...attributes} {...listeners} onClick={onClick}
+      className="w-full h-full rounded-xl p-1.5 text-left overflow-hidden cursor-grab active:cursor-grabbing"
+      style={{ background: '#dbeafe', borderLeft: '3px solid #3b82f6', minHeight: '56px', opacity: isDragging ? 0.4 : 1 }}>
       <div className="text-[11px] font-semibold leading-tight truncate" style={{ color: '#1f2937' }}>{res.reserver_name}</div>
       <div className="text-[9px] leading-tight" style={{ color: '#3b82f6' }}>{res.start_time?.slice(0, 5)}–{res.end_time?.slice(0, 5)}</div>
     </button>
