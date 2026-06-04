@@ -414,12 +414,6 @@ export default function VenueHubPage() {
           <span className="text-text-muted text-sm">Rezervasyonları görüntüle ve yönet</span>
           <span className="text-accent">→</span>
         </Link>
-        {!isLesson && (
-          <Link href={`/dashboard/venue/${venueId}/availability`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
-            <span className="text-text-muted text-sm">Çalışma Saatleri</span>
-            <span className="text-accent">→</span>
-          </Link>
-        )}
       </div>
 
       {/* Videolar & Sosyal Medya */}

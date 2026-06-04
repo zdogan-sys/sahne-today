@@ -90,6 +90,7 @@ export default function RoomCalendarPage() {
   // Modals
   const [addCell, setAddCell] = useState<{ col: number; hour: number } | null>(null)
   const [detailItem, setDetailItem] = useState<any>(null)
+  const [resForm, setResForm] = useState({ reserver_name: '', reserver_email: '', reserver_phone: '', duration: 1 })
   const [pendingMove, setPendingMove] = useState<{ slot: any; newCol: number; newHour: number; seriesCount: number } | null>(null)
   const [pendingRoomMove, setPendingRoomMove] = useState<{ slot: any; targetRoomId: string; targetRoomName: string; seriesCount: number } | null>(null)
 
@@ -225,7 +226,40 @@ export default function RoomCalendarPage() {
     setError('')
     setMemberQuery('')
     setForm({ student_name: '', student_email: '', student_phone: '', student_id: null, instructor_name: '', lesson_type: 'single', template_id: '' })
+    setResForm({ reserver_name: '', reserver_email: '', reserver_phone: '', duration: 1 })
     setAddCell({ col, hour })
+  }
+
+  // Stüdyo: boş hücreye rezervasyon aç
+  async function saveReservation() {
+    if (!addCell) return
+    if (!resForm.reserver_name) { setError('Müşteri adı zorunlu'); return }
+    setSaving(true); setError('')
+
+    const startHour = addCell.hour
+    const startTime = `${pad(startHour)}:00:00`
+    const endTime = `${pad(startHour + resForm.duration)}:00:00`
+    const resDate = dateStr(weekDates[addCell.col])
+    const pricePerHour = Number(room?.price_per_hour ?? 0)
+    const totalPrice = pricePerHour * resForm.duration
+
+    const { error: err } = await supabase.from('studio_reservations').insert({
+      venue_id: venueId, room_id: activeRoomId, room_name: room?.name ?? null,
+      reserver_id: null,
+      reserver_name: resForm.reserver_name,
+      reserver_email: resForm.reserver_email || 'belirtilmedi@sahne.today',
+      reserver_phone: resForm.reserver_phone || '-',
+      reservation_date: resDate,
+      start_time: startTime, end_time: endTime,
+      duration_hours: resForm.duration,
+      price_per_hour: pricePerHour, total_price: totalPrice,
+      status: 'confirmed',
+    } as any)
+    if (err) { setError(err.message); setSaving(false); return }
+
+    setAddCell(null)
+    await load()
+    setSaving(false)
   }
 
   async function saveLesson() {
@@ -662,6 +696,41 @@ export default function RoomCalendarPage() {
         </Modal>
       )}
 
+      {/* === STÜDYO REZERVASYON EKLE MODAL === */}
+      {addCell && !isLesson && (
+        <Modal onClose={() => setAddCell(null)} title={`${DAYS_TR[addCell.col]} ${pad(addCell.hour)}:00 — Rezervasyon`}>
+          <div className="space-y-3">
+            <div>
+              <label className="label text-xs">Müşteri Adı *</label>
+              <input value={resForm.reserver_name} onChange={e => setResForm(p => ({ ...p, reserver_name: e.target.value }))} className="input-field text-sm mt-1" placeholder="Ad Soyad" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="email" value={resForm.reserver_email} onChange={e => setResForm(p => ({ ...p, reserver_email: e.target.value }))} placeholder="E-posta" className="input-field text-sm" />
+              <input type="tel" value={resForm.reserver_phone} onChange={e => setResForm(p => ({ ...p, reserver_phone: e.target.value }))} placeholder="Telefon" className="input-field text-sm" />
+            </div>
+            <div>
+              <label className="label text-xs">Süre (saat)</label>
+              <select value={resForm.duration} onChange={e => setResForm(p => ({ ...p, duration: parseInt(e.target.value) }))} className="input-field text-sm mt-1">
+                {[1, 2, 3, 4, 5, 6].map(d => <option key={d} value={d}>{d} saat ({pad(addCell.hour)}:00–{pad(addCell.hour + d)}:00)</option>)}
+              </select>
+            </div>
+            {room?.price_per_hour > 0 && (
+              <div className="flex items-center justify-between bg-[rgba(228,224,216,0.04)] p-2 rounded-lg text-sm">
+                <span className="text-text-muted">{resForm.duration} saat × ₺{room.price_per_hour}</span>
+                <span className="font-bebas text-lg text-accent">₺{room.price_per_hour * resForm.duration}</span>
+              </div>
+            )}
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <div className="flex gap-2">
+              <button onClick={saveReservation} disabled={saving} className="btn-accent flex-1 py-2.5 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                {saving ? <><Loader2 size={13} className="animate-spin" /> Kaydediliyor...</> : <><Plus size={13} /> Rezervasyon Ekle</>}
+              </button>
+              <button onClick={() => setAddCell(null)} className="px-4 py-2.5 text-sm rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted hover:text-text-primary">İptal</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* === DETAIL MODAL === */}
       {detailItem && (
         <Modal onClose={() => setDetailItem(null)} title={isLesson ? 'Ders Detayı' : 'Rezervasyon Detayı'}>
@@ -888,7 +957,7 @@ function Cell({ id, hasItem, dayLight, isLesson, onAdd, children }: { id: string
         outline: isOver ? `2px dashed ${dayLight}` : 'none',
       }}>
       {children}
-      {!hasItem && isLesson && (
+      {!hasItem && (
         <button onClick={onAdd} className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#94a3b8' }}>
           <Plus size={16} />
         </button>
