@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Check, Wallet } from 'lucide-react'
+import { ArrowLeft, Loader2, Check, Wallet, ChevronDown, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -41,9 +41,9 @@ export default function VenuePaymentsPage() {
   const [saving, setSaving] = useState<string | null>(null)
 
   // Filtreler
-  const [fLabel, setFLabel] = useState('')
-  const [fPeriod, setFPeriod] = useState('')
-  const [fStatus, setFStatus] = useState<'all' | 'paid' | 'unpaid'>('all')
+  const [search, setSearch] = useState('')
+  const [showPast, setShowPast] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -167,18 +167,29 @@ export default function VenuePaymentsPage() {
     setSaving(null)
   }
 
-  // Filtre seçenekleri
-  const labels = Array.from(new Set(rows.map(r => r.label))).sort()
-  const periods = Array.from(new Set(rows.map(r => r.period))).sort((a, b) => b.localeCompare(a))
+  const nowPeriod = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
-  const filtered = rows.filter(r =>
-    (!fLabel || r.label === fLabel) &&
-    (!fPeriod || r.period === fPeriod) &&
-    (fStatus === 'all' || (fStatus === 'paid' ? r.paid : !r.paid))
+  // Kursiyerlere göre grupla
+  type Student = { key: string; name: string; email: string; rows: Row[]; offerings: string[]; pending: number; active: boolean }
+  const studentMap = new Map<string, Student>()
+  for (const r of rows) {
+    const key = (r.student_email || r.student_name || '').toLowerCase() + '|' + r.student_name.toLowerCase()
+    if (!studentMap.has(key)) studentMap.set(key, { key, name: r.student_name, email: r.student_email, rows: [], offerings: [], pending: 0, active: false })
+    const s = studentMap.get(key)!
+    s.rows.push(r)
+    if (!s.offerings.includes(r.label)) s.offerings.push(r.label)
+    if (!r.paid) s.pending += r.amount
+    if (r.period >= nowPeriod) s.active = true
+  }
+  const allStudents = Array.from(studentMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+
+  const students = allStudents.filter(s =>
+    (showPast || s.active) &&
+    (!search || s.name.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const collected = filtered.filter(r => r.paid).reduce((s, r) => s + r.amount, 0)
-  const pending = filtered.filter(r => !r.paid).reduce((s, r) => s + r.amount, 0)
+  const collected = rows.filter(r => r.paid).reduce((s, r) => s + r.amount, 0)
+  const pending = rows.filter(r => !r.paid).reduce((s, r) => s + r.amount, 0)
 
   if (loading) return <div className="max-w-3xl mx-auto px-4 py-12 flex justify-center"><Loader2 size={24} className="animate-spin text-accent" /></div>
 
@@ -203,43 +214,67 @@ export default function VenuePaymentsPage() {
         </div>
       </div>
 
-      {/* Filtreler */}
-      <div className="grid grid-cols-3 gap-2">
-        <select value={fLabel} onChange={e => setFLabel(e.target.value)} className="input-field text-sm">
-          <option value="">Tüm dersler</option>
-          {labels.map(l => <option key={l} value={l}>{l}</option>)}
-        </select>
-        <select value={fPeriod} onChange={e => setFPeriod(e.target.value)} className="input-field text-sm">
-          <option value="">Tüm dönemler</option>
-          {periods.map(p => <option key={p} value={p}>{periodLabel(p)}</option>)}
-        </select>
-        <select value={fStatus} onChange={e => setFStatus(e.target.value as any)} className="input-field text-sm">
-          <option value="all">Tümü</option>
-          <option value="unpaid">Ödemeyen</option>
-          <option value="paid">Ödeyen</option>
-        </select>
+      {/* Arama + geçmiş */}
+      <div className="flex gap-2 items-center">
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Kursiyer ara..." className="input-field text-sm flex-1" />
+        <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer whitespace-nowrap">
+          <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)} />
+          Geçmiş kursiyerler
+        </label>
       </div>
 
-      {/* Liste */}
-      {filtered.length === 0 ? (
-        <div className="card p-8 text-center text-text-muted text-sm">Aidat kaydı yok. Aylık kurs/ders açıp öğrenci kaydedildiğinde burada görünür.</div>
+      {/* Kursiyer listesi */}
+      {students.length === 0 ? (
+        <div className="card p-8 text-center text-text-muted text-sm">
+          {allStudents.length === 0 ? 'Henüz kursiyer yok. Aylık kurs/ders açıp öğrenci kaydedildiğinde burada görünür.' : 'Aktif kursiyer yok. "Geçmiş kursiyerler" ile tümünü görebilirsin.'}
+        </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(row => (
-            <div key={row.key} className={cn('card p-3 flex items-center gap-3', row.paid ? 'border-success/20' : 'border-yellow-400/20')}>
-              <div className="flex-1 min-w-0">
-                <p className="text-text-primary text-sm font-medium truncate">{row.student_name}</p>
-                <p className="text-text-muted text-xs mt-0.5">{row.label} · {periodLabel(row.period)}</p>
+          {students.map(stu => {
+            const isOpen = expanded === stu.key
+            return (
+              <div key={stu.key} className="card overflow-hidden">
+                {/* Kursiyer başlığı — tıklayınca açılır */}
+                <button onClick={() => setExpanded(isOpen ? null : stu.key)} className="w-full p-3 flex items-center gap-3 text-left hover:bg-[rgba(228,224,216,0.03)] transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium truncate">{stu.name}</p>
+                    <p className="text-text-muted text-xs mt-0.5">{stu.offerings.join(', ')}</p>
+                  </div>
+                  {stu.pending > 0 && <span className="text-yellow-400 text-xs font-medium flex-shrink-0">₺{stu.pending} bekliyor</span>}
+                  {isOpen ? <ChevronDown size={16} className="text-text-muted flex-shrink-0" /> : <ChevronRight size={16} className="text-text-muted flex-shrink-0" />}
+                </button>
+
+                {/* Detay: kurslar + aidat dönemleri */}
+                {isOpen && (
+                  <div className="border-t border-[rgba(228,224,216,0.08)] p-3 space-y-3">
+                    {stu.email && <p className="text-text-muted text-[11px]">{stu.email}</p>}
+                    {stu.offerings.map(label => {
+                      const offRows = stu.rows.filter(r => r.label === label).sort((a, b) => a.period.localeCompare(b.period))
+                      return (
+                        <div key={label}>
+                          <p className="text-text-primary text-xs font-semibold mb-1.5">{label}</p>
+                          <div className="space-y-1">
+                            {offRows.map(row => (
+                              <div key={row.key} className="flex items-center gap-2 text-xs">
+                                <span className="text-text-muted flex-1">{periodLabel(row.period)}</span>
+                                <span className="text-accent font-bebas">₺{row.amount}</span>
+                                <button onClick={() => togglePaid(row)} disabled={saving === row.key}
+                                  className={cn('px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1 disabled:opacity-40',
+                                    row.paid ? 'bg-success/10 text-success border-success/30' : 'text-text-muted border-[rgba(228,224,216,0.15)] hover:border-accent/30 hover:text-accent'
+                                  )}>
+                                  {saving === row.key ? <Loader2 size={11} className="animate-spin" /> : row.paid ? <><Check size={11} /> Ödendi</> : 'Ödenmedi'}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-              <div className="text-accent font-bebas text-lg flex-shrink-0">₺{row.amount}</div>
-              <button onClick={() => togglePaid(row)} disabled={saving === row.key}
-                className={cn('text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1 flex-shrink-0 disabled:opacity-40',
-                  row.paid ? 'bg-success/10 text-success border-success/30' : 'text-text-muted border-[rgba(228,224,216,0.15)] hover:border-accent/30 hover:text-accent'
-                )}>
-                {saving === row.key ? <Loader2 size={12} className="animate-spin" /> : row.paid ? <><Check size={12} /> Ödendi</> : 'Ödenmedi'}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
