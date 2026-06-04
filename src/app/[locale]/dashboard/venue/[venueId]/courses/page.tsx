@@ -96,7 +96,7 @@ export default function VenueCoursesPage() {
       {courses.length > 0 ? (
         <div className="space-y-2">
           {courses.map(course => (
-            <Link key={course.id} href={`/courses/${course.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
+            <Link key={course.id} href={`/dashboard/courses/${course.id}`} className="card p-4 hover:border-accent/30 transition-colors block">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {course.startDate && (
