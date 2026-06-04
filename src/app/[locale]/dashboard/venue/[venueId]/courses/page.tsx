@@ -39,7 +39,7 @@ export default function VenueCoursesPage() {
 
     const { data: coursesData } = await supabase
       .from('courses')
-      .select('id, title, category, level, price_per_session, max_participants, status, created_at, course_sessions(session_date)')
+      .select('id, title, category, level, price_per_session, billing_type, monthly_price, max_participants, status, created_at, course_sessions(session_date)')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false })
 
@@ -118,8 +118,8 @@ export default function VenueCoursesPage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-bebas text-accent text-lg">₺{course.price_per_session}</p>
-                  <p className="text-text-muted text-xs">toplam</p>
+                  <p className="font-bebas text-accent text-lg">{course.billing_type === 'monthly' ? `₺${course.monthly_price ?? 0}` : `₺${course.price_per_session}`}</p>
+                  <p className="text-text-muted text-xs">{course.billing_type === 'monthly' ? 'aylık' : 'toplam'}</p>
                 </div>
               </div>
             </Link>

@@ -22,8 +22,9 @@ export default function CustomLessonRequestPage() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
+  const [billingType, setBillingType] = useState<'package' | 'monthly'>('package')
   const [form, setForm] = useState({
-    subject: '', weeks: 4, hours_per_session: 1,
+    subject: '', weeks: 4, hours_per_session: 1, months: 1,
     requested_date: '', requested_time: '10:00', preferred_instructor: '',
     student_name: '', student_email: '', student_phone: '', notes: '',
   })
@@ -72,8 +73,10 @@ export default function CustomLessonRequestPage() {
         venue_id: id,
         template_id: null,
         request_type: 'private',
+        billing_type: billingType,
         subject: form.subject,
-        weeks: form.weeks,
+        weeks: billingType === 'package' ? form.weeks : null,
+        months: billingType === 'monthly' ? form.months : null,
         hours_per_session: form.hours_per_session,
         requested_date: form.requested_date,
         requested_time: form.requested_time,
@@ -129,17 +132,39 @@ export default function CustomLessonRequestPage() {
           </select>
         </div>
 
-        {/* Hafta + saat */}
+        {/* Süre tipi */}
+        <div>
+          <label className="label">Süre Tipi</label>
+          <div className="flex gap-2 mt-1">
+            <button type="button" onClick={() => setBillingType('package')}
+              className={`flex-1 py-2 text-xs rounded-lg border transition-colors ${billingType === 'package' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)]'}`}>
+              Haftalık paket
+            </button>
+            <button type="button" onClick={() => setBillingType('monthly')}
+              className={`flex-1 py-2 text-xs rounded-lg border transition-colors ${billingType === 'monthly' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)]'}`}>
+              Aylık (aidat)
+            </button>
+          </div>
+        </div>
+
+        {/* Süre + saat */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Kaç Hafta</label>
-            <input type="number" min={1} value={form.weeks} onChange={e => setForm(p => ({ ...p, weeks: parseInt(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
+            <label className="label">{billingType === 'monthly' ? 'Kaç Ay' : 'Kaç Hafta'}</label>
+            {billingType === 'monthly' ? (
+              <input type="number" min={1} value={form.months} onChange={e => setForm(p => ({ ...p, months: parseInt(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
+            ) : (
+              <input type="number" min={1} value={form.weeks} onChange={e => setForm(p => ({ ...p, weeks: parseInt(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
+            )}
           </div>
           <div>
             <label className="label">Haftada Kaç Saat</label>
             <input type="number" min={0.5} step={0.5} value={form.hours_per_session} onChange={e => setForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
           </div>
         </div>
+        {billingType === 'monthly' && (
+          <p className="text-text-muted text-xs -mt-2">Aylık aidat ile ödersin; ücret mekan onayında belirlenir.</p>
+        )}
 
         {/* Tarih + saat */}
         <div className="grid grid-cols-2 gap-3">

@@ -51,7 +51,7 @@ export default async function CoursesPage({ searchParams }: Props) {
 
   let query = supabase
     .from('courses')
-    .select('id, title, category, subcategory, course_type, level, price_per_session, currency, is_online, location, max_participants, min_female, min_male, instructor_id, status, venues(city), profiles(display_name, avatar_url), course_sessions(id)')
+    .select('id, title, category, subcategory, course_type, level, price_per_session, billing_type, monthly_price, currency, is_online, location, max_participants, min_female, min_male, instructor_id, status, venues(city), profiles(display_name, avatar_url), course_sessions(id)')
     .in('status', ['active', 'full'])
     .order('created_at', { ascending: false })
 
@@ -201,8 +201,8 @@ export default async function CoursesPage({ searchParams }: Props) {
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[rgba(228,224,216,0.08)]">
                   <div>
-                    <span className="font-bebas text-xl text-accent">₺{course.price_per_session}</span>
-                    <span className="text-text-muted text-xs ml-1">seans başı</span>
+                    <span className="font-bebas text-xl text-accent">{(course as any).billing_type === 'monthly' ? `₺${(course as any).monthly_price ?? 0}` : `₺${course.price_per_session}`}</span>
+                    <span className="text-text-muted text-xs ml-1">{(course as any).billing_type === 'monthly' ? 'aylık' : 'toplam'}</span>
                   </div>
                   <div className="flex items-center gap-1 text-text-muted text-xs">
                     <span>{sessionCount} seans</span>

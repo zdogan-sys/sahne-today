@@ -32,6 +32,21 @@ function generateSessions(startDate: string, days: number[], weeks: number, star
   return dates
 }
 
+// Ay bazlı: başlangıçtan itibaren `months` ay boyunca seçili günlerin TÜM tarihleri (4/5 haftasonu otomatik)
+function generateSessionsByMonths(startDate: string, days: number[], months: number): string[] {
+  if (!startDate || days.length === 0 || months === 0) return []
+  const dates: string[] = []
+  const start = new Date(startDate + 'T00:00:00')
+  const end = new Date(start)
+  end.setMonth(end.getMonth() + months)
+  const cur = new Date(start)
+  while (cur < end) {
+    if (days.includes(cur.getDay())) dates.push(cur.toISOString().split('T')[0])
+    cur.setDate(cur.getDate() + 1)
+  }
+  return dates
+}
+
 export default function VenueNewCoursePage() {
   const router = useRouter()
   const params = useParams()
@@ -77,7 +92,9 @@ export default function VenueNewCoursePage() {
   const [location, setLocation] = useState('')
 
   // Program (takvim)
+  const [durationUnit, setDurationUnit] = useState<'weeks' | 'months'>('weeks')
   const [weeks, setWeeks] = useState(4)
+  const [months, setMonths] = useState(3)
   const [startDate, setStartDate] = useState('')
   const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [startTime, setStartTime] = useState('19:00')
@@ -88,26 +105,31 @@ export default function VenueNewCoursePage() {
   const [minFemale, setMinFemale] = useState(0)
   const [minMale, setMinMale] = useState(0)
 
-  // Fiyat — toplam kurs ücreti
+  // Fiyat — paket: toplam ücret, aylık: aidat
   const [coursePrice, setCoursePrice] = useState('')
+  const [monthlyPrice, setMonthlyPrice] = useState('')
 
   function toggleDay(d: number) {
     setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
   }
 
+  const isMonthly = durationUnit === 'months'
+
   const generatedSessions = useMemo(
-    () => generateSessions(startDate, selectedDays, weeks, startTime, endTime),
-    [startDate, selectedDays, weeks, startTime, endTime]
+    () => isMonthly
+      ? generateSessionsByMonths(startDate, selectedDays, months)
+      : generateSessions(startDate, selectedDays, weeks, startTime, endTime),
+    [isMonthly, startDate, selectedDays, weeks, months, startTime, endTime]
   )
 
-  // Toplam fiyat girilince, seans başına düşen tutarı bilgi olarak göster
-  const perSessionInfo = coursePrice && generatedSessions.length
+  // Paket modunda seans başına düşen tutar bilgisi
+  const perSessionInfo = !isMonthly && coursePrice && generatedSessions.length
     ? (parseFloat(coursePrice) / generatedSessions.length).toFixed(0)
     : null
 
   async function handleSave() {
     if (!title) { setError('Kurs adı zorunludur.'); return }
-    if (!coursePrice) { setError('Kurs ücreti zorunludur.'); return }
+    if (isMonthly ? !monthlyPrice : !coursePrice) { setError('Ücret zorunludur.'); return }
     if (!startDate) { setError('Başlangıç tarihi seçin.'); return }
     if (selectedDays.length === 0) { setError('En az bir gün seçin.'); return }
     if (generatedSessions.length === 0) { setError('Geçerli seans bulunamadı.'); return }
@@ -129,7 +151,11 @@ export default function VenueNewCoursePage() {
         course_type: 'group',
         level,
         duration_minutes: durationMinutes,
-        price_per_session: Number(coursePrice),
+        price_per_session: isMonthly ? 0 : Number(coursePrice),
+        billing_type: isMonthly ? 'monthly' : 'package',
+        monthly_price: isMonthly ? Number(monthlyPrice) : null,
+        duration_unit: durationUnit,
+        months: isMonthly ? months : null,
         max_participants: maxParticipants,
         min_female: minFemale,
         min_male: minMale,
@@ -298,19 +324,39 @@ export default function VenueNewCoursePage() {
         <div className="card p-5 space-y-4">
           <h2 className="font-bebas text-xl text-text-primary">Program</h2>
 
+          {/* Süre birimi: Hafta / Ay */}
+          <div>
+            <label className="label">Süre / Faturalandırma</label>
+            <div className="flex gap-2 mt-1">
+              <button type="button" onClick={() => setDurationUnit('weeks')}
+                className={cn('flex-1 py-2 text-xs rounded-lg border transition-colors', durationUnit === 'weeks' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)]')}>
+                Haftalık (toplam ücret)
+              </button>
+              <button type="button" onClick={() => setDurationUnit('months')}
+                className={cn('flex-1 py-2 text-xs rounded-lg border transition-colors', durationUnit === 'months' ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)]')}>
+                Aylık (aidat)
+              </button>
+            </div>
+            {isMonthly && <p className="text-text-muted text-xs mt-1">Sezonluk/dans kursları için: ay başına sabit ücret, kayıt gününde her ay ödenir.</p>}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Hafta Sayısı</label>
-              <div className="flex gap-1">
-                {DURATIONS.map(d => (
-                  <button key={d} onClick={() => setWeeks(d)}
-                    className={cn('flex-1 py-2 text-xs rounded border transition-colors',
-                      weeks === d ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
-                    )}>
-                    {d}
-                  </button>
-                ))}
-              </div>
+              <label className="label">{isMonthly ? 'Kaç Ay' : 'Hafta Sayısı'}</label>
+              {isMonthly ? (
+                <input type="number" min={1} value={months} onChange={e => setMonths(parseInt(e.target.value) || 1)} className="input-field text-sm" />
+              ) : (
+                <div className="flex gap-1">
+                  {DURATIONS.map(d => (
+                    <button key={d} onClick={() => setWeeks(d)}
+                      className={cn('flex-1 py-2 text-xs rounded border transition-colors',
+                        weeks === d ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)]'
+                      )}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="label">Başlangıç Tarihi</label>
@@ -378,11 +424,26 @@ export default function VenueNewCoursePage() {
         <div className="card p-5 space-y-4">
           <h2 className="font-bebas text-xl text-text-primary">Fiyatlandırma</h2>
 
-          <div>
-            <label className="label">Toplam Kurs Ücreti (₺) *</label>
-            <input type="number" min={0} step={50} value={coursePrice} onChange={e => setCoursePrice(e.target.value)} placeholder="2000" className="input-field" />
-            <p className="text-text-muted text-xs mt-1">Kursun tamamı için öğrencinin ödeyeceği toplam tutar.</p>
-          </div>
+          {isMonthly ? (
+            <div>
+              <label className="label">Aylık Ücret / Aidat (₺) *</label>
+              <input type="number" min={0} step={50} value={monthlyPrice} onChange={e => setMonthlyPrice(e.target.value)} placeholder="1500" className="input-field" />
+              <p className="text-text-muted text-xs mt-1">Öğrencinin her ay ödeyeceği sabit tutar. Ayda kaç seans olduğu fark etmez.</p>
+            </div>
+          ) : (
+            <div>
+              <label className="label">Toplam Kurs Ücreti (₺) *</label>
+              <input type="number" min={0} step={50} value={coursePrice} onChange={e => setCoursePrice(e.target.value)} placeholder="2000" className="input-field" />
+              <p className="text-text-muted text-xs mt-1">Kursun tamamı için öğrencinin ödeyeceği toplam tutar.</p>
+            </div>
+          )}
+
+          {isMonthly && generatedSessions.length > 0 && (
+            <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">
+              <p className="text-text-muted text-xs">{months} ay · {generatedSessions.length} seans</p>
+              <p className="font-bebas text-accent text-2xl">Aylık ₺{monthlyPrice || 0}</p>
+            </div>
+          )}
 
           {perSessionInfo && generatedSessions.length > 0 && (
             <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">

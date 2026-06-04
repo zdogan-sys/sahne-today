@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const {
       venue_id, template_id, request_type,
       requested_date, requested_time, preferred_instructor,
-      subject, weeks, hours_per_session,
+      subject, weeks, hours_per_session, billing_type, months,
       student_name, student_email, student_phone, notes,
     } = await req.json()
 
@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
         subject: subject || null,
         weeks: weeks ? Number(weeks) : null,
         hours_per_session: hours_per_session ? Number(hours_per_session) : null,
+        billing_type: billing_type === 'monthly' ? 'monthly' : 'package',
+        months: months ? Number(months) : null,
         student_id: user?.id ?? null,
         student_name,
         student_email,

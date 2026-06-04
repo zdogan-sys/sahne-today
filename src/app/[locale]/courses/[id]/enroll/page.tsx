@@ -32,7 +32,7 @@ export default function CourseEnrollPage() {
     async function load() {
       const { data: courseData } = await supabase
         .from('courses')
-        .select('id, title, price_per_session, course_type, max_participants, min_female, min_male, category')
+        .select('id, title, price_per_session, billing_type, monthly_price, course_type, max_participants, min_female, min_male, category')
         .eq('id', id)
         .single()
       setCourse(courseData)
@@ -203,9 +203,12 @@ export default function CourseEnrollPage() {
         {/* Özet */}
         <div className="card p-4 space-y-2">
           <div className="flex items-center justify-between text-sm border-t border-[rgba(228,224,216,0.1)] pt-2">
-            <span className="text-text-primary font-semibold">Toplam Kurs Ücreti</span>
-            <span className="font-bebas text-xl text-accent">₺{course.price_per_session}</span>
+            <span className="text-text-primary font-semibold">{course.billing_type === 'monthly' ? 'Aylık Ücret (Aidat)' : 'Toplam Kurs Ücreti'}</span>
+            <span className="font-bebas text-xl text-accent">{course.billing_type === 'monthly' ? `₺${course.monthly_price ?? 0}/ay` : `₺${course.price_per_session}`}</span>
           </div>
+          {course.billing_type === 'monthly' && (
+            <p className="text-text-muted text-xs">Kayıt gününde her ay ödenir. Ödemeler mekan tarafından elden/POS ile alınır.</p>
+          )}
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}

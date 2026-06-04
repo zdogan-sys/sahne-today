@@ -53,6 +53,8 @@ export default async function CourseDetailPage({ params }: Props) {
   const instructor = (course as any).profiles
   const venue = (course as any).venues
   const isOwner = !!user && (user.id === (course as any).instructor_id || user.id === venue?.owner_id)
+  const isMonthly = (course as any).billing_type === 'monthly'
+  const priceLabel = isMonthly ? `₺${(course as any).monthly_price ?? 0}/ay` : `₺${(course as any).price_per_session}`
   const sessions: any[] = (course as any).course_sessions ?? []
   const enrollments: any[] = (course as any).course_enrollments?.filter((e: any) => e.status === 'confirmed') ?? []
 
@@ -214,7 +216,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bebas text-xl text-accent">₺{(course as any).price_per_session}</span>
+                  <span className="font-bebas text-xl text-accent">{priceLabel}</span>
                   <span className="text-accent text-sm">→</span>
                 </div>
               </Link>

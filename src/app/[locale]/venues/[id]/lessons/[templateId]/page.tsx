@@ -82,6 +82,8 @@ export default function LessonRequestPage() {
         venue_id: id,
         template_id: templateId,
         request_type: mode,
+        billing_type: template?.billing_type === 'monthly' ? 'monthly' : 'package',
+        months: template?.billing_type === 'monthly' ? 1 : null,
         requested_date: mode === 'private' ? form.requested_date : null,
         requested_time: mode === 'private' ? form.requested_time : null,
         preferred_instructor: form.preferred_instructor || null,
@@ -129,9 +131,12 @@ export default function LessonRequestPage() {
 
       <h1 className="font-bebas text-4xl text-text-primary mb-1">{template.name}</h1>
       <p className="text-text-muted text-sm mb-1">
-        {template.subject && `${template.subject} · `}{template.weeks} hafta · {template.hours_per_session} saat/seans
+        {template.subject && `${template.subject} · `}
+        {template.billing_type === 'monthly' ? 'Aylık' : `${template.weeks} hafta`} · {template.hours_per_session} saat/seans
       </p>
-      {template.price_total > 0 && <p className="font-bebas text-2xl text-accent mb-4">₺{template.price_total}</p>}
+      {template.billing_type === 'monthly'
+        ? (template.monthly_price > 0 && <p className="font-bebas text-2xl text-accent mb-4">₺{template.monthly_price}<span className="text-sm font-sans text-text-muted">/ay</span></p>)
+        : (template.price_total > 0 && <p className="font-bebas text-2xl text-accent mb-4">₺{template.price_total}</p>)}
       {template.description && <p className="text-text-muted text-sm mb-6">{template.description}</p>}
 
       {/* Grup / Özel seçimi */}

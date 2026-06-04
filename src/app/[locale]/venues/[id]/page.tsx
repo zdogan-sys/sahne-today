@@ -103,12 +103,12 @@ export default async function VenuePage({ params }: Props) {
     user
       ? supabase.from('follows').select('id').eq('user_id', user.id).eq('target_type', 'venue').eq('target_id', id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from('courses').select('id, title, category, level, price_per_session, created_at, max_participants, course_sessions(session_date), course_enrollments(id, status)').eq('venue_id', id).eq('status', 'active'),
+    supabase.from('courses').select('id, title, category, level, price_per_session, billing_type, monthly_price, created_at, max_participants, course_sessions(session_date), course_enrollments(id, status)').eq('venue_id', id).eq('status', 'active'),
     supabase.from('teaching_slots').select('id, instrument, day_of_week, slot_date, start_time, end_time, price_per_session, lesson_type, is_online').eq('venue_id', id).eq('is_active', true),
     supabase.from('venue_instructors').select('id, name, instruments, bio, photo_url').eq('venue_id', id).eq('is_active', true),
     supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('venue_id', id).order('created_at', { ascending: false }),
     user ? supabase.from('reviews').select('*').eq('venue_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
-    supabase.from('venue_lesson_templates').select('id, name, subject, weeks, hours_per_session, price_total').eq('venue_id', id).eq('is_active', true).order('created_at'),
+    supabase.from('venue_lesson_templates').select('id, name, subject, weeks, hours_per_session, price_total, billing_type, monthly_price').eq('venue_id', id).eq('is_active', true).order('created_at'),
   ])
 
   if (!venueRes.data) notFound()
@@ -364,11 +364,14 @@ export default async function VenuePage({ params }: Props) {
                   <div className="min-w-0">
                     <p className="font-medium text-text-primary text-sm">{tmpl.name}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {tmpl.subject && `${tmpl.subject} · `}{tmpl.weeks} {isEn ? 'weeks' : 'hafta'} · {tmpl.hours_per_session} {isEn ? 'h/session' : 'saat/seans'}
+                      {tmpl.subject && `${tmpl.subject} · `}
+                      {tmpl.billing_type === 'monthly' ? (isEn ? 'Monthly' : 'Aylık') : `${tmpl.weeks} ${isEn ? 'weeks' : 'hafta'}`} · {tmpl.hours_per_session} {isEn ? 'h/session' : 'saat/seans'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    {tmpl.price_total > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.price_total}</span>}
+                    {tmpl.billing_type === 'monthly'
+                      ? (tmpl.monthly_price > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.monthly_price}<span className="text-[10px] font-sans text-text-muted">/ay</span></span>)
+                      : (tmpl.price_total > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.price_total}</span>)}
                     <p className="text-accent text-xs">{isEn ? 'Book →' : 'Talep Et →'}</p>
                   </div>
                 </Link>
@@ -415,7 +418,7 @@ export default async function VenuePage({ params }: Props) {
                     <span className="text-[10px] px-2 py-0.5 rounded border border-accent/20 text-accent bg-accent/5">
                       {course.level}
                     </span>
-                    <span className="ml-auto font-bebas text-accent">₺{course.price_per_session}</span>
+                    <span className="ml-auto font-bebas text-accent">{course.billing_type === 'monthly' ? `₺${course.monthly_price ?? 0}/ay` : `₺${course.price_per_session}`}</span>
                   </div>
                 </Link>
               ))}

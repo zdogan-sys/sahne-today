@@ -78,9 +78,10 @@ export default function VenueReservationsPage() {
     setSaving(true)
 
     const tmpl = req.venue_lesson_templates
-    const weeks = tmpl?.weeks ?? req.weeks ?? 1
+    const isMonthly = (req.billing_type === 'monthly') || (tmpl?.billing_type === 'monthly')
     const subject = tmpl?.name ?? req.subject ?? 'Özel Ders'
-    const pricePer = tmpl && tmpl.weeks > 0 ? tmpl.price_total / tmpl.weeks : (tmpl?.price_total ?? 0)
+    // Paket: seans başına ücret; Aylık: aidat ayrı takip edilir, slot fiyatı 0
+    const pricePer = isMonthly ? 0 : (tmpl && tmpl.weeks > 0 ? tmpl.price_total / tmpl.weeks : (tmpl?.price_total ?? 0))
     const startHour = parseInt(assign.time.split(':')[0])
     const startTime = `${String(startHour).padStart(2, '0')}:00:00`
     const endTime = `${String(startHour + 1).padStart(2, '0')}:00:00`
@@ -89,18 +90,26 @@ export default function VenueReservationsPage() {
     const pad = (n: number) => String(n).padStart(2, '0')
     const dStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-    const slotRows = []
-    for (let w = 0; w < weeks; w++) {
-      const d = new Date(baseDate); d.setDate(d.getDate() + w * 7)
-      slotRows.push({
-        venue_id: venueId, room_id: assign.room_id, artist_id: null,
-        instructor_name: assign.instructor_name || null, instrument: subject,
-        day_of_week: baseDate.getDay(), slot_date: dStr(d),
-        start_time: startTime, end_time: endTime,
-        price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
-        series_id: seriesId,
-      })
+    // Tarihleri üret: aylık → ay bazlı (4/5 haftasonu otomatik), paket → hafta sayısı
+    const slotDates: string[] = []
+    if (isMonthly) {
+      const m = req.months ?? 1
+      const endD = new Date(baseDate); endD.setMonth(endD.getMonth() + m)
+      const cur = new Date(baseDate)
+      while (cur < endD) { slotDates.push(dStr(cur)); cur.setDate(cur.getDate() + 7) }
+    } else {
+      const weeks = tmpl?.weeks ?? req.weeks ?? 1
+      for (let w = 0; w < weeks; w++) { const d = new Date(baseDate); d.setDate(d.getDate() + w * 7); slotDates.push(dStr(d)) }
     }
+
+    const slotRows = slotDates.map(sd => ({
+      venue_id: venueId, room_id: assign.room_id, artist_id: null,
+      instructor_name: assign.instructor_name || null, instrument: subject,
+      day_of_week: baseDate.getDay(), slot_date: sd,
+      start_time: startTime, end_time: endTime,
+      price_per_session: pricePer, is_active: true, slot_type: 'lesson', recurrence: 'weekly',
+      series_id: seriesId,
+    }))
 
     const { data: createdSlots, error: slotErr } = await supabase.from('teaching_slots').insert(slotRows as any).select()
     if (slotErr || !createdSlots) { alert(slotErr?.message ?? 'Slot oluşturulamadı'); setSaving(false); return }
@@ -239,7 +248,9 @@ export default function VenueReservationsPage() {
                           {req.request_type === 'private' ? 'Özel' : 'Grup (Ön Kayıt)'}
                         </span>
                       </div>
-                      <p className="text-text-muted text-xs mt-0.5">{tmpl?.name ?? req.subject ?? 'Özel Ders'} · {tmpl?.weeks ?? req.weeks ?? 1} hafta{req.hours_per_session ? ` · ${req.hours_per_session} saat/seans` : ''}</p>
+                      <p className="text-text-muted text-xs mt-0.5">
+                        {tmpl?.name ?? req.subject ?? 'Özel Ders'} · {(req.billing_type === 'monthly' || tmpl?.billing_type === 'monthly') ? `Aylık · ${req.months ?? 1} ay` : `${tmpl?.weeks ?? req.weeks ?? 1} hafta`}{req.hours_per_session ? ` · ${req.hours_per_session} saat/seans` : ''}
+                      </p>
                       {req.requested_date && (
                         <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1">
                           <Clock size={10} /> İstenen: {new Date(req.requested_date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} · {req.requested_time?.slice(0, 5)}
