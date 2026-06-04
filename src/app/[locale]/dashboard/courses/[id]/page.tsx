@@ -39,6 +39,10 @@ export default function CourseSessionsPage() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [acceptingEnrollment, setAcceptingEnrollment] = useState<string | null>(null)
 
+  // Kurs düzenleme
+  const [showEditCourse, setShowEditCourse] = useState(false)
+  const [editCourse, setEditCourse] = useState({ title: '', description: '', price: '' })
+
   // Manuel kayıt ekleme
   const [showEnrollForm, setShowEnrollForm] = useState(false)
   const [members, setMembers] = useState<any[]>([])
@@ -186,6 +190,38 @@ export default function CourseSessionsPage() {
     setSaving(false)
   }
 
+  async function deleteCourse() {
+    if (!confirm('Bu kurs ve tüm seansları/kayıtları kalıcı olarak silinecek. Emin misin?')) return
+    setSaving(true)
+    const { error: err } = await supabase.from('courses').delete().eq('id', id)
+    if (err) { alert(err.message); setSaving(false); return }
+    router.push('/dashboard/courses')
+  }
+
+  function startEditCourse() {
+    const isMonthly = (course as any).billing_type === 'monthly'
+    setEditCourse({
+      title: course.title ?? '',
+      description: course.description ?? '',
+      price: String(isMonthly ? (course.monthly_price ?? '') : (course.price_per_session ?? '')),
+    })
+    setShowEditCourse(true)
+  }
+
+  async function saveCourseEdit() {
+    if (!editCourse.title) { setError('Kurs adı zorunlu'); return }
+    setSaving(true); setError('')
+    const isMonthly = (course as any).billing_type === 'monthly'
+    const updates: any = { title: editCourse.title, description: editCourse.description || null }
+    if (isMonthly) updates.monthly_price = editCourse.price ? Number(editCourse.price) : 0
+    else updates.price_per_session = editCourse.price ? Number(editCourse.price) : 0
+    const { error: err } = await supabase.from('courses').update(updates).eq('id', id)
+    if (err) { setError(err.message); setSaving(false); return }
+    setCourse((c: any) => ({ ...c, ...updates }))
+    setShowEditCourse(false)
+    setSaving(false)
+  }
+
   if (loading) return (
     <div className="max-w-2xl mx-auto px-4 py-12 flex justify-center">
       <Loader2 size={24} className="animate-spin text-accent" />
@@ -208,13 +244,41 @@ export default function CourseSessionsPage() {
           <div>
             <h1 className="font-bebas text-4xl text-text-primary">{course.title}</h1>
             <p className="text-text-muted text-sm mt-0.5">
-              {course.duration_minutes} dk · ₺{course.price_per_session} / seans
+              {course.duration_minutes} dk · {(course as any).billing_type === 'monthly' ? `₺${course.monthly_price ?? 0}/ay` : `₺${course.price_per_session} toplam`}
             </p>
           </div>
-          <Link href={`/courses/${id}`} target="_blank" className="text-xs text-accent hover:underline flex-shrink-0 mt-1">
-            Sayfayı gör →
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+            <button onClick={() => showEditCourse ? setShowEditCourse(false) : startEditCourse()} className="text-xs px-2.5 py-1.5 rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">Düzenle</button>
+            <button onClick={deleteCourse} disabled={saving} className="text-xs px-2.5 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50">Sil</button>
+          </div>
         </div>
+
+        {/* Düzenleme formu */}
+        {showEditCourse && (
+          <div className="card p-4 mt-3 space-y-3">
+            <div>
+              <label className="label text-xs">Kurs Adı *</label>
+              <input value={editCourse.title} onChange={e => setEditCourse(p => ({ ...p, title: e.target.value }))} className="input-field text-sm mt-1" />
+            </div>
+            <div>
+              <label className="label text-xs">{(course as any).billing_type === 'monthly' ? 'Aylık Ücret (₺)' : 'Toplam Ücret (₺)'}</label>
+              <input type="number" min={0} value={editCourse.price} onChange={e => setEditCourse(p => ({ ...p, price: e.target.value }))} className="input-field text-sm mt-1" />
+            </div>
+            <div>
+              <label className="label text-xs">Açıklama</label>
+              <textarea value={editCourse.description} onChange={e => setEditCourse(p => ({ ...p, description: e.target.value }))} rows={2} className="input-field text-sm mt-1 resize-none" />
+            </div>
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <div className="flex gap-2">
+              <button onClick={saveCourseEdit} disabled={saving} className="btn-accent flex-1 py-2 text-sm disabled:opacity-50">Kaydet</button>
+              <button onClick={() => setShowEditCourse(false)} className="px-4 py-2 text-sm rounded-lg border border-[rgba(228,224,216,0.15)] text-text-muted hover:text-text-primary">İptal</button>
+            </div>
+          </div>
+        )}
+
+        <Link href={`/courses/${id}`} target="_blank" className="text-xs text-accent hover:underline mt-2 inline-block">
+          Sayfayı gör →
+        </Link>
       </div>
 
       {/* --- SEANSLAR --- */}
