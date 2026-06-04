@@ -394,8 +394,13 @@ export default function VenueNewCoursePage() {
 
           {generatedSessions.length > 0 && (
             <div className="rounded-lg bg-accent/5 border border-accent/15 p-3">
-              <p className="text-accent text-sm font-medium">{generatedSessions.length} seans</p>
-              <p className="text-text-muted text-xs mt-0.5">{generatedSessions[0]} – {generatedSessions[generatedSessions.length - 1]}</p>
+              <p className="text-accent text-sm font-medium">
+                {isMonthly ? `${months} ay` : `${generatedSessions.length} seans`}
+              </p>
+              <p className="text-text-muted text-xs mt-0.5">
+                {generatedSessions[0]} – {generatedSessions[generatedSessions.length - 1]}
+                {isMonthly && ` · seçili gün(ler) her hafta tekrarlar`}
+              </p>
             </div>
           )}
         </div>
