@@ -246,8 +246,8 @@ export default function VenueInstructorsPage() {
         <div className="space-y-2">
           {instructors.map(inst => (
             <div key={inst.id} className="card p-4 flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-text-primary">{inst.name}</p>
+              <Link href={`/dashboard/venue/${venueId}/instructors/${inst.id}`} className="flex-1 min-w-0 group">
+                <p className="font-medium text-text-primary group-hover:text-accent transition-colors">{inst.name} <span className="text-accent text-xs font-normal">· programı gör →</span></p>
                 {inst.instruments && inst.instruments.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {inst.instruments.map((i: string) => (
@@ -258,7 +258,7 @@ export default function VenueInstructorsPage() {
                   </div>
                 )}
                 {inst.bio && <p className="text-text-muted text-xs mt-1.5">{inst.bio}</p>}
-              </div>
+              </Link>
               <button onClick={() => deleteInstructor(inst.id)} className="p-1 text-text-muted hover:text-red-400 transition-colors flex-shrink-0">
                 <X size={13} />
               </button>
