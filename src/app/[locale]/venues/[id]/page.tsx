@@ -292,7 +292,7 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </div>
 
-        {(['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
+        {!isOwner && (['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
           <Link
             href={`/studios/${venue.id}`}
             className="btn-accent py-3 px-6 text-sm w-full text-center"
