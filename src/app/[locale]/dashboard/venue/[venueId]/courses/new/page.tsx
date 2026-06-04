@@ -191,7 +191,7 @@ export default function VenueNewCoursePage() {
       })) as any
     )
 
-    router.push(`/dashboard`)
+    router.push(`/dashboard/venue/${venueId}/courses`)
   }
 
   const subcats = SUBCATEGORIES[category] ?? []
