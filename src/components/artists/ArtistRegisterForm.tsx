@@ -273,8 +273,8 @@ export function ArtistRegisterForm() {
               {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <button onClick={() => { if (stageName && genres.length) setStep(2) }}
-            disabled={!stageName || !genres.length}
+          <button onClick={() => { if (stageName && (genres.length || instruments.length)) setStep(2) }}
+            disabled={!stageName || (!genres.length && !instruments.length)}
             className="btn-accent w-full py-3 disabled:opacity-40">
             {isEn ? 'Continue →' : 'Devam Et →'}
           </button>
