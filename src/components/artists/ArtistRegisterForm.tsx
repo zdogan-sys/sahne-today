@@ -9,7 +9,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { cn } from '@/lib/utils'
 
-import { INSTRUMENT_OPTIONS, CITY_OPTIONS } from '@/lib/constants'
+import { INSTRUMENT_OPTIONS, CITY_OPTIONS, DANCE_OPTIONS } from '@/lib/constants'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 
 function ProgressBar({ step }: { step: number }) {
@@ -265,6 +265,7 @@ export function ArtistRegisterForm() {
           {activeTab === 'music' && (
             <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label={isEn ? 'Instruments' : 'Enstrümanlar'} />
           )}
+          <ChipToggle options={DANCE_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label={isEn ? 'Dance Styles' : 'Dans Stilleri'} />
           <div>
             <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field">
