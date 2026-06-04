@@ -364,19 +364,21 @@ export default function VenueHubPage() {
         )}
       </div>
 
-      {/* Eğitmenler */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bebas text-2xl text-text-primary">EĞİTMENLER</h2>
-          <Link href={`/dashboard/venue/${venueId}/instructors`} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
-            <Plus size={14} /> Eğitmen Ekle
+      {/* Eğitmenler (sadece ders veren mekanlar) */}
+      {isLesson && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bebas text-2xl text-text-primary">EĞİTMENLER</h2>
+            <Link href={`/dashboard/venue/${venueId}/instructors`} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+              <Plus size={14} /> Eğitmen Ekle
+            </Link>
+          </div>
+          <Link href={`/dashboard/venue/${venueId}/instructors`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+            <span className="text-text-muted text-sm">Eğitmenleri görüntüle ve yönet</span>
+            <span className="text-accent">→</span>
           </Link>
         </div>
-        <Link href={`/dashboard/venue/${venueId}/instructors`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
-          <span className="text-text-muted text-sm">Eğitmenleri görüntüle ve yönet</span>
-          <span className="text-accent">→</span>
-        </Link>
-      </div>
+      )}
 
       {/* Kurslar (sadece dans/müzik okulu) */}
       {isLesson && (
