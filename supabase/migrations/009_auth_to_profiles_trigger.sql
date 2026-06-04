@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, display_name, role)
-  VALUES (new.id, COALESCE(new.user_metadata->>'display_name', new.email), 'audience')
+  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)), 'audience')
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
