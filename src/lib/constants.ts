@@ -37,6 +37,10 @@ export const INSTRUMENT_OPTIONS = [
   'Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud'
 ]
 
+export const DANCE_OPTIONS = [
+  'Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal'
+]
+
 export const CITY_OPTIONS = [
   'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri'
 ]

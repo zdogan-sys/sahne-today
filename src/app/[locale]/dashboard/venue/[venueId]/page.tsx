@@ -68,7 +68,9 @@ export default function VenueHubPage() {
 
     try {
       const configs = await getListConfigs()
-      if (configs?.instruments?.length) setInstrumentOptions(configs.instruments)
+      // Dans stüdyosu → dans türleri, müzik okulu → enstrümanlar
+      const list = venueData.venue_type === 'dance_studio' ? configs?.dance_types : configs?.instruments
+      if (list?.length) setInstrumentOptions(list)
     } catch { /* fallback */ }
 
     setLoading(false)
@@ -219,7 +221,7 @@ export default function VenueHubPage() {
                 <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} placeholder="Klasik Gitar Kursu" className="input-field text-sm w-full mt-1" />
               </div>
               <div>
-                <label className="label text-xs">Enstrüman / Konu</label>
+                <label className="label text-xs">{venue?.venue_type === 'dance_studio' ? 'Dans Türü / Konu' : 'Enstrüman / Konu'}</label>
                 <select value={templateForm.subject} onChange={e => setTemplateForm(p => ({ ...p, subject: e.target.value }))} className="input-field text-sm w-full mt-1">
                   <option value="">Seçin...</option>
                   {instrumentOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}

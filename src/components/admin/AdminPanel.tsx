@@ -57,6 +57,7 @@ interface ListConfigs {
   music_genres: string[]
   stage_genres: string[]
   instruments: string[]
+  dance_types?: string[]
 }
 
 interface Props {
@@ -1345,12 +1346,13 @@ function PermissionsTab({ members, onRefresh }: { members: any[]; onRefresh: () 
 
 // ── Türler & Enstrümanlar ─────────────────────────────────────────────────────
 
-function ListsTab({ configs }: { configs: { music_genres: string[]; stage_genres: string[]; instruments: string[] } }) {
+function ListsTab({ configs }: { configs: { music_genres: string[]; stage_genres: string[]; instruments: string[]; dance_types?: string[] } }) {
   return (
     <div className="space-y-8">
       <ListEditor title="Müzik Türleri"  configKey="music_genres"  initialItems={configs.music_genres} />
       <ListEditor title="Sahne Türleri"  configKey="stage_genres"  initialItems={configs.stage_genres} />
       <ListEditor title="Enstrümanlar"   configKey="instruments"   initialItems={configs.instruments} />
+      <ListEditor title="Dans Türleri"   configKey="dance_types"   initialItems={configs.dance_types ?? []} />
     </div>
   )
 }
