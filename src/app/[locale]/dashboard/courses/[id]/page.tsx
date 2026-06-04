@@ -39,6 +39,13 @@ export default function CourseSessionsPage() {
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [acceptingEnrollment, setAcceptingEnrollment] = useState<string | null>(null)
 
+  // Manuel kayıt ekleme
+  const [showEnrollForm, setShowEnrollForm] = useState(false)
+  const [members, setMembers] = useState<any[]>([])
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberFocused, setMemberFocused] = useState(false)
+  const [enrollForm, setEnrollForm] = useState({ student_name: '', student_email: '', student_phone: '', gender: '', student_id: null as string | null })
+
   // Tek seans formu
   const [singleDate, setSingleDate] = useState('')
   const [singleStart, setSingleStart] = useState('10:00')
@@ -69,10 +76,11 @@ export default function CourseSessionsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [courseRes, sessionsRes, enrollmentsRes] = await Promise.all([
+    const [courseRes, sessionsRes, enrollmentsRes, membersRes] = await Promise.all([
       supabase.from('courses').select('*').eq('id', id).eq('instructor_id', user.id).single(),
       supabase.from('course_sessions').select('*').eq('course_id', id).order('session_date').order('start_time'),
       supabase.from('course_enrollments').select('id, student_name, student_email, student_phone, gender, status, payment_status, session_id, created_at').eq('course_id', id).order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
     ])
 
     if (!courseRes.data) { router.push('/dashboard/courses'); return }
@@ -80,6 +88,7 @@ export default function CourseSessionsPage() {
     setCourse(courseRes.data)
     setSessions(sessionsRes.data ?? [])
     setEnrollments(enrollmentsRes.data ?? [])
+    setMembers(membersRes.data ?? [])
     setLoading(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
@@ -153,6 +162,28 @@ export default function CourseSessionsPage() {
       .eq('id', enrollmentId)
     setEnrollments(prev => prev.map(e => e.id === enrollmentId ? { ...e, status: accept ? 'confirmed' : 'cancelled' } : e))
     setAcceptingEnrollment(null)
+  }
+
+  // --- Manuel kayıt ekle (mekan sahibi) ---
+  async function addEnrollment() {
+    if (!enrollForm.student_name) { setError('Öğrenci adı zorunludur'); return }
+    setSaving(true)
+    setError('')
+    const { data, error: err } = await supabase.from('course_enrollments').insert({
+      course_id: id,
+      student_id: enrollForm.student_id,
+      student_name: enrollForm.student_name,
+      student_email: enrollForm.student_email || 'belirtilmedi@sahne.today',
+      student_phone: enrollForm.student_phone || '-',
+      gender: enrollForm.gender || null,
+      status: 'confirmed',
+    } as any).select().single()
+    if (err) { setError(err.message); setSaving(false); return }
+    setEnrollments(prev => [data, ...prev])
+    setEnrollForm({ student_name: '', student_email: '', student_phone: '', gender: '', student_id: null })
+    setMemberQuery('')
+    setShowEnrollForm(false)
+    setSaving(false)
   }
 
   if (loading) return (
@@ -343,16 +374,74 @@ export default function CourseSessionsPage() {
 
       {/* --- KAYITLAR --- */}
       <div>
-        <h2 className="font-bebas text-2xl text-text-primary mb-3 flex items-center gap-2">
-          <Users size={18} /> KAYITLAR
-          {pendingEnrollments.length > 0 && (
-            <span className="font-sans text-xs font-semibold px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
-              {pendingEnrollments.length} bekliyor
-            </span>
-          )}
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bebas text-2xl text-text-primary flex items-center gap-2">
+            <Users size={18} /> KAYITLAR
+            {pendingEnrollments.length > 0 && (
+              <span className="font-sans text-xs font-semibold px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-400 border border-yellow-400/20">
+                {pendingEnrollments.length} bekliyor
+              </span>
+            )}
+          </h2>
+          <button onClick={() => { setShowEnrollForm(!showEnrollForm); setError(''); setEnrollForm({ student_name: '', student_email: '', student_phone: '', gender: '', student_id: null }); setMemberQuery('') }}
+            className="btn-accent py-1.5 px-3 text-xs flex items-center gap-1.5">
+            <Plus size={12} /> {showEnrollForm ? 'İptal' : 'Kayıt Ekle'}
+          </button>
+        </div>
 
-        {enrollments.length === 0 ? (
+        {/* Manuel kayıt formu */}
+        {showEnrollForm && (
+          <div className="card p-4 mb-4 space-y-3">
+            {/* Üye havuzundan seç */}
+            <div className="relative">
+              <label className="label text-xs">Üye havuzundan seç</label>
+              <input
+                value={memberQuery}
+                onChange={e => setMemberQuery(e.target.value)}
+                onFocus={() => setMemberFocused(true)}
+                onBlur={() => setTimeout(() => setMemberFocused(false), 150)}
+                placeholder="Tıkla veya isim yaz..."
+                className="input-field text-sm mt-1"
+              />
+              {memberFocused && (
+                <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-[rgba(228,224,216,0.15)] rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
+                  {(() => {
+                    const q = memberQuery.toLowerCase()
+                    const filtered = members.filter(m => !q || m.display_name?.toLowerCase().includes(q)).slice(0, 20)
+                    if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Üye bulunamadı</p>
+                    return filtered.map(m => (
+                      <button key={m.id} type="button"
+                        onMouseDown={() => { setEnrollForm(p => ({ ...p, student_name: m.display_name ?? '', student_id: m.id })); setMemberQuery(''); setMemberFocused(false) }}
+                        className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors">
+                        {m.display_name}
+                      </button>
+                    ))
+                  })()}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="label text-xs">Öğrenci Adı *</label>
+              <input value={enrollForm.student_name} onChange={e => setEnrollForm(p => ({ ...p, student_name: e.target.value, student_id: null }))} className="input-field text-sm mt-1" placeholder="Ad Soyad" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="email" value={enrollForm.student_email} onChange={e => setEnrollForm(p => ({ ...p, student_email: e.target.value }))} placeholder="E-posta" className="input-field text-sm" />
+              <input type="tel" value={enrollForm.student_phone} onChange={e => setEnrollForm(p => ({ ...p, student_phone: e.target.value }))} placeholder="Telefon" className="input-field text-sm" />
+            </div>
+            <select value={enrollForm.gender} onChange={e => setEnrollForm(p => ({ ...p, gender: e.target.value }))} className="input-field text-sm">
+              <option value="">Cinsiyet (opsiyonel)</option>
+              <option value="female">Kadın</option>
+              <option value="male">Erkek</option>
+              <option value="other">Diğer</option>
+            </select>
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <button onClick={addEnrollment} disabled={saving || !enrollForm.student_name} className="btn-accent w-full py-2 text-xs disabled:opacity-50 flex items-center justify-center gap-1.5">
+              {saving ? <><Loader2 size={12} className="animate-spin" /> Ekleniyor...</> : <><Plus size={12} /> Kursa Kaydet</>}
+            </button>
+          </div>
+        )}
+
+        {enrollments.length === 0 && !showEnrollForm ? (
           <div className="card p-4 text-center text-text-muted text-sm">Henüz kayıt yok.</div>
         ) : (
           <div className="space-y-2">
