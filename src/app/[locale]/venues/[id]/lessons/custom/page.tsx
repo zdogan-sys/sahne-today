@@ -278,7 +278,8 @@ export default function CustomLessonRequestPage() {
             <div className="relative">
               <input type="date" min={new Date().toISOString().split('T')[0]} value={form.requested_date}
                 onChange={e => setForm(p => ({ ...p, requested_date: e.target.value }))}
-                className="input-field text-sm pr-9 mt-1" />
+                onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="input-field text-sm pr-9 mt-1 cursor-pointer" />
               <CalendarDays size={15} className="absolute right-3 top-1/2 translate-y-0.5 text-text-muted pointer-events-none" />
             </div>
           </div>
