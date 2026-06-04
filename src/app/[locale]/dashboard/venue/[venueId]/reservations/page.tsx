@@ -37,7 +37,7 @@ export default function VenueReservationsPage() {
 
   // Ders talebi onay formu
   const [assignReqId, setAssignReqId] = useState<string | null>(null)
-  const [assign, setAssign] = useState({ room_id: '', instructor_name: '', date: '', time: '10:00' })
+  const [assign, setAssign] = useState({ room_id: '', instructor_name: '', date: '', time: '10:00', monthly_price: '' })
 
   useEffect(() => { load() }, [])
 
@@ -69,6 +69,7 @@ export default function VenueReservationsPage() {
       instructor_name: req.preferred_instructor ?? '',
       date: req.requested_date ?? new Date().toISOString().split('T')[0],
       time: req.requested_time ? req.requested_time.slice(0, 5) : '10:00',
+      monthly_price: req.monthly_price ? String(req.monthly_price) : '',
     })
     setAssignReqId(req.id)
   }
@@ -121,7 +122,11 @@ export default function VenueReservationsPage() {
     }))
     await supabase.from('teaching_bookings').insert(bookingRows as any)
 
-    await supabase.from('lesson_requests').update({ status: 'approved' }).eq('id', req.id)
+    await supabase.from('lesson_requests').update({
+      status: 'approved',
+      series_id: seriesId,
+      monthly_price: isMonthly && assign.monthly_price ? Number(assign.monthly_price) : null,
+    }).eq('id', req.id)
     setLessonRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r))
     setAssignReqId(null)
     setSaving(false)
@@ -298,10 +303,18 @@ export default function VenueReservationsPage() {
                           </select>
                         </div>
                       </div>
+                      {(req.billing_type === 'monthly' || tmpl?.billing_type === 'monthly') && (
+                        <div>
+                          <label className="label text-xs">Aylık Ücret / Aidat (₺)</label>
+                          <input type="number" min={0} value={assign.monthly_price} onChange={e => setAssign(p => ({ ...p, monthly_price: e.target.value }))} placeholder="1500" className="input-field text-sm mt-1" />
+                        </div>
+                      )}
                       <button onClick={() => approveRequest(req)} disabled={saving || !assign.room_id} className="btn-accent w-full py-2 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
                         {saving ? <><Loader2 size={13} className="animate-spin" /> İşleniyor...</> : <><Check size={14} /> Onayla & Takvime İşle</>}
                       </button>
-                      <p className="text-text-muted text-[10px] text-center">{tmpl?.weeks ?? 1} haftalık ders, seçilen odanın takvimine işlenecek.</p>
+                      <p className="text-text-muted text-[10px] text-center">
+                        {(req.billing_type === 'monthly' || tmpl?.billing_type === 'monthly') ? `${req.months ?? 1} aylık ders` : `${tmpl?.weeks ?? req.weeks ?? 1} haftalık ders`}, seçilen odanın takvimine işlenecek.
+                      </p>
                     </div>
                   )}
                 </div>
