@@ -84,7 +84,7 @@ export default function CourseSessionsPage() {
       supabase.from('courses').select('*').eq('id', id).eq('instructor_id', user.id).single(),
       supabase.from('course_sessions').select('*').eq('course_id', id).order('session_date').order('start_time'),
       supabase.from('course_enrollments').select('id, student_name, student_email, student_phone, gender, status, payment_status, session_id, created_at').eq('course_id', id).order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, display_name').not('display_name', 'is', null).order('display_name').limit(500),
+      supabase.from('profiles').select('id, display_name').eq('role', 'audience').not('display_name', 'is', null).order('display_name').limit(500),
     ])
 
     if (!courseRes.data) { router.push('/dashboard/courses'); return }
