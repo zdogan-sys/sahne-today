@@ -42,7 +42,7 @@ export default function VenueInstructorsPage() {
     if (!user) { router.push('/auth'); return }
 
     const [venueRes, instRes, artistsRes] = await Promise.all([
-      supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
+      supabase.from('venues').select('id, name, owner_id, venue_type').eq('id', venueId).single(),
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
       supabase.from('artists').select('id, stage_name, teaching_instruments').order('stage_name').limit(300),
     ])
@@ -56,10 +56,11 @@ export default function VenueInstructorsPage() {
     setInstructors(instRes.data ?? [])
     setArtists(artistsRes.data ?? [])
 
-    // Admin panelden yönetilen enstrüman listesi
+    // Admin panelden yönetilen liste — dans stüdyosu → dans türleri, müzik okulu → enstrümanlar
     try {
       const configs = await getListConfigs()
-      if (configs?.instruments?.length) setInstrumentOptions(configs.instruments)
+      const list = venueRes.data.venue_type === 'dance_studio' ? configs?.dance_types : configs?.instruments
+      if (list?.length) setInstrumentOptions(list)
     } catch { /* fallback kullanılır */ }
 
     setLoading(false)
@@ -148,7 +149,7 @@ export default function VenueInstructorsPage() {
         <div className="card p-5 space-y-4">
           {/* 1. Enstrüman seçimi (önce) */}
           <div>
-            <label className="label mb-2">Enstrümanlar *</label>
+            <label className="label mb-2">{venue?.venue_type === 'dance_studio' ? 'Dans Türleri *' : 'Enstrümanlar *'}</label>
             <div className="flex flex-wrap gap-1.5">
               {instrumentOptions.map(inst => (
                 <button
