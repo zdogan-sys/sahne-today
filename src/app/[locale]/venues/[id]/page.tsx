@@ -292,6 +292,29 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </div>
 
+        {/* Sahip yönetim paneli — Dashboard'a gitmeden buradan yönet */}
+        {isOwner && (['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
+          <div className="card p-4 border-accent/20 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-bebas text-xl text-text-primary">⚙️ MEKAN YÖNETİMİ</p>
+              <Link href={`/dashboard/venue/${venue.id}`} className="btn-accent py-1.5 px-3 text-xs">{isEn ? 'Manage all →' : 'Tümünü Yönet →'}</Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <Link href={`/dashboard/venue/${venue.id}`} className="text-center text-xs px-2 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">🚪 Odalar / Program</Link>
+              {['dance_studio', 'music_school'].includes((venue as any).venue_type) && (
+                <Link href={`/dashboard/venue/${venue.id}/instructors`} className="text-center text-xs px-2 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">👤 Eğitmenler</Link>
+              )}
+              {['dance_studio', 'music_school'].includes((venue as any).venue_type) && (
+                <Link href={`/dashboard/venue/${venue.id}/courses`} className="text-center text-xs px-2 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">📚 Kurslar</Link>
+              )}
+              <Link href={`/dashboard/venue/${venue.id}/reservations`} className="text-center text-xs px-2 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">📋 Rezervasyonlar</Link>
+              {['dance_studio', 'music_school'].includes((venue as any).venue_type) && (
+                <Link href={`/dashboard/venue/${venue.id}/payments`} className="text-center text-xs px-2 py-2 rounded-lg border border-[rgba(228,224,216,0.12)] text-text-muted hover:text-accent hover:border-accent/30 transition-colors">💰 Aidatlar</Link>
+              )}
+            </div>
+          </div>
+        )}
+
         {!isOwner && (['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
           <Link
             href={`/studios/${venue.id}`}
