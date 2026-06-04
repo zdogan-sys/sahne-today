@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, X, CalendarDays, Users, Check, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, X, CalendarDays, Users, Check, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +34,7 @@ export default function CourseSessionsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showSessions, setShowSessions] = useState(false)
   const [addMode, setAddMode] = useState<AddMode>('single')
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [acceptingEnrollment, setAcceptingEnrollment] = useState<string | null>(null)
@@ -187,20 +188,16 @@ export default function CourseSessionsPage() {
 
       {/* --- SEANSLAR --- */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <button onClick={() => setShowSessions(s => !s)} className="w-full flex items-center justify-between mb-3 group">
           <h2 className="font-bebas text-2xl text-text-primary flex items-center gap-2">
             <CalendarDays size={18} /> SEANSLAR
+            <span className="font-sans text-xs text-text-muted">({sessions.length})</span>
           </h2>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn-accent py-1.5 px-3 text-xs flex items-center gap-1.5"
-          >
-            <Plus size={12} /> {showAddForm ? 'İptal' : 'Seans Ekle'}
-          </button>
-        </div>
+          {showSessions ? <ChevronDown size={18} className="text-text-muted group-hover:text-text-primary" /> : <ChevronRight size={18} className="text-text-muted group-hover:text-text-primary" />}
+        </button>
 
-        {/* Seans ekleme formu */}
-        {showAddForm && (
+        {/* Seans ekleme formu (gizli — başlığa tıklayınca liste açılır) */}
+        {false && showAddForm && (
           <div className="card p-4 mb-4 space-y-4">
             {/* Mod seçimi */}
             <div className="flex gap-2">
@@ -304,38 +301,43 @@ export default function CourseSessionsPage() {
           </div>
         )}
 
-        {/* Yaklaşan seanslar */}
-        {upcomingSessions.length === 0 && !showAddForm ? (
-          <div className="card p-6 text-center text-text-muted text-sm">
-            Henüz seans eklenmemiş.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {upcomingSessions.map(s => (
-              <SessionRow
-                key={s.id}
-                session={s}
-                enrollments={enrollments.filter(e => e.session_id === s.id && e.status === 'confirmed')}
-                maxParticipants={course.max_participants ?? 1}
-                onCancel={s.status === 'available' ? () => cancelSession(s.id) : undefined}
-                cancelling={cancelling === s.id}
-              />
-            ))}
-          </div>
-        )}
+        {/* Seans listesi — sadece başlığa tıklayınca açılır */}
+        {showSessions && (
+          <>
+            {/* Yaklaşan seanslar */}
+            {upcomingSessions.length === 0 ? (
+              <div className="card p-6 text-center text-text-muted text-sm">
+                Henüz seans yok.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingSessions.map(s => (
+                  <SessionRow
+                    key={s.id}
+                    session={s}
+                    enrollments={enrollments.filter(e => e.session_id === s.id && e.status === 'confirmed')}
+                    maxParticipants={course.max_participants ?? 1}
+                    onCancel={s.status === 'available' ? () => cancelSession(s.id) : undefined}
+                    cancelling={cancelling === s.id}
+                  />
+                ))}
+              </div>
+            )}
 
-        {/* Geçmiş seanslar */}
-        {pastSessions.length > 0 && (
-          <details className="mt-4">
-            <summary className="text-text-muted text-xs cursor-pointer hover:text-text-primary select-none">
-              Geçmiş seanslar ({pastSessions.length})
-            </summary>
-            <div className="space-y-2 mt-2">
-              {pastSessions.map(s => (
-                <SessionRow key={s.id} session={s} enrollments={[]} maxParticipants={course.max_participants ?? 1} />
-              ))}
-            </div>
-          </details>
+            {/* Geçmiş seanslar */}
+            {pastSessions.length > 0 && (
+              <details className="mt-4">
+                <summary className="text-text-muted text-xs cursor-pointer hover:text-text-primary select-none">
+                  Geçmiş seanslar ({pastSessions.length})
+                </summary>
+                <div className="space-y-2 mt-2">
+                  {pastSessions.map(s => (
+                    <SessionRow key={s.id} session={s} enrollments={[]} maxParticipants={course.max_participants ?? 1} />
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
         )}
       </div>
 
