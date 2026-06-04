@@ -9,7 +9,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { cn } from '@/lib/utils'
 
-import { INSTRUMENT_OPTIONS, CITY_OPTIONS, DANCE_OPTIONS } from '@/lib/constants'
+import { INSTRUMENT_OPTIONS, CITY_OPTIONS } from '@/lib/constants'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 
 function ProgressBar({ step }: { step: number }) {
@@ -197,7 +197,7 @@ export function ArtistRegisterForm() {
   const [genres, setGenres] = useState<string[]>([])
   const [instruments, setInstruments] = useState<string[]>([])
   const [city, setCity] = useState('')
-  const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
+  const [activeTab, setActiveTab] = useState<'music' | 'stage' | 'dance'>('music')
 
   // Step 2
   const [bio, setBio] = useState('')
@@ -261,11 +261,17 @@ export function ArtistRegisterForm() {
             <label className="label">{isEn ? 'Stage Name *' : 'Sahne Adı *'}</label>
             <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Murat Boz" className="input-field" />
           </div>
-          <TabbedGenreSelector selected={genres} onToggle={(v) => toggleItem(genres, setGenres, v)} label={isEn ? 'Performance Types *' : 'Performans Türleri *'} onTabChange={setActiveTab} />
+          <TabbedGenreSelector
+            selected={genres}
+            onToggle={(v) => toggleItem(genres, setGenres, v)}
+            label={isEn ? 'Performance Types *' : 'Performans Türleri *'}
+            onTabChange={setActiveTab}
+            danceSelected={instruments}
+            onDanceToggle={(v) => toggleItem(instruments, setInstruments, v)}
+          />
           {activeTab === 'music' && (
             <ChipToggle options={INSTRUMENT_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label={isEn ? 'Instruments' : 'Enstrümanlar'} />
           )}
-          <ChipToggle options={DANCE_OPTIONS} selected={instruments} onToggle={(v) => toggleItem(instruments, setInstruments, v)} label={isEn ? 'Dance Styles' : 'Dans Stilleri'} />
           <div>
             <label className="label">{isEn ? 'City' : 'Şehir'}</label>
             <select value={city} onChange={(e) => setCity(e.target.value)} className="input-field">

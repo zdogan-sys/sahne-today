@@ -42,7 +42,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const [socialLinks, setSocialLinks] = useState<SocialLinksData>(initialData.social_links ?? {})
   const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url ?? '')
-  const [activeTab, setActiveTab] = useState<'music' | 'stage'>('music')
+  const [activeTab, setActiveTab] = useState<'music' | 'stage' | 'dance'>('music')
 
   async function handleSave() {
     if (!stageName.trim()) {
@@ -58,7 +58,7 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
       city: city || null,
       active_cities: activeCities,
       genres,
-      instruments: activeTab === 'music' ? instruments : [],
+      instruments,
       bio: bio || null,
       social_links: socialLinks,
       is_hidden: isHidden,
@@ -145,6 +145,8 @@ export function ArtistProfileEditor({ artistId, initialData }: Props) {
             selected={genres}
             onToggle={(g) => setGenres(genres.includes(g) ? genres.filter((x) => x !== g) : [...genres, g])}
             onTabChange={setActiveTab}
+            danceSelected={instruments}
+            onDanceToggle={(v) => toggleInstrument(v)}
           />
 
           {activeTab === 'music' && (
