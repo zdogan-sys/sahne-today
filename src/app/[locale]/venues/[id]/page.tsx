@@ -423,18 +423,6 @@ export default async function VenuePage({ params }: Props) {
           </div>
         )}
 
-        {/* Photo album link */}
-        <Link
-          href={`/venues/${venue.id}/photos`}
-          className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <Images size={18} className="text-text-muted" />
-            <span className="text-text-primary text-sm font-medium">{isEn ? 'Photo Album' : 'Fotoğraf Albümü'}</span>
-          </div>
-          <span className="text-text-muted text-xs">{photos.length} {isEn ? 'photos →' : 'fotoğraf →'}</span>
-        </Link>
-
         {canSeeSlots && (
           <VenueSlotsList
             slots={slots as any[]}
@@ -499,6 +487,18 @@ export default async function VenuePage({ params }: Props) {
             />
           </div>
         )}
+
+        {/* Photo album link — en altta */}
+        <Link
+          href={`/venues/${venue.id}/photos`}
+          className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Images size={18} className="text-text-muted" />
+            <span className="text-text-primary text-sm font-medium">{isEn ? 'Photo Album' : 'Fotoğraf Albümü'}</span>
+          </div>
+          <span className="text-text-muted text-xs">{photos.length} {isEn ? 'photos →' : 'fotoğraf →'}</span>
+        </Link>
       </div>
     </div>
   )
