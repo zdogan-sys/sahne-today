@@ -374,7 +374,7 @@ export default async function VenuePage({ params }: Props) {
                     {tmpl.billing_type === 'monthly'
                       ? (tmpl.monthly_price > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.monthly_price}<span className="text-[10px] font-sans text-text-muted">/ay</span></span>)
                       : (tmpl.price_total > 0 && <span className="font-bebas text-accent text-lg">₺{tmpl.price_total}</span>)}
-                    <p className="text-accent text-xs">{isEn ? 'Book →' : 'Talep Et →'}</p>
+                    <p className="text-accent text-xs">{isOwner ? (isEn ? '+ Add student →' : '+ Kayıt Ekle →') : (isEn ? 'Book →' : 'Talep Et →')}</p>
                   </div>
                 </Link>
               ))}
