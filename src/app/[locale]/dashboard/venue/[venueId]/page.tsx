@@ -7,6 +7,8 @@ import { ArrowLeft, Plus, X, Edit2, Loader2, Eye } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { getListConfigs } from '@/app/actions/site'
+import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
+import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
 
 const FALLBACK_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
 
@@ -416,6 +418,13 @@ export default function VenueHubPage() {
             <span className="text-accent">→</span>
           </Link>
         )}
+      </div>
+
+      {/* Videolar & Sosyal Medya */}
+      <div className="space-y-4">
+        <h2 className="font-bebas text-2xl text-text-primary">VİDEOLAR & SOSYAL MEDYA</h2>
+        <VenueVideoEditor venueId={venueId} initialUrls={(venue as any).video_urls ?? []} readOnly={false} />
+        <VenueSocialEditor venueId={venueId} initialLinks={(venue as any).social_links ?? {}} />
       </div>
       </>
       )}
