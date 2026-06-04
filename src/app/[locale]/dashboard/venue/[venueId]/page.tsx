@@ -397,7 +397,7 @@ export default function VenueHubPage() {
       {/* Aidatlar (sadece ders modülü) */}
       {isLesson && (
         <div className="space-y-4">
-          <h2 className="font-bebas text-2xl text-text-primary">AİDATLAR</h2>
+          <h2 className="font-bebas text-2xl text-text-primary">KURSİYERLER</h2>
           <Link href={`/dashboard/venue/${venueId}/payments`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
             <span className="text-text-muted text-sm">Aylık aidat ödemelerini takip et</span>
             <span className="text-accent">→</span>

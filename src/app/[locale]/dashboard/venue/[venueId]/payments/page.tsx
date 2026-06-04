@@ -188,7 +188,7 @@ export default function VenuePaymentsPage() {
         <Link href={`/dashboard/venue/${venueId}`} className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
           <ArrowLeft size={16} /> {venue?.name}
         </Link>
-        <h1 className="font-bebas text-4xl text-text-primary flex items-center gap-2"><Wallet size={28} className="text-accent" /> AİDATLAR</h1>
+        <h1 className="font-bebas text-4xl text-text-primary flex items-center gap-2"><Wallet size={28} className="text-accent" /> KURSİYERLER</h1>
       </div>
 
       {/* Özet */}
