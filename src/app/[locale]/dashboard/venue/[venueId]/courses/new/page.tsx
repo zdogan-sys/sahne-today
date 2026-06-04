@@ -366,8 +366,13 @@ export default function VenueNewCoursePage() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="label">Günler</label>
-              <button onClick={() => setSelectedDays([1, 2, 3, 4, 5])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted hover:text-accent border-[rgba(228,224,216,0.1)] hover:border-accent/30 transition-colors">Haftaiçi</button>
+              <label className="label">
+                Günler {selectedDays.length > 0 && <span className="text-accent font-normal">· haftada {selectedDays.length} gün</span>}
+              </label>
+              <div className="flex gap-1.5">
+                <button onClick={() => setSelectedDays([1, 2, 3, 4, 5])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted hover:text-accent border-[rgba(228,224,216,0.1)] hover:border-accent/30 transition-colors">Haftaiçi</button>
+                <button onClick={() => setSelectedDays([6, 0])} className="text-[10px] px-2 py-0.5 rounded border text-text-muted hover:text-accent border-[rgba(228,224,216,0.1)] hover:border-accent/30 transition-colors">Haftasonu</button>
+              </div>
             </div>
             <div className="flex gap-1.5">
               {DAY_SHORT.map((d, i) => (
@@ -379,6 +384,7 @@ export default function VenueNewCoursePage() {
                 </button>
               ))}
             </div>
+            <p className="text-text-muted text-xs mt-1.5">Birden fazla gün seçebilirsin — kurs haftada o kadar gün yapılır.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
