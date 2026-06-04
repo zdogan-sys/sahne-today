@@ -249,7 +249,7 @@ export default function VenueHubPage() {
                   </div>
                   <div>
                     <label className="label text-xs">Günlük Ders Saati</label>
-                    <input type="number" min={0.5} step={0.5} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
+                    <input type="number" min={1} step={1} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
                   </div>
                   <div>
                     <label className="label text-xs">Aylık Ücret (₺)</label>
@@ -264,7 +264,7 @@ export default function VenueHubPage() {
                   </div>
                   <div>
                     <label className="label text-xs">Saat / Seans</label>
-                    <input type="number" min={0.5} step={0.5} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
+                    <input type="number" min={1} step={1} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
                   </div>
                   <div>
                     <label className="label text-xs">Toplam Ücret (₺)</label>

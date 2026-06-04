@@ -159,7 +159,7 @@ export default function CustomLessonRequestPage() {
           </div>
           <div>
             <label className="label">Haftada Kaç Saat</label>
-            <input type="number" min={0.5} step={0.5} value={form.hours_per_session} onChange={e => setForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
+            <input type="number" min={1} step={1} value={form.hours_per_session} onChange={e => setForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
           </div>
         </div>
         {billingType === 'monthly' && (
