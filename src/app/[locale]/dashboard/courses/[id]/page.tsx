@@ -45,6 +45,7 @@ export default function CourseSessionsPage() {
 
   // Manuel kayıt ekleme
   const [showEnrollForm, setShowEnrollForm] = useState(false)
+  const [inviteMember, setInviteMember] = useState(false)
   const [members, setMembers] = useState<any[]>([])
   const [memberQuery, setMemberQuery] = useState('')
   const [memberFocused, setMemberFocused] = useState(false)
@@ -173,9 +174,25 @@ export default function CourseSessionsPage() {
     if (!enrollForm.student_name) { setError('Öğrenci adı zorunludur'); return }
     setSaving(true)
     setError('')
+
+    let studentId = enrollForm.student_id
+
+    // Üyelik aç: davet maili gönder, oluşan üyeyi öğrenciye bağla
+    if (inviteMember && !studentId) {
+      if (!enrollForm.student_email) { setError('Üyelik için e-posta zorunlu.'); setSaving(false); return }
+      const res = await fetch('/api/members/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: enrollForm.student_email, name: enrollForm.student_name, context: course.title }),
+      })
+      const j = await res.json()
+      if (!res.ok) { setError(j.error ?? 'Üyelik oluşturulamadı'); setSaving(false); return }
+      studentId = j.user_id ?? null
+    }
+
     const { data, error: err } = await supabase.from('course_enrollments').insert({
       course_id: id,
-      student_id: enrollForm.student_id,
+      student_id: studentId,
       student_name: enrollForm.student_name,
       student_email: enrollForm.student_email || 'belirtilmedi@sahne.today',
       student_phone: enrollForm.student_phone || '-',
@@ -185,6 +202,7 @@ export default function CourseSessionsPage() {
     if (err) { setError(err.message); setSaving(false); return }
     setEnrollments(prev => [data, ...prev])
     setEnrollForm({ student_name: '', student_email: '', student_phone: '', gender: '', student_id: null })
+    setInviteMember(false)
     setMemberQuery('')
     setShowEnrollForm(false)
     setSaving(false)
@@ -498,6 +516,15 @@ export default function CourseSessionsPage() {
               <option value="male">Erkek</option>
               <option value="other">Diğer</option>
             </select>
+
+            {/* Üyelik aç — sadece havuzdan üye seçilmediyse */}
+            {!enrollForm.student_id && (
+              <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
+                <input type="checkbox" checked={inviteMember} onChange={e => setInviteMember(e.target.checked)} />
+                <span>Bu öğrenci için üyelik aç ve davet maili gönder (şifre belirleyip profilini sahiplenir)</span>
+              </label>
+            )}
+
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <button onClick={addEnrollment} disabled={saving || !enrollForm.student_name} className="btn-accent w-full py-2 text-xs disabled:opacity-50 flex items-center justify-center gap-1.5">
               {saving ? <><Loader2 size={12} className="animate-spin" /> Ekleniyor...</> : <><Plus size={12} /> Kursa Kaydet</>}
