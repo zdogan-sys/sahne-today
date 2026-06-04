@@ -15,6 +15,7 @@ const SUBCATEGORIES: Record<string, string[]> = {
 }
 const DAY_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 const DURATIONS = [2, 4, 6, 8, 10, 12]
+const HOURS = Array.from({ length: 15 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`) // 08:00 - 22:00
 
 function generateSessions(startDate: string, days: number[], weeks: number, startTime: string, endTime: string): string[] {
   if (!startDate || days.length === 0 || weeks === 0) return []
@@ -404,11 +405,15 @@ export default function VenueNewCoursePage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Başlangıç Saati</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm" />
+              <select value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field text-sm">
+                {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Bitiş Saati</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm" />
+              <select value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm">
+                {HOURS.filter(h => h > startTime).map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
           </div>
 
