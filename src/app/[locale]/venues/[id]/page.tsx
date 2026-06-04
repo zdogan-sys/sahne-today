@@ -386,10 +386,10 @@ export default async function VenuePage({ params }: Props) {
                   className="card p-3 flex items-center justify-between hover:border-accent/30 transition-colors border-dashed border-accent/30"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-accent text-sm">{isEn ? 'Custom Lesson' : '+ Özel Ders Talebi'}</p>
-                    <p className="text-text-muted text-xs mt-0.5">{isEn ? 'Pick your instrument, weeks, hours and time' : 'Enstrüman, hafta, saat ve zamanı sen belirle'}</p>
+                    <p className="font-medium text-accent text-sm">{isOwner ? (isEn ? '+ Custom Lesson Enrollment' : '+ Özel Ders Kaydı') : (isEn ? 'Custom Lesson' : '+ Özel Ders Talebi')}</p>
+                    <p className="text-text-muted text-xs mt-0.5">{isOwner ? (isEn ? 'Enroll a student in a custom lesson' : 'Öğrenciyi özel derse kaydet') : (isEn ? 'Pick your instrument, weeks, hours and time' : 'Enstrüman, hafta, saat ve zamanı sen belirle')}</p>
                   </div>
-                  <span className="text-accent text-xs flex-shrink-0 ml-3">{isEn ? 'Request →' : 'Talep Et →'}</span>
+                  <span className="text-accent text-xs flex-shrink-0 ml-3">{isOwner ? (isEn ? 'Add →' : 'Kayıt Ekle →') : (isEn ? 'Request →' : 'Talep Et →')}</span>
                 </Link>
               )}
             </div>
