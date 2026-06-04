@@ -114,6 +114,14 @@ export default function VenueNewCoursePage() {
     setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
   }
 
+  // Başlangıç saati / seans süresi değişince bitiş saatini otomatik hesapla
+  useEffect(() => {
+    const [h, m] = startTime.split(':').map(Number)
+    const total = h * 60 + m + durationMinutes
+    const eh = Math.floor(total / 60), em = total % 60
+    setEndTime(`${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`)
+  }, [startTime, durationMinutes])
+
   const isMonthly = durationUnit === 'months'
 
   const generatedSessions = useMemo(
@@ -410,10 +418,8 @@ export default function VenueNewCoursePage() {
               </select>
             </div>
             <div>
-              <label className="label">Bitiş Saati</label>
-              <select value={endTime} onChange={e => setEndTime(e.target.value)} className="input-field text-sm">
-                {HOURS.filter(h => h > startTime).map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
+              <label className="label">Bitiş Saati <span className="text-text-muted font-normal">(otomatik)</span></label>
+              <input value={endTime} readOnly className="input-field text-sm bg-[rgba(228,224,216,0.04)] text-text-muted" />
             </div>
           </div>
 
