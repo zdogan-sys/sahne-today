@@ -217,15 +217,27 @@ export default function VenueNewCoursePage() {
                   if (t) {
                     setTitle(t.name)
                     if (t.subject) setSubcategory(t.subject)
-                    if (t.weeks) setWeeks(t.weeks)
-                    if (t.price_total) setCoursePrice(String(t.price_total))
+                    if (t.billing_type === 'monthly') {
+                      setDurationUnit('months')
+                      if (t.monthly_price) setMonthlyPrice(String(t.monthly_price))
+                    } else {
+                      setDurationUnit('weeks')
+                      if (t.weeks) setWeeks(t.weeks)
+                      if (t.price_total) setCoursePrice(String(t.price_total))
+                    }
                   }
                 }}
                 className="input-field text-sm">
                 <option value="">Sıfırdan oluştur...</option>
-                {templates.map(t => <option key={t.id} value={t.id}>{t.name} — {t.weeks} hafta · ₺{t.price_total}</option>)}
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.billing_type === 'monthly'
+                      ? `${t.name} — Aylık · ₺${t.monthly_price ?? 0}/ay`
+                      : `${t.name} — ${t.weeks} hafta · ₺${t.price_total}`}
+                  </option>
+                ))}
               </select>
-              <p className="text-text-muted text-xs mt-1">Bir ders seçersen ad, hafta ve ücret otomatik dolar; düzenleyebilirsin.</p>
+              <p className="text-text-muted text-xs mt-1">Bir ders seçersen ad, süre ve ücret otomatik dolar; düzenleyebilirsin.</p>
             </div>
           )}
 
