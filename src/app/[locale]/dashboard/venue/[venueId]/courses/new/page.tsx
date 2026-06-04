@@ -372,7 +372,9 @@ export default function VenueNewCoursePage() {
             </div>
             <div>
               <label className="label">Başlangıç Tarihi</label>
-              <input type="date" min={today} value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field text-sm" />
+              <input type="date" min={today} value={startDate} onChange={e => setStartDate(e.target.value)}
+                onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="input-field text-sm cursor-pointer" />
             </div>
           </div>
 
