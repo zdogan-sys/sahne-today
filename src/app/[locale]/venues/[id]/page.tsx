@@ -404,7 +404,7 @@ export default async function VenuePage({ params }: Props) {
               {coursesAtVenue.map((course) => (
                 <Link
                   key={course.id}
-                  href={`/courses/${course.id}`}
+                  href={isOwner ? `/dashboard/courses/${course.id}` : `/courses/${course.id}`}
                   className="card p-3 hover:border-accent/30 transition-colors block"
                 >
                   {course.startDate && (

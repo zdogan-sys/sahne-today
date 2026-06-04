@@ -221,15 +221,8 @@ export default async function CourseDetailPage({ params }: Props) {
         </p>
       </div>
 
-      {/* Kayıt ol butonu — kurs sahibine gösterilmez */}
-      {isOwner ? (
-        <Link
-          href={`/dashboard/courses/${id}`}
-          className="card p-4 text-center text-accent text-sm font-semibold block hover:border-accent/30 transition-colors"
-        >
-          Bu senin kursun · Yönet →
-        </Link>
-      ) : (course as any).status === 'full' ? (
+      {/* Kayıt ol butonu — kurs sahibine gösterilmez (sahip zaten yönetim sayfasından gelir) */}
+      {isOwner ? null : (course as any).status === 'full' ? (
         <div className="card p-4 text-center text-red-400 text-sm font-semibold">Bu kurs doldu.</div>
       ) : (
         <Link
