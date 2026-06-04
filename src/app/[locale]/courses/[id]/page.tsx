@@ -194,35 +194,31 @@ export default async function CourseDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Müsait seanslar */}
+      {/* Program — seanslar sadece takvim olarak gösterilir, tek tek kayıt alınmaz */}
       <div className="mb-6">
-        <h2 className="font-bebas text-2xl text-text-primary mb-3">MÜSAİT SEANSLAR</h2>
-        {availableSessions.length === 0 ? (
-          <div className="card p-4 text-center text-text-muted text-sm">Şu an müsait seans yok.</div>
+        <h2 className="font-bebas text-2xl text-text-primary mb-3">PROGRAM</h2>
+        {sessions.length === 0 ? (
+          <div className="card p-4 text-center text-text-muted text-sm">Program henüz belirlenmedi.</div>
         ) : (
-          <div className="space-y-2">
-            {availableSessions.map((s) => (
-              <Link
-                key={s.id}
-                href={`/courses/${id}/enroll?session=${s.id}`}
-                className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
-              >
-                <div>
-                  <p className="text-text-primary text-sm font-medium">
+          <div className="card divide-y divide-[rgba(228,224,216,0.06)]">
+            {sessions
+              .slice()
+              .sort((a: any, b: any) => (a.session_date ?? '').localeCompare(b.session_date ?? ''))
+              .map((s: any) => (
+                <div key={s.id} className="p-3 flex items-center justify-between">
+                  <p className="text-text-primary text-sm">
                     {new Date(s.session_date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </p>
-                  <p className="text-text-muted text-xs mt-0.5">
-                    {s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}
-                  </p>
+                  <p className="text-text-muted text-xs">{s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bebas text-xl text-accent">{priceLabel}</span>
-                  <span className="text-accent text-sm">→</span>
-                </div>
-              </Link>
-            ))}
+              ))}
           </div>
         )}
+        <p className="text-text-muted text-xs mt-2">
+          {isMonthly
+            ? `Aylık aidat ile kursun tamamına kayıt olunur · ${sessions.length} seans`
+            : `Kursun tamamına kayıt olunur · ${sessions.length} seans`}
+        </p>
       </div>
 
       {/* Kayıt ol butonu — kurs sahibine gösterilmez */}
