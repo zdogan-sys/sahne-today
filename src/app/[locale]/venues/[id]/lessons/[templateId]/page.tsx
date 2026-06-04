@@ -132,7 +132,9 @@ export default function LessonRequestPage() {
       <h1 className="font-bebas text-4xl text-text-primary mb-1">{template.name}</h1>
       <p className="text-text-muted text-sm mb-1">
         {template.subject && `${template.subject} · `}
-        {template.billing_type === 'monthly' ? 'Aylık' : `${template.weeks} hafta`} · {template.hours_per_session} saat/seans
+        {template.billing_type === 'monthly'
+          ? `Aylık · haftada ${template.days_per_week ?? 1} gün · ${template.hours_per_session} saat/gün`
+          : `${template.weeks} hafta · ${template.hours_per_session} saat/seans`}
       </p>
       {template.billing_type === 'monthly'
         ? (template.monthly_price > 0 && <p className="font-bebas text-2xl text-accent mb-4">₺{template.monthly_price}<span className="text-sm font-sans text-text-muted">/ay</span></p>)

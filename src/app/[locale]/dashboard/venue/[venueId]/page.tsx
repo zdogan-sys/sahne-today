@@ -35,7 +35,7 @@ export default function VenueHubPage() {
 
   // Template form
   const [showTemplateForm, setShowTemplateForm] = useState(false)
-  const [templateForm, setTemplateForm] = useState({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0 })
+  const [templateForm, setTemplateForm] = useState({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0, days_per_week: 1 })
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -139,7 +139,7 @@ export default function VenueHubPage() {
       if (err) { setError(err.message); setSaving(false); return }
     }
 
-    setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0 })
+    setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0, days_per_week: 1 })
     setEditingTemplateId(null)
     setShowTemplateForm(false)
     await load()
@@ -205,7 +205,7 @@ export default function VenueHubPage() {
               <h2 className="font-bebas text-2xl text-text-primary">DERSLERİMİZ</h2>
               <p className="text-text-muted text-xs">Profilinizde yayınlanır — öğrenciler buradan grup/özel ders talebi oluşturur</p>
             </div>
-            <button onClick={() => { setShowTemplateForm(!showTemplateForm); setEditingTemplateId(null); setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
+            <button onClick={() => { setShowTemplateForm(!showTemplateForm); setEditingTemplateId(null); setTemplateForm({ name: '', subject: '', weeks: 4, hours_per_session: 1, price_total: 0, billing_type: 'package', monthly_price: 0, days_per_week: 1 }) }} className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5">
               <Plus size={14} /> {showTemplateForm ? 'İptal' : 'Şablon Ekle'}
             </button>
           </div>
@@ -242,9 +242,13 @@ export default function VenueHubPage() {
               </div>
 
               {templateForm.billing_type === 'monthly' ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="label text-xs">Saat / Seans</label>
+                    <label className="label text-xs">Haftada Kaç Gün</label>
+                    <input type="number" min={1} max={7} value={templateForm.days_per_week} onChange={e => setTemplateForm(p => ({ ...p, days_per_week: parseInt(e.target.value) || 1 }))} className="input-field text-sm mt-1" />
+                  </div>
+                  <div>
+                    <label className="label text-xs">Günlük Ders Saati</label>
                     <input type="number" min={0.5} step={0.5} value={templateForm.hours_per_session} onChange={e => setTemplateForm(p => ({ ...p, hours_per_session: parseFloat(e.target.value) }))} className="input-field text-sm mt-1" />
                   </div>
                   <div>
@@ -282,7 +286,10 @@ export default function VenueHubPage() {
                   <div className="flex-1">
                     <p className="text-text-primary font-medium text-sm">{tmpl.name}</p>
                     <p className="text-text-muted text-xs mt-0.5">
-                      {tmpl.billing_type === 'monthly' ? 'Aylık' : `${tmpl.weeks} hafta`} · {tmpl.hours_per_session}h/seans {tmpl.subject && `· ${tmpl.subject}`}
+                      {tmpl.billing_type === 'monthly'
+                        ? `Aylık · haftada ${tmpl.days_per_week ?? 1} gün · ${tmpl.hours_per_session}h/gün`
+                        : `${tmpl.weeks} hafta · ${tmpl.hours_per_session}h/seans`}
+                      {tmpl.subject && ` · ${tmpl.subject}`}
                     </p>
                   </div>
                   <div className="text-accent font-bebas text-lg">

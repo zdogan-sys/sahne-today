@@ -108,7 +108,7 @@ export default async function VenuePage({ params }: Props) {
     supabase.from('venue_instructors').select('id, name, instruments, bio, photo_url').eq('venue_id', id).eq('is_active', true),
     supabase.from('reviews').select('id, rating, comment, created_at, profiles(display_name, avatar_url)').eq('venue_id', id).order('created_at', { ascending: false }),
     user ? supabase.from('reviews').select('*').eq('venue_id', id).eq('reviewer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
-    supabase.from('venue_lesson_templates').select('id, name, subject, weeks, hours_per_session, price_total, billing_type, monthly_price').eq('venue_id', id).eq('is_active', true).order('created_at'),
+    supabase.from('venue_lesson_templates').select('id, name, subject, weeks, hours_per_session, price_total, billing_type, monthly_price, days_per_week').eq('venue_id', id).eq('is_active', true).order('created_at'),
   ])
 
   if (!venueRes.data) notFound()
@@ -365,7 +365,9 @@ export default async function VenuePage({ params }: Props) {
                     <p className="font-medium text-text-primary text-sm">{tmpl.name}</p>
                     <p className="text-text-muted text-xs mt-0.5">
                       {tmpl.subject && `${tmpl.subject} · `}
-                      {tmpl.billing_type === 'monthly' ? (isEn ? 'Monthly' : 'Aylık') : `${tmpl.weeks} ${isEn ? 'weeks' : 'hafta'}`} · {tmpl.hours_per_session} {isEn ? 'h/session' : 'saat/seans'}
+                      {tmpl.billing_type === 'monthly'
+                        ? `${isEn ? 'Monthly' : 'Aylık'} · ${isEn ? 'weekly' : 'haftada'} ${tmpl.days_per_week ?? 1} ${isEn ? 'days' : 'gün'} · ${tmpl.hours_per_session} ${isEn ? 'h/day' : 'saat/gün'}`
+                        : `${tmpl.weeks} ${isEn ? 'weeks' : 'hafta'} · ${tmpl.hours_per_session} ${isEn ? 'h/session' : 'saat/seans'}`}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
