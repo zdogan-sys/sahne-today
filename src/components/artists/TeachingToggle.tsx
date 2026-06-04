@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { GraduationCap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DANCE_OPTIONS } from '@/lib/constants'
 
 interface Props {
   artistId: string
@@ -66,24 +67,28 @@ export function TeachingToggle({
         {isTeaching ? 'Kurs veriyorum · Aktif' : 'Kurs veriyorum'}
       </button>
 
-      {isTeaching && instruments.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pl-0.5">
-          {instruments.map((instrument) => (
-            <button
-              key={instrument}
-              onClick={() => toggleInstrument(instrument)}
-              className={cn(
-                'text-[10px] px-2 py-1 rounded border transition-colors',
-                teachingInstruments.includes(instrument)
-                  ? 'bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30'
-                  : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-              )}
-            >
-              {instrument}
-            </button>
-          ))}
-        </div>
-      )}
+      {isTeaching && (() => {
+        // Sanatçının enstrümanları + dans stilleri (dans hocaları için) + seçili olanlar
+        const options = Array.from(new Set([...instruments, ...DANCE_OPTIONS, ...teachingInstruments]))
+        return (
+          <div className="flex flex-wrap gap-1.5 pl-0.5">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => toggleInstrument(opt)}
+                className={cn(
+                  'text-[10px] px-2 py-1 rounded border transition-colors',
+                  teachingInstruments.includes(opt)
+                    ? 'bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30'
+                    : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                )}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )
+      })()}
     </div>
   )
 }
