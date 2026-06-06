@@ -44,7 +44,7 @@ export default function VenueInstructorsPage() {
     const [venueRes, instRes, artistsRes] = await Promise.all([
       supabase.from('venues').select('id, name, owner_id, venue_type').eq('id', venueId).single(),
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
-      supabase.from('artists').select('id, stage_name, teaching_instruments').order('stage_name').limit(300),
+      supabase.from('artists').select('id, stage_name, teaching_instruments, instruments').order('stage_name').limit(300),
     ])
 
     if (!venueRes.data || venueRes.data.owner_id !== user.id) {
@@ -84,7 +84,7 @@ export default function VenueInstructorsPage() {
     setSaving(true)
     setError('')
 
-    const { data, error: err } = await supabase
+    const { error: err } = await supabase
       .from('venue_instructors')
       .insert({
         venue_id: venueId,
@@ -94,8 +94,6 @@ export default function VenueInstructorsPage() {
         artist_id: formData.artist_id,
         is_active: true,
       })
-      .select()
-      .single()
 
     if (err) {
       setError(err.message)
@@ -103,11 +101,11 @@ export default function VenueInstructorsPage() {
       return
     }
 
-    setInstructors(prev => [...prev, data])
     setFormData({ name: '', instruments: [], bio: '', artist_id: null })
     setArtistQuery('')
     setShowForm(false)
     setSaving(false)
+    router.push(`/dashboard/venue/${venueId}`)
   }
 
   async function deleteInstructor(id: string) {
@@ -131,8 +129,8 @@ export default function VenueInstructorsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
-          <ArrowLeft size={16} /> Dashboard
+        <Link href={`/dashboard/venue/${venueId}`} className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
+          <ArrowLeft size={16} /> {venue?.name ?? 'Mekan'}
         </Link>
         <div className="flex items-center justify-between">
           <div>
@@ -201,16 +199,16 @@ export default function VenueInstructorsPage() {
                     {(() => {
                       const filtered = artists.filter(a => {
                         if (artistQuery && !a.stage_name.toLowerCase().includes(artistQuery.toLowerCase())) return false
-                        const teaches = a.teaching_instruments ?? []
-                        return teaches.some((ti: string) => formData.instruments.includes(ti))
+                        const skills = [...(a.teaching_instruments ?? []), ...(a.instruments ?? [])]
+                        return skills.some((ti: string) => formData.instruments.includes(ti))
                       }).slice(0, 20)
-                      if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">Bu enstrümanı öğreten sanatçı bulunamadı</p>
+                      if (filtered.length === 0) return <p className="px-3 py-2 text-xs text-text-muted">{venue?.venue_type === 'dance_studio' ? 'Bu dans türünü yapan sanatçı bulunamadı' : 'Bu enstrümanı öğreten sanatçı bulunamadı'}</p>
                       return filtered.map(a => (
                         <button key={a.id} type="button"
                           onMouseDown={() => { setFormData(prev => ({ ...prev, name: a.stage_name, artist_id: a.id })); setArtistQuery(''); setArtistFocused(false) }}
                           className="w-full text-left px-3 py-2 text-sm text-text-muted hover:bg-[rgba(228,224,216,0.06)] hover:text-text-primary transition-colors flex items-center justify-between">
                           <span>{a.stage_name}</span>
-                          <span className="text-[10px] text-text-muted">{(a.teaching_instruments ?? []).filter((ti: string) => formData.instruments.includes(ti)).join(', ')}</span>
+                          <span className="text-[10px] text-text-muted">{Array.from(new Set([...(a.teaching_instruments ?? []), ...(a.instruments ?? [])])).filter((ti: string) => formData.instruments.includes(ti)).join(', ')}</span>
                         </button>
                       ))
                     })()}
