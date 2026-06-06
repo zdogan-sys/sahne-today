@@ -212,8 +212,8 @@ export default function VenueReservationsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
-          <ArrowLeft size={16} /> Dashboard
+        <Link href={`/dashboard/venue/${venueId}`} className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
+          <ArrowLeft size={16} /> Mekan
         </Link>
         <h1 className="font-bebas text-4xl text-text-primary">{venue?.name}</h1>
         <p className="text-text-muted text-sm mt-0.5">Rezervasyonlar</p>

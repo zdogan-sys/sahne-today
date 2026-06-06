@@ -113,8 +113,8 @@ export default function VenueRoomsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <Link href="/dashboard" className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
-          <ArrowLeft size={16} /> Dashboard
+        <Link href={`/dashboard/venue/${venueId}`} className="flex items-center gap-2 text-text-muted text-sm mb-4 hover:text-text-primary w-fit">
+          <ArrowLeft size={16} /> Mekan
         </Link>
         <div className="flex items-center justify-between">
           <div>
