@@ -21,6 +21,7 @@ import { toggleFeatureFlag, toggleUserPremium, toggleFoundingMember, adminBlockC
 import { createSlot } from '@/app/actions/event'
 import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
+import { InstagramScanner } from '@/components/admin/InstagramScanner'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -34,7 +35,7 @@ import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRE
 import { getDayNames, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
-type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions'
+type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions' | 'instagram'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pending', label: 'Bekleyenler' },
@@ -47,6 +48,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'premium', label: 'Premium' },
   { key: 'conversations', label: 'Sohbetler' },
   { key: 'permissions', label: 'Yetkiler' },
+  { key: 'instagram', label: 'Instagram' },
 ]
 
 const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
@@ -120,6 +122,7 @@ export function AdminPanel({ events, artists, venues, bands, members, pendingEve
       {tab === 'premium' && <PremiumTab featureFlags={featureFlags} members={members} onRefresh={refresh} />}
       {tab === 'conversations' && <ConversationsTab conversations={conversations} onRefresh={refresh} />}
       {tab === 'permissions' && <PermissionsTab members={members} onRefresh={refresh} />}
+      {tab === 'instagram' && <InstagramScanner />}
     </div>
   )
 }
