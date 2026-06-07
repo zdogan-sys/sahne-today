@@ -23,6 +23,8 @@ type PlaceResult = {
   rating: number | null
   types: string[]
   photo_name: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 // Adres bileşenlerinden ilçe (administrative_area_level_2) çıkar
@@ -45,7 +47,7 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.addressComponents,places.photos',
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.addressComponents,places.photos,places.location',
     },
     body: JSON.stringify({
       textQuery,
@@ -74,6 +76,8 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
     rating: typeof p.rating === 'number' ? p.rating : null,
     types: p.types ?? [],
     photo_name: p.photos?.[0]?.name ?? null,
+    latitude: typeof p.location?.latitude === 'number' ? p.location.latitude : null,
+    longitude: typeof p.location?.longitude === 'number' ? p.location.longitude : null,
   }))
 }
 
@@ -194,6 +198,8 @@ export async function POST(req: NextRequest) {
         social_links,
         photo_url,
         logo_url,
+        latitude: v.latitude,
+        longitude: v.longitude,
         verified: false,
       })
       if (error) errors.push(`${v.name}: ${error.message}`)
