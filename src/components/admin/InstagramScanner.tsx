@@ -69,7 +69,7 @@ export function InstagramScanner() {
     try {
       const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       const data = await res.json()
-      setScanResult(`${data.scanned} hesap tarandı, ${data.drafts} yeni taslak oluşturuldu.`)
+      setScanResult(JSON.stringify(data))
       await load()
     } catch {
       setScanResult('Tarama sırasında hata oluştu.')
