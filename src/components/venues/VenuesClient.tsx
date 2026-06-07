@@ -192,7 +192,14 @@ function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; can
   return (
     <Link href={`/venues/${venue.id}`} className="card overflow-hidden hover:border-accent/30 transition-colors block">
       <div className="relative h-36 bg-[rgba(228,224,216,0.04)]">
-        {venue.logo_url ? (
+        {venue.photo_url ? (
+          <Image
+            src={venue.photo_url}
+            alt={venue.name}
+            fill
+            className="object-cover"
+          />
+        ) : venue.logo_url ? (
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="relative w-full h-full">
               <Image
@@ -203,16 +210,21 @@ function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; can
               />
             </div>
           </div>
-        ) : venue.photo_url ? (
-          <Image
-            src={venue.photo_url}
-            alt={venue.name}
-            fill
-            className="object-cover"
-          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <Music size={32} className="text-[rgba(228,224,216,0.12)]" />
+          </div>
+        )}
+        {/* Fotoğraf + logo birlikte varsa: logoyu köşede rozet olarak göster */}
+        {venue.photo_url && venue.logo_url && (
+          <div className="absolute bottom-2 left-2 w-11 h-11 rounded-lg bg-white/95 shadow-md overflow-hidden flex items-center justify-center p-1">
+            <Image
+              src={venue.logo_url}
+              alt={venue.name}
+              width={44}
+              height={44}
+              className="object-contain w-full h-full"
+            />
           </div>
         )}
         {canSeeSlots && openSlots > 0 && (
