@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
-import { MapPin, Filter, Music, CalendarDays } from 'lucide-react'
+import { MapPin, Filter, Music, CalendarDays, Navigation, Loader2 } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
@@ -22,6 +22,21 @@ type UpcomingEvent = {
 
 const CITIES_TR = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
 const CITIES_EN = ['Istanbul', 'Ankara', 'Izmir', 'Bursa']
+
+// İki koordinat arası mesafe (km) — Haversine
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLng = (b.lng - a.lng) * Math.PI / 180
+  const lat1 = a.lat * Math.PI / 180
+  const lat2 = b.lat * Math.PI / 180
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(x))
+}
+
+function fmtDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+}
 
 export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }: { initialVenues: VenueFull[]; upcomingEvents?: UpcomingEvent[]; canSeeSlots: boolean }) {
   const t = useTranslations('filters')
@@ -43,6 +58,21 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
+  const [nearMode, setNearMode] = useState(false)
+  const [locating, setLocating] = useState(false)
+
+  function toggleNearMe() {
+    if (nearMode) { setNearMode(false); return }
+    if (userLoc) { setNearMode(true); return }
+    if (!('geolocation' in navigator)) { alert(locale === 'en' ? 'Location not supported' : 'Konum desteklenmiyor'); return }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setNearMode(true); setLocating(false) },
+      () => { setLocating(false); alert(locale === 'en' ? 'Could not get location' : 'Konum alınamadı') },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
 
   const filtered = initialVenues.filter((v) => {
     if (city && v.city !== city) return false
@@ -53,6 +83,21 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     }
     return true
   })
+
+  // Yakınımda modu: mesafe hesapla + sırala
+  const withDist = filtered.map((v) => ({
+    v,
+    dist: (nearMode && userLoc && (v as any).latitude != null && (v as any).longitude != null)
+      ? distanceKm(userLoc, { lat: (v as any).latitude, lng: (v as any).longitude })
+      : null,
+  }))
+  if (nearMode && userLoc) {
+    withDist.sort((a, b) => {
+      if (a.dist == null) return 1
+      if (b.dist == null) return -1
+      return a.dist - b.dist
+    })
+  }
 
   const activeFilters = [city, venueType, onlyOpenSlots].filter(Boolean).length
 
@@ -76,9 +121,14 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
       </aside>
 
       <div className="flex-1">
-        <div className="md:hidden flex items-center justify-between mb-4">
-          <span className="text-sm text-text-muted">{filtered.length} mekan</span>
-          <button onClick={() => setFilterOpen(true)} className="flex items-center gap-2 btn-outline py-1.5 text-sm">
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <button onClick={toggleNearMe} disabled={locating}
+            className={cn('flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-sm transition-colors disabled:opacity-60',
+              nearMode ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)] hover:text-text-primary')}>
+            {locating ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+            {nearMode ? (locale === 'en' ? 'Nearby' : 'Yakınımda') : (locale === 'en' ? 'Near me' : 'Yakınımdakiler')}
+          </button>
+          <button onClick={() => setFilterOpen(true)} className="md:hidden flex items-center gap-2 btn-outline py-1.5 text-sm">
             <Filter size={14} />
             Filtre
             {activeFilters > 0 && (
@@ -87,16 +137,21 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
           </button>
         </div>
 
-        {filtered.length === 0 ? (
+        {nearMode && userLoc && (
+          <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
+        )}
+
+        {withDist.length === 0 ? (
           <div className="text-center py-16 text-text-muted text-sm">Mekan bulunamadı.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filtered.map((venue) => (
+            {withDist.map(({ v, dist }) => (
               <VenueCard
-                key={venue.id}
-                venue={venue}
+                key={v.id}
+                venue={v}
                 canSeeSlots={canSeeSlots}
-                nearestEvent={upcomingEvents.find(e => e.venue_id === venue.id) ?? null}
+                nearestEvent={upcomingEvents.find(e => e.venue_id === v.id) ?? null}
+                distance={dist}
               />
             ))}
           </div>
@@ -179,7 +234,7 @@ function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, 
   )
 }
 
-function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; canSeeSlots: boolean; nearestEvent: UpcomingEvent | null }) {
+function VenueCard({ venue, canSeeSlots, nearestEvent, distance }: { venue: VenueFull; canSeeSlots: boolean; nearestEvent: UpcomingEvent | null; distance?: number | null }) {
   const openSlots = venue.slots?.filter((s) => s.status === 'open').length ?? 0
 
   const today = new Date().toISOString().split('T')[0]
@@ -233,6 +288,11 @@ function VenueCard({ venue, canSeeSlots, nearestEvent }: { venue: VenueFull; can
             style={{ backgroundColor: 'rgba(29,158,117,0.85)', color: '#fff' }}
           >
             {openSlots} açık slot
+          </div>
+        )}
+        {distance != null && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-black/55 text-white backdrop-blur-sm">
+            <Navigation size={9} /> {fmtDistance(distance)}
           </div>
         )}
       </div>
