@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
   let query = admin.from('instagram_sources').select('*').eq('is_active', true)
   if (sourceId) query = (query as any).eq('id', sourceId)
 
-  const { data: sources } = await query
-  if (!sources?.length) return NextResponse.json({ scanned: 0, drafts: 0 })
+  const { data: sources, error: srcError } = await query
+  if (srcError) return NextResponse.json({ error: srcError.message, scanned: 0, drafts: 0 })
+  if (!sources?.length) return NextResponse.json({ scanned: 0, drafts: 0, debug: 'no active sources found' })
 
   let totalDrafts = 0
 
