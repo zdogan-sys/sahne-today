@@ -16,30 +16,40 @@ function adminClient() {
   )
 }
 
-// Instagram sayfasından metin içeriği çekmeye çalışır
+// Instagram sayfasından metin içeriği çeker — önce Jina.ai reader, sonra doğrudan
 async function fetchInstagramContent(url: string): Promise<string> {
+  // Önce Jina.ai reader dene (JavaScript render eder, Instagram engeline karşı daha dayanıklı)
+  try {
+    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-Return-Format': 'text',
+      },
+      signal: AbortSignal.timeout(20000),
+    })
+    if (jinaRes.ok) {
+      const text = await jinaRes.text()
+      if (text.length > 100) return text.slice(0, 4000)
+    }
+  } catch { /* Jina başarısız, doğrudan dene */ }
+
+  // Doğrudan fetch (yedek)
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.7',
-        'Cache-Control': 'no-cache',
+        'Accept-Language': 'tr-TR,tr;q=0.9',
       },
       signal: AbortSignal.timeout(12000),
     })
-
     if (!res.ok) return ''
     const html = await res.text()
-
-    // Meta etiketlerinden içerik çıkar
-    const pick = (re: RegExp) => html.match(re)?.[1]?.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') ?? ''
-
-    const title = pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{1,300})["']/i)
-    const desc  = pick(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']{1,800})["']/i)
-    const tDesc = pick(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,800})["']/i)
-
-    const parts = [title, desc, tDesc].filter(Boolean)
+    const pick = (re: RegExp) => html.match(re)?.[1]?.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&') ?? ''
+    const parts = [
+      pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{1,300})["']/i),
+      pick(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']{1,1500})["']/i),
+    ].filter(Boolean)
     return parts.join('\n\n').slice(0, 3000)
   } catch {
     return ''
