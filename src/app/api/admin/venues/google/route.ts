@@ -165,6 +165,7 @@ export async function POST(req: NextRequest) {
     const venues: PlaceResult[] = body.venues ?? []
     const city: string = body.city ?? ''
     const venueType: string = body.venue_type ?? 'live_music'
+    const genres: string[] = Array.isArray(body.genres) ? body.genres : []
     if (!venues.length) return NextResponse.json({ error: 'Seçili mekan yok' }, { status: 400 })
 
     const admin = adminClient()
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest) {
         district: v.district || null,
         address: v.address || '',
         venue_type: venueType,
-        genres: [],
+        genres,
         phone: v.phone || null,
         social_links,
         photo_url,

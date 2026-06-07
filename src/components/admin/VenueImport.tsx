@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Search, Loader2, MapPin, Star, Check, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CITY_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS, ALL_GENRES } from '@/lib/constants'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Result = {
@@ -24,6 +24,7 @@ export function VenueImport() {
   const [city, setCity] = useState('Ankara')
   const [query, setQuery] = useState('canlı müzik')
   const [venueType, setVenueType] = useState('live_music')
+  const [genres, setGenres] = useState<string[]>([])
   const [results, setResults] = useState<Result[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [searching, setSearching] = useState(false)
@@ -65,7 +66,7 @@ export function VenueImport() {
     try {
       const res = await fetch('/api/admin/venues/google', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'import', venues: toImport, city, venue_type: venueType }),
+        body: JSON.stringify({ action: 'import', venues: toImport, city, venue_type: venueType, genres }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'İçe aktarma hatası'); setImporting(false); return }
@@ -124,11 +125,29 @@ export function VenueImport() {
 
         {/* Eklenecek mekan türü */}
         <div className="flex items-center gap-2">
-          <label className="label text-xs whitespace-nowrap">Eklenecek tür:</label>
+          <label className="label text-xs whitespace-nowrap">Mekan türü:</label>
           <select value={venueType} onChange={e => setVenueType(e.target.value)} className="input-field text-sm w-48">
             {Object.entries(VENUE_TYPE_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
           <span className="text-text-muted text-[11px]">(hepsi bu türle eklenir, sonra düzenlenebilir)</span>
+        </div>
+
+        {/* Müzik türleri (çoklu seçim) */}
+        <div>
+          <label className="label text-xs mb-1 block">
+            Müzik Türleri <span className="text-text-muted font-normal">(opsiyonel, birkaç seçebilirsin)</span>
+            {genres.length > 0 && <span className="text-accent ml-1">· {genres.join(', ')}</span>}
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {ALL_GENRES.map(g => (
+              <button key={g} type="button"
+                onClick={() => setGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                className={cn('text-[11px] px-2.5 py-1 rounded-full border transition-colors',
+                  genres.includes(g) ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary')}>
+                {g}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
