@@ -22,6 +22,7 @@ type PlaceResult = {
   website: string | null
   rating: number | null
   types: string[]
+  photo_name: string | null
 }
 
 // Adres bileşenlerinden ilçe (administrative_area_level_2) çıkar
@@ -44,7 +45,7 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.addressComponents',
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.addressComponents,places.photos',
     },
     body: JSON.stringify({
       textQuery,
@@ -72,7 +73,34 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
     website: p.websiteUri ?? null,
     rating: typeof p.rating === 'number' ? p.rating : null,
     types: p.types ?? [],
+    photo_name: p.photos?.[0]?.name ?? null,
   }))
+}
+
+// Google Places fotoğrafını indirip venues bucket'ına yükler, public URL döner
+async function fetchAndStorePhoto(photoName: string, placeId: string, admin: ReturnType<typeof adminClient>): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  if (!apiKey || !photoName) return null
+  try {
+    const mediaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1200&key=${apiKey}`
+    const imgRes = await fetch(mediaUrl, { signal: AbortSignal.timeout(15000) })
+    if (!imgRes.ok) return null
+    const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
+    const ext = contentType.includes('png') ? 'png' : 'jpg'
+    const buffer = Buffer.from(await imgRes.arrayBuffer())
+    const path = `imported/${placeId}.${ext}`
+
+    const { error } = await admin.storage.from('venues').upload(path, buffer, {
+      contentType,
+      upsert: true,
+    })
+    if (error) return null
+
+    const { data } = admin.storage.from('venues').getPublicUrl(path)
+    return data.publicUrl ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -128,6 +156,8 @@ export async function POST(req: NextRequest) {
       const social_links: Record<string, string> = {}
       if (v.website) social_links.website = v.website
 
+      const photo_url = v.photo_name ? await fetchAndStorePhoto(v.photo_name, v.place_id, admin) : null
+
       const { error } = await admin.from('venues').insert({
         name: v.name,
         city,
@@ -137,6 +167,7 @@ export async function POST(req: NextRequest) {
         genres: [],
         phone: v.phone || null,
         social_links,
+        photo_url,
         verified: false,
       })
       if (error) errors.push(`${v.name}: ${error.message}`)
