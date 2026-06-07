@@ -16,44 +16,38 @@ function adminClient() {
   )
 }
 
-// Instagram sayfasından metin içeriği çeker — önce Jina.ai reader, sonra doğrudan
-async function fetchInstagramContent(url: string): Promise<string> {
-  // Önce Jina.ai reader dene (JavaScript render eder, Instagram engeline karşı daha dayanıklı)
-  try {
-    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-      headers: {
-        'Accept': 'text/plain',
-        'X-Return-Format': 'text',
-      },
-      signal: AbortSignal.timeout(20000),
-    })
-    if (jinaRes.ok) {
-      const text = await jinaRes.text()
-      if (text.length > 100) return text.slice(0, 4000)
-    }
-  } catch { /* Jina başarısız, doğrudan dene */ }
+// Instagram kullanıcı adını URL'den çıkar
+function extractUsername(url: string): string {
+  return url.replace(/\/$/, '').split('/').pop() ?? ''
+}
 
-  // Doğrudan fetch (yedek)
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'tr-TR,tr;q=0.9',
-      },
-      signal: AbortSignal.timeout(12000),
-    })
-    if (!res.ok) return ''
-    const html = await res.text()
-    const pick = (re: RegExp) => html.match(re)?.[1]?.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&') ?? ''
-    const parts = [
-      pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{1,300})["']/i),
-      pick(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']{1,1500})["']/i),
-    ].filter(Boolean)
-    return parts.join('\n\n').slice(0, 3000)
-  } catch {
-    return ''
+// Instagram içeriği çeker — viewer siteler üzerinden (oturum açmadan erişim)
+async function fetchInstagramContent(instagramUrl: string): Promise<string> {
+  const username = extractUsername(instagramUrl)
+  if (!username) return ''
+
+  // imginn.com üzerinden Jina.ai ile çek (instagram içeriğini oturum açmadan gösteriyor)
+  const viewerUrls = [
+    `https://imginn.com/${username}/`,
+    `https://picuki.com/profile/${username}`,
+  ]
+
+  for (const viewerUrl of viewerUrls) {
+    try {
+      const res = await fetch(`https://r.jina.ai/${viewerUrl}`, {
+        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+        signal: AbortSignal.timeout(25000),
+      })
+      if (!res.ok) continue
+      const text = await res.text()
+      // Login/hata sayfası değil gerçek içerik mi?
+      if (text.length > 500 && !text.toLowerCase().includes('sign in') && !text.toLowerCase().includes('giriş')) {
+        return text.slice(0, 5000)
+      }
+    } catch { /* sonraki kaynağa geç */ }
   }
+
+  return ''
 }
 
 const SYSTEM_PROMPT = `Sen bir etkinlik tespit asistanısın. Türk bar, pub ve mekan Instagram sayfalarından alınan içeriklerde yaklaşan canlı müzik etkinlikleri, konserler veya özel geceleri tespit ediyorsun.
