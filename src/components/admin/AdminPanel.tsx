@@ -738,6 +738,7 @@ function ArtistForm({ open, onClose, initial, onSaved }: any) {
   const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
   const [instruments, setInstruments] = useState<string[]>(initial?.instruments ?? [])
   const [isHidden, setIsHidden] = useState(initial?.is_hidden ?? false)
+  const [instagram, setInstagram] = useState(initial?.social_links?.instagram ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -747,7 +748,8 @@ function ArtistForm({ open, onClose, initial, onSaved }: any) {
   async function handleSave() {
     if (!stageName) { setError('Sahne adı zorunludur.'); return }
     setLoading(true); setError('')
-    const data = { stage_name: stageName, city: city || null, bio: bio || null, genres, instruments, is_hidden: isHidden }
+    const socialLinks = { ...(initial?.social_links ?? {}), ...(instagram ? { instagram } : { instagram: undefined }) }
+    const data = { stage_name: stageName, city: city || null, bio: bio || null, genres, instruments, is_hidden: isHidden, social_links: socialLinks }
     const res = initial?.id
       ? await adminUpdateArtist(initial.id, data)
       : await adminCreateArtist(data)
@@ -795,6 +797,10 @@ function ArtistForm({ open, onClose, initial, onSaved }: any) {
               </button>
             ))}
           </div>
+        </div>
+        <div>
+          <label className="label">Instagram</label>
+          <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/sanatci" className="input-field text-sm" />
         </div>
         <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
           <p className="text-sm text-text-muted">Gizle</p>
@@ -918,6 +924,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [email, setEmail] = useState(initial?.email ?? '')
   const [verified, setVerified] = useState(initial?.verified ?? false)
   const [pricePerHour, setPricePerHour] = useState(initial?.price_per_hour?.toString() ?? '')
+  const [instagram, setInstagram] = useState(initial?.social_links?.instagram ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -926,12 +933,14 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   async function handleSave() {
     if (!name || !city) { setError('Ad ve şehir zorunludur.'); return }
     setLoading(true); setError('')
+    const socialLinks = { ...(initial?.social_links ?? {}), ...(instagram ? { instagram } : { instagram: undefined }) }
     const data = {
       name, city, district: district || null, address: address || '',
       venue_type: venueType, genres,
       description: description || null,
       phone: phone || null, email: email || null, verified,
       price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
+      social_links: socialLinks,
     }
     const res = initial?.id
       ? await adminUpdateVenue(initial.id, data)
@@ -996,6 +1005,10 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
             <input type="number" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="500" min="0" className="input-field text-sm" />
           </div>
         )}
+        <div>
+          <label className="label">Instagram</label>
+          <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/mekan" className="input-field text-sm" />
+        </div>
         <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
           <p className="text-sm text-text-muted">Onaylı Mekan</p>
           <button type="button" onClick={() => setVerified(!verified)}
@@ -1171,13 +1184,15 @@ function BandForm({ open, onClose, initial, onSaved }: any) {
   const [city, setCity] = useState(initial?.city ?? '')
   const [bio, setBio] = useState(initial?.bio ?? '')
   const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
+  const [instagram, setInstagram] = useState(initial?.social_links?.instagram ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleSave() {
     if (!name) { setError('Grup adı zorunludur.'); return }
     setLoading(true); setError('')
-    const data = { name, city: city || null, bio: bio || null, genres }
+    const socialLinks = { ...(initial?.social_links ?? {}), ...(instagram ? { instagram } : { instagram: undefined }) }
+    const data = { name, city: city || null, bio: bio || null, genres, social_links: socialLinks }
     const res = initial?.id
       ? await adminUpdateBand(initial.id, data)
       : await adminCreateBand(data)
@@ -1209,6 +1224,10 @@ function BandForm({ open, onClose, initial, onSaved }: any) {
           selected={genres}
           onToggle={(g) => setGenres(genres.includes(g) ? genres.filter(x => x !== g) : [...genres, g])}
         />
+        <div>
+          <label className="label">Instagram</label>
+          <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/grup" className="input-field text-sm" />
+        </div>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={handleSave} disabled={loading} className="btn-accent w-full py-3 text-sm disabled:opacity-50">
           {loading ? 'Kaydediliyor...' : 'Kaydet'}
