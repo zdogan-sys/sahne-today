@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils'
 import { getListConfigs } from '@/app/actions/site'
 import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
-
-const FALLBACK_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
+import { DANCE_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 
 export default function VenueHubPage() {
   const router = useRouter()
@@ -21,7 +20,7 @@ export default function VenueHubPage() {
   const [venue, setVenue] = useState<any>(null)
   const [rooms, setRooms] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
-  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(FALLBACK_INSTRUMENTS)
+  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(INSTRUMENT_OPTIONS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -66,10 +65,11 @@ export default function VenueHubPage() {
     setRooms(roomsRes.data ?? [])
     setTemplates(templatesRes.data ?? [])
 
+    const isDance = venueData.venue_type === 'dance_studio'
+    setInstrumentOptions(isDance ? DANCE_OPTIONS : INSTRUMENT_OPTIONS)
     try {
       const configs = await getListConfigs()
-      // Dans stüdyosu → dans türleri, müzik okulu → enstrümanlar
-      const list = venueData.venue_type === 'dance_studio' ? configs?.dance_types : configs?.instruments
+      const list = isDance ? configs?.dance_types : configs?.instruments
       if (list?.length) setInstrumentOptions(list)
     } catch { /* fallback */ }
 

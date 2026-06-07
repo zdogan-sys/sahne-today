@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getListConfigs } from '@/app/actions/site'
-
-const FALLBACK_INSTRUMENTS = ['Gitar', 'Piyano', 'Davul', 'Bas', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
+import { DANCE_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
 
 export default function VenueInstructorsPage() {
   const router = useRouter()
@@ -17,7 +16,7 @@ export default function VenueInstructorsPage() {
 
   const [venue, setVenue] = useState<any>(null)
   const [instructors, setInstructors] = useState<any[]>([])
-  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(FALLBACK_INSTRUMENTS)
+  const [instrumentOptions, setInstrumentOptions] = useState<string[]>(INSTRUMENT_OPTIONS)
   const [artists, setArtists] = useState<any[]>([])
   const [artistQuery, setArtistQuery] = useState('')
   const [artistFocused, setArtistFocused] = useState(false)
@@ -56,10 +55,14 @@ export default function VenueInstructorsPage() {
     setInstructors(instRes.data ?? [])
     setArtists(artistsRes.data ?? [])
 
-    // Admin panelden yönetilen liste — dans stüdyosu → dans türleri, müzik okulu → enstrümanlar
+    // Venue type'a göre doğru fallback
+    const isDance = venueRes.data.venue_type === 'dance_studio'
+    setInstrumentOptions(isDance ? DANCE_OPTIONS : INSTRUMENT_OPTIONS)
+
+    // Admin panelden yönetilen liste varsa üzerine yaz
     try {
       const configs = await getListConfigs()
-      const list = venueRes.data.venue_type === 'dance_studio' ? configs?.dance_types : configs?.instruments
+      const list = isDance ? configs?.dance_types : configs?.instruments
       if (list?.length) setInstrumentOptions(list)
     } catch { /* fallback kullanılır */ }
 
