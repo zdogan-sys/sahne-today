@@ -103,6 +103,30 @@ async function fetchAndStorePhoto(photoName: string, placeId: string, admin: Ret
   }
 }
 
+// Web sitesi domain'inden logo çeker (Clearbit), venues bucket'ına yükler
+async function fetchAndStoreLogo(website: string, placeId: string, admin: ReturnType<typeof adminClient>): Promise<string | null> {
+  try {
+    const host = new URL(website).hostname.replace(/^www\./, '')
+    if (!host) return null
+    const logoUrl = `https://logo.clearbit.com/${host}?size=256`
+    const imgRes = await fetch(logoUrl, { signal: AbortSignal.timeout(10000) })
+    if (!imgRes.ok) return null
+    const contentType = imgRes.headers.get('content-type') ?? 'image/png'
+    if (!contentType.startsWith('image/')) return null
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('svg') ? 'svg' : 'jpg'
+    const buffer = Buffer.from(await imgRes.arrayBuffer())
+    if (buffer.length < 200) return null // boş/placeholder logo
+    const path = `imported/logo-${placeId}.${ext}`
+
+    const { error } = await admin.storage.from('venues').upload(path, buffer, { contentType, upsert: true })
+    if (error) return null
+    const { data } = admin.storage.from('venues').getPublicUrl(path)
+    return data.publicUrl ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -157,6 +181,7 @@ export async function POST(req: NextRequest) {
       if (v.website) social_links.website = v.website
 
       const photo_url = v.photo_name ? await fetchAndStorePhoto(v.photo_name, v.place_id, admin) : null
+      const logo_url = v.website ? await fetchAndStoreLogo(v.website, v.place_id, admin) : null
 
       const { error } = await admin.from('venues').insert({
         name: v.name,
@@ -168,6 +193,7 @@ export async function POST(req: NextRequest) {
         phone: v.phone || null,
         social_links,
         photo_url,
+        logo_url,
         verified: false,
       })
       if (error) errors.push(`${v.name}: ${error.message}`)
