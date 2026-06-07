@@ -13,6 +13,7 @@ import { ReviewSection } from '@/components/ui/ReviewSection'
 import { isAdminUser } from '@/lib/admin'
 import { SocialLinks } from '@/components/ui/SocialLinks'
 import { VenueCoverEditor } from '@/components/venues/VenueCoverEditor'
+import { VenueMap } from '@/components/venues/VenueMap'
 import { VenueLogoEditor } from '@/components/venues/VenueLogoEditor'
 import { VenueVideoEditor } from '@/components/venues/VenueVideoEditor'
 import { VenueSocialEditor } from '@/components/venues/VenueSocialEditor'
@@ -297,6 +298,21 @@ export default async function VenuePage({ params }: Props) {
             )}
           </div>
         </div>
+
+        {/* Harita */}
+        {(venue as any).latitude != null && (venue as any).longitude != null && (
+          <div className="space-y-2">
+            <VenueMap lat={(venue as any).latitude} lng={(venue as any).longitude} name={venue.name} />
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${(venue as any).latitude},${(venue as any).longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+            >
+              <MapPin size={14} /> {isEn ? 'Get Directions' : 'Yol Tarifi Al'}
+            </a>
+          </div>
+        )}
 
         {!isOwner && (['studio', 'dance_studio', 'music_school'].includes((venue as any).venue_type)) && (
           <Link
