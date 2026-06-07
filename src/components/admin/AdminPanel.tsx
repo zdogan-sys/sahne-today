@@ -831,13 +831,45 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
   const [slotVenue, setSlotVenue] = useState<any>(null)
   const [localVenues, setLocalVenues] = useState<any[]>(venues)
   const [togglingPro, setTogglingPro] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return
+    if (!confirm(`${selected.size} mekanı silmek istediğinizden emin misiniz?`)) return
+    setBulkDeleting(true)
+    const ids = Array.from(selected)
+    const failed: string[] = []
+    for (const id of ids) {
+      const res = await adminDeleteVenue(id)
+      if (res.success) setLocalVenues(prev => prev.filter(v => v.id !== id))
+      else failed.push(id)
+    }
+    setSelected(new Set())
+    setBulkDeleting(false)
+    if (failed.length) alert(`${failed.length} mekan silinemedi (bağlı kayıtları olabilir).`)
+    onRefresh()
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Bu mekanı silmek istediğinizden emin misiniz?')) return
     setDeleting(id)
-    await adminDeleteVenue(id)
-    onRefresh()
+    const res = await adminDeleteVenue(id)
     setDeleting(null)
+    if (!res.success) {
+      alert('Silinemedi: ' + (res.error ?? 'bilinmeyen hata'))
+      return
+    }
+    setLocalVenues(prev => prev.filter(v => v.id !== id))
+    onRefresh()
   }
 
   async function handleTogglePro(venueId: string, currentPro: boolean) {
@@ -857,18 +889,39 @@ function VenuesTab({ venues, onRefresh }: { venues: any[]; onRefresh: () => void
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-text-muted text-sm">{localVenues.length} mekan</p>
-        <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
-          className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
-          <Plus size={14} /> Mekan Ekle
-        </button>
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <div className="flex items-center gap-3">
+          <p className="text-text-muted text-sm">{localVenues.length} mekan</p>
+          {localVenues.length > 0 && (
+            <button onClick={() => setSelected(selected.size === localVenues.length ? new Set() : new Set(localVenues.map(v => v.id)))}
+              className="text-xs text-accent hover:underline">
+              {selected.size === localVenues.length ? 'seçimi kaldır' : 'tümünü seç'}
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <button onClick={handleBulkDelete} disabled={bulkDeleting}
+              className="py-2 px-3 text-sm rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 disabled:opacity-50 flex items-center gap-1.5">
+              <Trash2 size={14} /> {bulkDeleting ? 'Siliniyor...' : `${selected.size} Sil`}
+            </button>
+          )}
+          <button onClick={() => { setEditing(null); setNewKey(k => k + 1); setFormOpen(true) }}
+            className="btn-accent py-2 px-4 text-sm flex items-center gap-2">
+            <Plus size={14} /> Mekan Ekle
+          </button>
+        </div>
       </div>
       <div className="space-y-2">
         {localVenues.map((v) => {
           const isPro = v.is_pro_venue ?? false
           return (
             <div key={v.id} className="card p-3 flex items-center gap-3">
+              <button type="button" onClick={() => toggleSelect(v.id)}
+                className={cn('w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                  selected.has(v.id) ? 'bg-accent border-accent' : 'border-[rgba(228,224,216,0.2)] hover:border-accent/40')}>
+                {selected.has(v.id) && <Check size={13} className="text-white" />}
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-text-primary text-sm font-medium truncate">{v.name}</p>
