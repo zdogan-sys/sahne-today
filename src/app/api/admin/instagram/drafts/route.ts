@@ -94,7 +94,8 @@ export async function PATCH(req: NextRequest) {
         end_time: null,
         artist_name: ex.performer || null,
         description: ex.description || null,
-        entry_type: 'free',
+        // Çoğu mekan kapıda ödemeli; yalnızca caption açıkça ücretsiz diyorsa 'free'
+        entry_type: ex.free === true ? 'free' : 'door',
         status: 'confirmed',
       } as any).select('id').single()
       if (evErr || !ev) return NextResponse.json({ error: 'Etkinlik oluşturulamadı: ' + (evErr?.message ?? '') }, { status: 500 })

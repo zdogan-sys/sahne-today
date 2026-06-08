@@ -76,7 +76,9 @@ Sana mekanın son gönderileri "[1]", "[2]" gibi numaralarla verilir. Her etkinl
 Yanıtını MUTLAKA şu JSON formatında ver, başka hiçbir şey yazma:
 
 Etkinlik varsa:
-{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>}]}
+{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>}]}
+
+Not: "free" alanını yalnızca metinde net biçimde "giriş ücretsiz/serbest/bedava" gibi ifadeler varsa true yap. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
 
 Etkinlik yoksa:
 {"has_event": false, "events": []}`
