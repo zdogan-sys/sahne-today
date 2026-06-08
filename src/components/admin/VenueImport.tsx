@@ -31,67 +31,6 @@ export function VenueImport() {
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [backfilling, setBackfilling] = useState(false)
-  const [guessing, setGuessing] = useState(false)
-  const [guessCands, setGuessCands] = useState<{ id: string; name: string; city: string; instagram: string }[]>([])
-  const [guessSel, setGuessSel] = useState<Set<string>>(new Set())
-  const [applyingGuess, setApplyingGuess] = useState(false)
-
-  async function guessInstagram() {
-    setGuessing(true); setError(''); setMessage(''); setGuessCands([]); setGuessSel(new Set())
-    try {
-      const res = await fetch('/api/admin/venues/google', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'guess_instagram', city }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Hata'); setGuessing(false); return }
-      setGuessCands(data.candidates ?? [])
-      setGuessSel(new Set((data.candidates ?? []).map((c: any) => c.id)))
-      if (!data.candidates?.length) {
-        setMessage(`${data.scanned} mekan tarandı, tahmin bulunamadı.` + (data.debug ? ' Tanı: ' + JSON.stringify(data.debug) : ''))
-      }
-    } catch {
-      setError('Tahmin sırasında hata oluştu')
-    }
-    setGuessing(false)
-  }
-
-  async function applyGuesses() {
-    const items = guessCands.filter(c => guessSel.has(c.id)).map(c => ({ id: c.id, instagram: c.instagram }))
-    if (!items.length) return
-    setApplyingGuess(true); setError('')
-    try {
-      const res = await fetch('/api/admin/venues/google', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'apply_instagram', items }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Hata'); setApplyingGuess(false); return }
-      setMessage(`${data.updated} mekana Instagram eklendi.`)
-      setGuessCands([]); setGuessSel(new Set())
-    } catch {
-      setError('Kaydetme sırasında hata oluştu')
-    }
-    setApplyingGuess(false)
-  }
-
-  async function backfillInstagram() {
-    if (!confirm('Websitesi olup Instagram\'ı olmayan mekanlar taranıp Instagram linkleri doldurulacak. Devam?')) return
-    setBackfilling(true); setError(''); setMessage('')
-    try {
-      const res = await fetch('/api/admin/venues/google', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'backfill_instagram' }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Hata'); setBackfilling(false); return }
-      setMessage(`${data.checked} mekan kontrol edildi, ${data.updated} tanesine Instagram eklendi.`)
-    } catch {
-      setError('Backfill sırasında hata oluştu')
-    }
-    setBackfilling(false)
-  }
 
   async function search() {
     if (!query.trim()) return
@@ -146,54 +85,10 @@ export function VenueImport() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-bebas text-2xl text-text-primary">Mekan İçe Aktar</h2>
-          <p className="text-text-muted text-xs mt-0.5">Google Haritalar'dan mekan ara, seç, veritabanına ekle</p>
-        </div>
-        <div className="flex flex-col gap-1.5 flex-shrink-0">
-          <button onClick={backfillInstagram} disabled={backfilling}
-            className="btn-outline py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-50">
-            {backfilling ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
-            Website'ten IG Doldur
-          </button>
-          <button onClick={guessInstagram} disabled={guessing}
-            className="btn-outline py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-50">
-            {guessing ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
-            İsimden IG Tahmin Et ({city})
-          </button>
-        </div>
+      <div>
+        <h2 className="font-bebas text-2xl text-text-primary">Mekan İçe Aktar</h2>
+        <p className="text-text-muted text-xs mt-0.5">Google Haritalar'dan mekan ara, seç, veritabanına ekle</p>
       </div>
-
-      {/* Instagram tahmin adayları */}
-      {guessCands.length > 0 && (
-        <div className="card p-4 space-y-3 border-accent/20">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-text-primary font-medium">{guessCands.length} Instagram tahmini · {guessSel.size} seçili</p>
-            <button onClick={applyGuesses} disabled={applyingGuess || guessSel.size === 0}
-              className="btn-accent py-2 px-4 text-sm disabled:opacity-50 flex items-center gap-1.5">
-              {applyingGuess ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {guessSel.size} Kaydet
-            </button>
-          </div>
-          <p className="text-[11px] text-text-muted">Her linke tıklayıp doğru hesap mı kontrol et, yanlışların işaretini kaldır.</p>
-          <div className="space-y-1.5">
-            {guessCands.map(c => (
-              <div key={c.id} className="flex items-center gap-3 py-1.5">
-                <button type="button" onClick={() => setGuessSel(prev => { const n = new Set(prev); n.has(c.id) ? n.delete(c.id) : n.add(c.id); return n })}
-                  className={cn('w-5 h-5 rounded border flex items-center justify-center flex-shrink-0',
-                    guessSel.has(c.id) ? 'bg-accent border-accent' : 'border-[rgba(228,224,216,0.2)]')}>
-                  {guessSel.has(c.id) && <Check size={13} className="text-white" />}
-                </button>
-                <span className="text-sm text-text-primary flex-1 min-w-0 truncate">{c.name}</span>
-                <a href={c.instagram} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-accent hover:underline truncate max-w-[45%]">
-                  {c.instagram.replace('https://www.instagram.com/', '@').replace(/\/$/, '')}
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Arama formu */}
       <div className="card p-4 space-y-3">

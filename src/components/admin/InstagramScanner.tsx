@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Plus, Trash2, RefreshCw, Check, X, Loader2, Instagram, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CITY_OPTIONS } from '@/lib/constants'
+import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
 
 function adminClient() {
   return createClient(
@@ -127,6 +128,9 @@ export function InstagramScanner() {
 
   return (
     <div className="space-y-8">
+      {/* Mekan Instagram linklerini doldurma araçları */}
+      <VenueInstagramTools />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
