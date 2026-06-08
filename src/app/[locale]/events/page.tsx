@@ -20,7 +20,7 @@ export default async function EventsPage() {
 
   const { data: events } = await supabase
     .from('events')
-    .select('*, venues(name, district, city, photo_url), artists(stage_name, profiles(avatar_url)), bands(name, photo_url)')
+    .select('*, venues(name, district, city, photo_url, latitude, longitude), artists(stage_name, profiles(avatar_url)), bands(name, photo_url)')
     .eq('status', 'confirmed')
     .gte('event_date', today)
     .order('event_date', { ascending: true })

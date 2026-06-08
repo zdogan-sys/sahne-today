@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
-import { MapPin, Clock, Filter, Music2, Building2, X, CalendarDays } from 'lucide-react'
+import { MapPin, Clock, Filter, Music2, Building2, X, CalendarDays, Navigation, Loader2 } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { formatTime } from '@/lib/utils'
@@ -16,13 +16,28 @@ import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS } from '@/lib/constants'
 
 type EventFull = Event & {
   poster_url?: string | null
-  venues: Pick<Venue, 'name' | 'district' | 'city'> & { photo_url?: string | null } | null
+  venues: Pick<Venue, 'name' | 'district' | 'city'> & { photo_url?: string | null; latitude?: number | null; longitude?: number | null } | null
   artists: Pick<Artist, 'stage_name'> & { profiles: { avatar_url: string | null } | null } | null
   bands: { name: string; photo_url?: string | null } | null
   artist_name?: string | null
 }
 
 const CITIES = CITY_OPTIONS
+
+// İki koordinat arası mesafe (km) — Haversine
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLng = (b.lng - a.lng) * Math.PI / 180
+  const lat1 = a.lat * Math.PI / 180
+  const lat2 = b.lat * Math.PI / 180
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(x))
+}
+
+function fmtDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+}
 
 function toISO(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -60,8 +75,32 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   const [popupDate, setPopupDate] = useState<Date | null>(null)
   const [popupEvents, setPopupEvents] = useState<EventFull[]>([])
   const [mounted, setMounted] = useState(false)
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
+  const [nearMode, setNearMode] = useState(false)
+  const [locating, setLocating] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
+
+  function toggleNearMe() {
+    if (nearMode) { setNearMode(false); return }
+    setView('list') // mesafe sıralaması liste görünümünde
+    if (userLoc) { setNearMode(true); return }
+    if (!('geolocation' in navigator)) { alert(locale === 'en' ? 'Location not supported' : 'Konum desteklenmiyor'); return }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setNearMode(true); setLocating(false) },
+      () => { setLocating(false); alert(locale === 'en' ? 'Could not get location' : 'Konum alınamadı') },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
+  function eventDist(e: EventFull): number | null {
+    if (!userLoc) return null
+    const lat = (e.venues as any)?.latitude
+    const lng = (e.venues as any)?.longitude
+    if (lat == null || lng == null) return null
+    return distanceKm(userLoc, { lat, lng })
+  }
 
   const filtered = initialEvents.filter((e) => {
     if (genre && e.genre !== genre) return false
@@ -80,6 +119,15 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
   const grouped = groupByDate(filtered)
   const activeFilters = [genre, city, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
+
+  // Yakınımda modu: etkinlikleri mekan mesafesine göre sırala
+  const nearList = nearMode && userLoc
+    ? filtered.map((e) => ({ e, dist: eventDist(e) })).sort((a, b) => {
+        if (a.dist == null) return 1
+        if (b.dist == null) return -1
+        return a.dist - b.dist
+      })
+    : null
 
   const calendarEvents: CalendarEventItem[] = filtered.map(e => ({
     id: e.id,
@@ -188,7 +236,16 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-text-muted">{filtered.length} {locale === 'en' ? 'events' : 'etkinlik'}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-text-muted">{filtered.length} {locale === 'en' ? 'events' : 'etkinlik'}</span>
+            <button onClick={toggleNearMe} disabled={locating}
+              className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg border text-xs transition-colors disabled:opacity-60 ${
+                nearMode ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.15)] hover:text-text-primary'
+              }`}>
+              {locating ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} />}
+              {locale === 'en' ? 'Near me' : 'Yakınımda'}
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             {/* View toggle */}
             <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)]">
@@ -234,7 +291,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
         {/* List view */}
         {view === 'list' && (
-          Object.keys(grouped).length === 0 ? (
+          filtered.length === 0 ? (
             <div className="text-center py-16">
               <CalendarDays size={40} className="mx-auto mb-3 text-text-muted opacity-20" />
               <p className="text-text-primary text-sm font-medium mb-1">Etkinlik bulunamadı</p>
@@ -250,6 +307,15 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
                 </button>
               )}
             </div>
+          ) : nearList ? (
+            <>
+              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
+              <div className="space-y-2">
+                {nearList.map(({ e, dist }) => (
+                  <EventListCard key={e.id} event={e} locale={locale} distance={dist} />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="space-y-6">
               {Object.entries(grouped).map(([date, evts]) => (
@@ -372,7 +438,7 @@ function Avatar({ src, fallback, size = 8 }: { src?: string | null; fallback: Re
     : <div className={cls}>{fallback}</div>
 }
 
-function EventListCard({ event, locale }: { event: EventFull; locale: string }) {
+function EventListCard({ event, locale, distance }: { event: EventFull; locale: string; distance?: number | null }) {
   const date = new Date(event.event_date)
   const dayNum = date.getDate()
   const localeStr = locale === 'tr' ? 'tr-TR' : 'en-US'
@@ -409,6 +475,11 @@ function EventListCard({ event, locale }: { event: EventFull; locale: string }) 
               <MapPin size={9} className="inline mr-0.5" />
               {event.venues.name}{event.venues.district ? ` · ${event.venues.district}` : ''}
             </span>
+            {distance != null && (
+              <span className="flex items-center gap-0.5 text-[11px] text-accent flex-shrink-0 ml-auto">
+                <Navigation size={9} /> {fmtDistance(distance)}
+              </span>
+            )}
           </div>
         )}
 
