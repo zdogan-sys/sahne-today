@@ -19,23 +19,23 @@ async function getAdminData() {
       admin.from('events')
         .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
         .order('event_date', { ascending: false })
-        .limit(50),
+        .limit(1000),
       admin.from('artists')
         .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profile_id, profiles(display_name, avatar_url, is_pro_individual)')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(1000),
       admin.from('venues')
         .select('id, name, city, district, venue_type, phone, email, description, verified, is_pro_venue, created_at')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(1000),
       admin.from('profiles')
         .select('id, display_name, city, role, is_premium, is_founding_member, is_moderator, created_at')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(1000),
       admin.from('bands')
         .select('id, name, city, genres, bio, created_at')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(1000),
       admin.from('events')
         .select('id, title, event_date, start_time, status, venues(name, city), artists(stage_name), bands(name)')
         .in('status', ['pending', 'offered'])
