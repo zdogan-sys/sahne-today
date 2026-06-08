@@ -140,6 +140,25 @@ function normalizeIg(handle: string): string | null {
   return `https://www.instagram.com/${h}/`
 }
 
+// İsimden Instagram tahmini — DuckDuckGo arama sonuçlarından ilk IG handle'ı
+async function guessInstagramByName(name: string, city: string): Promise<string | null> {
+  try {
+    const q = encodeURIComponent(`${name} ${city} instagram`)
+    const res = await fetch(`https://html.duckduckgo.com/html/?q=${q}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' },
+      signal: AbortSignal.timeout(9000),
+    })
+    if (!res.ok) return null
+    const html = await res.text()
+    // Hem düz (instagram.com/x) hem URL-encoded (instagram.com%2Fx) eşleştir
+    const m = html.match(/instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/i)
+    if (m) return normalizeIg(decodeURIComponent(m[1]))
+    return null
+  } catch {
+    return null
+  }
+}
+
 // Website'ten Instagram linkini bulur: website zaten IG ise onu, değilse site içindeki IG linkini
 async function deriveInstagram(website: string): Promise<string | null> {
   try {
@@ -264,6 +283,40 @@ export async function POST(req: NextRequest) {
       }
     }
     return NextResponse.json({ updated, checked })
+  }
+
+  // ── INSTAGRAM TAHMİN (isimden) ── onay için aday liste döner
+  if (body.action === 'guess_instagram') {
+    const admin = adminClient()
+    const cityFilter: string = body.city ?? ''
+    let q = admin.from('venues').select('id, name, city, social_links').limit(400)
+    if (cityFilter) q = (q as any).eq('city', cityFilter)
+    const { data } = await q
+
+    const candidates: { id: string; name: string; city: string; instagram: string }[] = []
+    let scanned = 0
+    for (const v of (data ?? []) as any[]) {
+      if (v.social_links?.instagram) continue
+      scanned++
+      if (scanned > 40) break // DDG sorgularını sınırla
+      const ig = await guessInstagramByName(v.name, v.city ?? '')
+      if (ig) candidates.push({ id: v.id, name: v.name, city: v.city, instagram: ig })
+    }
+    return NextResponse.json({ candidates, scanned })
+  }
+
+  // ── INSTAGRAM TAHMİN ONAYLA ── seçilenleri kaydet
+  if (body.action === 'apply_instagram') {
+    const admin = adminClient()
+    const items: { id: string; instagram: string }[] = body.items ?? []
+    let updated = 0
+    for (const it of items) {
+      const { data: v } = await admin.from('venues').select('social_links').eq('id', it.id).single()
+      const sl = (v as any)?.social_links ?? {}
+      const { error } = await admin.from('venues').update({ social_links: { ...sl, instagram: it.instagram } }).eq('id', it.id)
+      if (!error) updated++
+    }
+    return NextResponse.json({ updated })
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
