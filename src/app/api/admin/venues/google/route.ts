@@ -167,8 +167,32 @@ function extractIgFromBing(html: string): string | null {
   return null
 }
 
-// İsimden Instagram tahmini — Bing (redirect linklerini base64 çözerek)
+// Google Custom Search API — resmi, JSON, instagram linklerini direkt verir
+async function googleCseInstagram(name: string, city: string): Promise<string | null> {
+  const key = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_MAPS_API_KEY
+  const cx = process.env.GOOGLE_CSE_ID
+  if (!key || !cx) return null
+  try {
+    const q = encodeURIComponent(`site:instagram.com ${name} ${city}`)
+    const url = `https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=${q}&num=5`
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return null
+    const data = await res.json()
+    for (const item of data.items ?? []) {
+      const ig = extractIg(item.link ?? '')
+      if (ig) return ig
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// İsimden Instagram tahmini — önce Google CSE (varsa), sonra Bing
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
+  const cse = await googleCseInstagram(name, city)
+  if (cse) return cse
+
   const query = `${name} ${city} instagram`
   try {
     const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr&count=10`, {
@@ -183,6 +207,21 @@ async function guessInstagramByName(name: string, city: string): Promise<string 
 async function probeEngines(name: string, city: string) {
   const query = `${name} ${city} instagram`
   const out: any[] = []
+  // Google CSE durumu
+  {
+    const key = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_MAPS_API_KEY
+    const cx = process.env.GOOGLE_CSE_ID
+    if (!cx) {
+      out.push({ engine: 'google-cse', note: 'GOOGLE_CSE_ID tanımlı değil' })
+    } else {
+      try {
+        const q = encodeURIComponent(`site:instagram.com ${name} ${city}`)
+        const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=${q}&num=5`, { signal: AbortSignal.timeout(8000) })
+        const data = await res.json().catch(() => ({}))
+        out.push({ engine: 'google-cse', status: res.status, items: (data.items ?? []).length, firstLink: data.items?.[0]?.link ?? null, apiError: data.error?.message ?? null })
+      } catch (e: any) { out.push({ engine: 'google-cse', error: e?.name ?? 'err' }) }
+    }
+  }
   try {
     const res = await fetch('https://lite.duckduckgo.com/lite/', {
       method: 'POST',
