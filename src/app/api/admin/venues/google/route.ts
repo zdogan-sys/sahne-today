@@ -41,6 +41,29 @@ function extractDistrict(components: any[]): string | null {
   return sub?.longText ?? null
 }
 
+// Google Places'ten mekanın web sitesini bulur — çalışan Places API kullanır, arama motoru gerekmez.
+async function placeWebsite(name: string, city: string): Promise<string | null> {
+  const apiKey = googleKey()
+  if (!apiKey) return null
+  try {
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.websiteUri',
+      },
+      body: JSON.stringify({ textQuery: city ? `${name} ${city}` : name, languageCode: 'tr', regionCode: 'TR', maxResultCount: 1 }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.places?.[0]?.websiteUri ?? null
+  } catch {
+    return null
+  }
+}
+
 async function searchPlaces(query: string, city: string): Promise<PlaceResult[]> {
   const apiKey = googleKey()
   if (!apiKey) throw new Error('Google API key tanımlı değil')
@@ -153,23 +176,25 @@ function extractIg(html: string): string | null {
   try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
 }
 
-// Bing sonuç linkleri base64 ile gizli (u=a1<base64>) — çözüp instagram ara
-function extractIgFromBing(html: string): string | null {
-  // Önce düz dene
-  const plain = extractIg(html)
-  if (plain) return plain
-  const matches = Array.from(html.matchAll(/u=a1([A-Za-z0-9_\-]+)/g))
-  for (const m of matches) {
-    try {
-      const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
-      const decoded = Buffer.from(b64, 'base64').toString('utf8')
-      if (/instagram\.com/i.test(decoded)) {
-        const ig = extractIg(decoded)
-        if (ig) return ig
-      }
-    } catch { /* sonraki */ }
+// Bir arama sonucu HTML'inden en olası IG handle'ını seçer.
+// Tüm instagram.com/<handle> eşleşmelerini toplar, geçersizleri (p/reel/explore…) eler,
+// en sık geçen handle'ı döner — profil linki tekil post linklerinden daha çok tekrar eder.
+function extractIgBest(html: string): string | null {
+  const counts = new Map<string, number>()
+  const re = /instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    let h: string
+    try { h = decodeURIComponent(m[1]) } catch { h = m[1] }
+    h = h.replace(/\/$/, '').split('/')[0].split('?')[0].trim().toLowerCase()
+    if (!h || IG_NON_HANDLE.has(h) || h.length < 2) continue
+    counts.set(h, (counts.get(h) ?? 0) + 1)
   }
-  return null
+  if (counts.size === 0) return null
+  let best = ''
+  let bestN = 0
+  counts.forEach((n, h) => { if (n > bestN) { bestN = n; best = h } })
+  return `https://www.instagram.com/${best}/`
 }
 
 // Google Custom Search API — resmi, JSON, instagram linklerini direkt verir
@@ -193,18 +218,44 @@ async function googleCseInstagram(name: string, city: string): Promise<string | 
   }
 }
 
-// İsimden Instagram tahmini — önce Google CSE (varsa), sonra Bing
+// DuckDuckGo HTML ucu — keysiz ve güvenilir; arama sonuçlarından IG profilini bulur.
+// (Bing artık sonuç döndürmüyor, lite ucu format değiştirdi — bu uç sağlam.)
+async function ddgHtmlInstagram(query: string): Promise<string | null> {
+  try {
+    const res = await fetch('https://html.duckduckgo.com/html/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': UA,
+        'Accept-Language': 'tr-TR,tr;q=0.9',
+      },
+      body: `q=${encodeURIComponent(query)}`,
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    return extractIgBest(await res.text())
+  } catch {
+    return null
+  }
+}
+
+// İsimden Instagram tahmini. Sıra güvenilirliğe göre:
+// 1) Google Places (çalışıyor) → mekanın web sitesi → siteden IG linki. Rate-limit yok, en sağlam.
+// 2) DuckDuckGo HTML (keysiz, best-effort) — DDG art arda isteklerde 202/challenge dönebilir.
+// 3) Google CSE — env tanımlı ve projede erişim varsa otomatik devreye girer.
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
+  const site = await placeWebsite(name, city)
+  if (site) {
+    const ig = await deriveInstagram(site)
+    if (ig) return ig
+  }
+
+  const ddg = await ddgHtmlInstagram(`${name} ${city} instagram`)
+  if (ddg) return ddg
+
   const cse = await googleCseInstagram(name, city)
   if (cse) return cse
 
-  const query = `${name} ${city} instagram`
-  try {
-    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr&count=10`, {
-      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(8000),
-    })
-    if (res.ok) return extractIgFromBing(await res.text())
-  } catch { /* bitti */ }
   return null
 }
 
@@ -215,6 +266,12 @@ async function probeEngines(name: string, city: string) {
   // Runtime'ın gördüğü GOOGLE/CSE değişken isimleri (değer değil, sadece ad)
   const envKeys = Object.keys(process.env).filter(k => /google|cse/i.test(k))
   out.push({ engine: '_env', googleKeys: envKeys, cseIdSet: !!process.env.GOOGLE_CSE_ID, cseKeySet: !!process.env.GOOGLE_CSE_KEY, mapsKeySet: !!process.env.GOOGLE_MAPS_API_KEY })
+  // Asıl kaynak: Google Places → web sitesi → siteden IG
+  try {
+    const site = await placeWebsite(name, city)
+    const ig = site ? await deriveInstagram(site) : null
+    out.push({ engine: 'places-derive', website: site, ig })
+  } catch (e: any) { out.push({ engine: 'places-derive', error: e?.name ?? 'err' }) }
   // Google CSE durumu
   {
     const key = googleKey()
@@ -230,32 +287,16 @@ async function probeEngines(name: string, city: string) {
       } catch (e: any) { out.push({ engine: 'google-cse', error: e?.name ?? 'err' }) }
     }
   }
+  // Asıl kaynak: DuckDuckGo HTML ucu
   try {
-    const res = await fetch('https://lite.duckduckgo.com/lite/', {
+    const res = await fetch('https://html.duckduckgo.com/html/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' },
       body: `q=${encodeURIComponent(query)}`, signal: AbortSignal.timeout(6000),
     })
     const html = await res.text()
-    out.push({ engine: 'ddg-lite', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html) })
-  } catch (e: any) { out.push({ engine: 'ddg-lite', error: e?.name ?? 'err' }) }
-  try {
-    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr`, {
-      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
-    })
-    const html = await res.text()
-    const links = Array.from(html.matchAll(/u=a1([A-Za-z0-9_\-]+)/g))
-    const hosts: string[] = []
-    for (const m of links.slice(0, 12)) {
-      try {
-        const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
-        const dec = Buffer.from(b64, 'base64').toString('utf8')
-        const h = dec.match(/^https?:\/\/([^/]+)/i)?.[1]
-        if (h) hosts.push(h)
-      } catch { /* skip */ }
-    }
-    out.push({ engine: 'bing', status: res.status, len: html.length, linkCount: links.length, sampleHosts: hosts.slice(0, 8), decoded: extractIgFromBing(html) })
-  } catch (e: any) { out.push({ engine: 'bing', error: e?.name ?? 'err' }) }
+    out.push({ engine: 'ddg-html', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html), best: extractIgBest(html) })
+  } catch (e: any) { out.push({ engine: 'ddg-html', error: e?.name ?? 'err' }) }
   return { query, results: out }
 }
 
