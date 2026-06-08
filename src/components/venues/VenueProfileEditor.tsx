@@ -10,6 +10,7 @@ import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { translateVenueType } from '@/lib/utils'
 import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { LocationPicker } from '@/components/ui/LocationPicker'
 
 const EQUIPMENT_OPTIONS_TR = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
 const EQUIPMENT_OPTIONS_EN = ['Sound System', 'Microphone', 'Keyboard', 'Drum Kit', 'Lighting', 'Projector', 'Stage']
@@ -34,6 +35,8 @@ interface Props {
     logo_url: string | null
     is_hidden?: boolean
     price_per_hour?: number | null
+    latitude?: number | null
+    longitude?: number | null
   }
 }
 
@@ -147,6 +150,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [logoUrl, setLogoUrl] = useState<string | null>(initialData.logo_url)
   const [isHidden, setIsHidden] = useState(initialData.is_hidden ?? false)
   const [pricePerHour, setPricePerHour] = useState(initialData.price_per_hour?.toString() || '')
+  const [latitude, setLatitude] = useState<number | null>(initialData.latitude ?? null)
+  const [longitude, setLongitude] = useState<number | null>(initialData.longitude ?? null)
   const isStudio = venueType === 'studio' || venueType === 'dance_studio'
 
   async function handleSave() {
@@ -179,6 +184,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
         logo_url: logoUrl,
         is_hidden: isHidden,
         price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
+        latitude,
+        longitude,
       } as any)
       .eq('id', venueId)
 
@@ -247,6 +254,13 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
             <label className="label">{isEn ? 'Address *' : 'Adres *'}</label>
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="input-field text-sm" />
           </div>
+
+          <LocationPicker
+            lat={latitude}
+            lng={longitude}
+            address={[address, district, city].filter(Boolean).join(', ')}
+            onChange={(la, ln) => { setLatitude(la); setLongitude(ln) }}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>

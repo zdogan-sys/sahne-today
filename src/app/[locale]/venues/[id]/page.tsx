@@ -194,6 +194,8 @@ export default async function VenuePage({ params }: Props) {
               logo_url: venue.logo_url ?? null,
               is_hidden: (venue as any).is_hidden ?? false,
               price_per_hour: (venue as any).price_per_hour ?? null,
+              latitude: (venue as any).latitude ?? null,
+              longitude: (venue as any).longitude ?? null,
             }}
           />
         )}
