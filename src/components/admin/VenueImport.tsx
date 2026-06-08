@@ -31,6 +31,24 @@ export function VenueImport() {
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [backfilling, setBackfilling] = useState(false)
+
+  async function backfillInstagram() {
+    if (!confirm('Websitesi olup Instagram\'ı olmayan mekanlar taranıp Instagram linkleri doldurulacak. Devam?')) return
+    setBackfilling(true); setError(''); setMessage('')
+    try {
+      const res = await fetch('/api/admin/venues/google', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'backfill_instagram' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Hata'); setBackfilling(false); return }
+      setMessage(`${data.checked} mekan kontrol edildi, ${data.updated} tanesine Instagram eklendi.`)
+    } catch {
+      setError('Backfill sırasında hata oluştu')
+    }
+    setBackfilling(false)
+  }
 
   async function search() {
     if (!query.trim()) return
@@ -85,9 +103,16 @@ export function VenueImport() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-bebas text-2xl text-text-primary">Mekan İçe Aktar</h2>
-        <p className="text-text-muted text-xs mt-0.5">Google Haritalar'dan mekan ara, seç, veritabanına ekle</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-bebas text-2xl text-text-primary">Mekan İçe Aktar</h2>
+          <p className="text-text-muted text-xs mt-0.5">Google Haritalar'dan mekan ara, seç, veritabanına ekle</p>
+        </div>
+        <button onClick={backfillInstagram} disabled={backfilling}
+          className="btn-outline py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-50 flex-shrink-0">
+          {backfilling ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+          Instagram'ları Doldur
+        </button>
       </div>
 
       {/* Arama formu */}

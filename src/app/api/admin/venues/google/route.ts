@@ -131,6 +131,38 @@ async function fetchAndStoreLogo(website: string, placeId: string, admin: Return
   }
 }
 
+// Instagram handle'ları için geçersiz yollar (post/reel/explore vb. handle değil)
+const IG_NON_HANDLE = new Set(['p', 'reel', 'reels', 'explore', 'tv', 'stories', 'accounts', 'about', 'directory'])
+
+function normalizeIg(handle: string): string | null {
+  const h = handle.replace(/\/$/, '').split('/')[0].split('?')[0].trim()
+  if (!h || IG_NON_HANDLE.has(h.toLowerCase()) || h.length < 2) return null
+  return `https://www.instagram.com/${h}/`
+}
+
+// Website'ten Instagram linkini bulur: website zaten IG ise onu, değilse site içindeki IG linkini
+async function deriveInstagram(website: string): Promise<string | null> {
+  try {
+    const url = new URL(website)
+    // 1) Website doğrudan Instagram ise
+    if (url.hostname.replace(/^www\./, '').toLowerCase() === 'instagram.com') {
+      return normalizeIg(url.pathname.replace(/^\//, ''))
+    }
+    // 2) Siteyi aç, içindeki ilk instagram.com/<handle> linkini bul
+    const res = await fetch(website, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SahneBot/1.0)' },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const html = await res.text()
+    const m = html.match(/instagram\.com\/([A-Za-z0-9_.]+)/i)
+    if (m) return normalizeIg(m[1])
+    return null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -183,7 +215,12 @@ export async function POST(req: NextRequest) {
       if (dup?.length) continue
 
       const social_links: Record<string, string> = {}
-      if (v.website) social_links.website = v.website
+      if (v.website) {
+        const ig = await deriveInstagram(v.website)
+        if (ig) social_links.instagram = ig
+        // Website Instagram değilse website olarak da sakla
+        if (!ig || !/instagram\.com/i.test(v.website)) social_links.website = v.website
+      }
 
       const photo_url = v.photo_name ? await fetchAndStorePhoto(v.photo_name, v.place_id, admin) : null
       const logo_url = v.website ? await fetchAndStoreLogo(v.website, v.place_id, admin) : null
@@ -208,6 +245,25 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ imported, skipped: venues.length - imported - errors.length, errors })
+  }
+
+  // ── INSTAGRAM BACKFILL ── (websitesi olup IG'si olmayan mevcut mekanlar)
+  if (body.action === 'backfill_instagram') {
+    const admin = adminClient()
+    const { data } = await admin.from('venues').select('id, social_links').limit(1000)
+    let updated = 0
+    let checked = 0
+    for (const v of (data ?? []) as any[]) {
+      const sl = v.social_links ?? {}
+      if (sl.instagram || !sl.website) continue
+      checked++
+      const ig = await deriveInstagram(sl.website)
+      if (ig) {
+        await admin.from('venues').update({ social_links: { ...sl, instagram: ig } }).eq('id', v.id)
+        updated++
+      }
+    }
+    return NextResponse.json({ updated, checked })
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
