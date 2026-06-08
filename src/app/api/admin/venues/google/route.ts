@@ -197,7 +197,17 @@ async function probeEngines(name: string, city: string) {
       headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
     })
     const html = await res.text()
-    out.push({ engine: 'bing', status: res.status, len: html.length, decoded: extractIgFromBing(html) })
+    const links = Array.from(html.matchAll(/u=a1([A-Za-z0-9_\-]+)/g))
+    const hosts: string[] = []
+    for (const m of links.slice(0, 12)) {
+      try {
+        const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
+        const dec = Buffer.from(b64, 'base64').toString('utf8')
+        const h = dec.match(/^https?:\/\/([^/]+)/i)?.[1]
+        if (h) hosts.push(h)
+      } catch { /* skip */ }
+    }
+    out.push({ engine: 'bing', status: res.status, len: html.length, linkCount: links.length, sampleHosts: hosts.slice(0, 8), decoded: extractIgFromBing(html) })
   } catch (e: any) { out.push({ engine: 'bing', error: e?.name ?? 'err' }) }
   return { query, results: out }
 }
