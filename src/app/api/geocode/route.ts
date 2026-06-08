@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
-  if (!apiKey) return NextResponse.json({ error: 'GOOGLE_MAPS_API_KEY tanımlı değil' }, { status: 500 })
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_CSE_KEY
+  if (!apiKey) return NextResponse.json({ error: 'Google API key tanımlı değil' }, { status: 500 })
 
   const { address } = await req.json()
   if (!address || !String(address).trim()) return NextResponse.json({ error: 'Adres gerekli' }, { status: 400 })

@@ -13,6 +13,11 @@ function adminClient() {
   )
 }
 
+// Google key'i: hangi isimle tanımlıysa onu al (esnek)
+function googleKey(): string {
+  return process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_CSE_KEY || ''
+}
+
 type PlaceResult = {
   place_id: string
   name: string
@@ -37,8 +42,8 @@ function extractDistrict(components: any[]): string | null {
 }
 
 async function searchPlaces(query: string, city: string): Promise<PlaceResult[]> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
-  if (!apiKey) throw new Error('GOOGLE_MAPS_API_KEY tanımlı değil')
+  const apiKey = googleKey()
+  if (!apiKey) throw new Error('Google API key tanımlı değil')
 
   const textQuery = city ? `${query} ${city}` : query
 
@@ -83,7 +88,7 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
 
 // Google Places fotoğrafını indirip venues bucket'ına yükler, public URL döner
 async function fetchAndStorePhoto(photoName: string, placeId: string, admin: ReturnType<typeof adminClient>): Promise<string | null> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  const apiKey = googleKey()
   if (!apiKey || !photoName) return null
   try {
     const mediaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1200&key=${apiKey}`
@@ -169,7 +174,7 @@ function extractIgFromBing(html: string): string | null {
 
 // Google Custom Search API — resmi, JSON, instagram linklerini direkt verir
 async function googleCseInstagram(name: string, city: string): Promise<string | null> {
-  const key = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_MAPS_API_KEY
+  const key = googleKey()
   const cx = process.env.GOOGLE_CSE_ID
   if (!key || !cx) return null
   try {
@@ -212,7 +217,7 @@ async function probeEngines(name: string, city: string) {
   out.push({ engine: '_env', googleKeys: envKeys, cseIdSet: !!process.env.GOOGLE_CSE_ID, cseKeySet: !!process.env.GOOGLE_CSE_KEY, mapsKeySet: !!process.env.GOOGLE_MAPS_API_KEY })
   // Google CSE durumu
   {
-    const key = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_MAPS_API_KEY
+    const key = googleKey()
     const cx = process.env.GOOGLE_CSE_ID
     if (!cx) {
       out.push({ engine: 'google-cse', note: 'GOOGLE_CSE_ID tanımlı değil' })
