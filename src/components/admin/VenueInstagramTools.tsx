@@ -16,6 +16,7 @@ export function VenueInstagramTools() {
   const [cands, setCands] = useState<Cand[]>([])
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [applying, setApplying] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   async function post(body: any) {
     const res = await fetch('/api/admin/venues/google', {
@@ -56,10 +57,21 @@ export function VenueInstagramTools() {
     try {
       const { ok, data } = await post({ action: 'apply_instagram', items })
       if (!ok) { setError(data.error ?? 'Hata'); setApplying(false); return }
-      setMessage(`${data.updated} mekana Instagram eklendi.`)
+      setMessage(`${data.updated} mekana Instagram eklendi, ${data.sourcesAdded ?? 0} tanesi etkinlik tarama kaynağı olarak eklendi.`)
       setCands([]); setSel(new Set())
     } catch { setError('Kaydetme sırasında hata oluştu') }
     setApplying(false)
+  }
+
+  // Tek seferlik: zaten IG'si olup tarama kaynağı olmayan mekanları instagram_sources'a aktar
+  async function syncSources() {
+    setSyncing(true); setError(''); setMessage('')
+    try {
+      const { ok, data } = await post({ action: 'sync_instagram_sources' })
+      if (!ok) { setError(data.error ?? 'Hata'); setSyncing(false); return }
+      setMessage(`${data.total} IG'li mekandan ${data.added} tanesi etkinlik tarama kaynağına eklendi.`)
+    } catch { setError('Aktarım sırasında hata oluştu') }
+    setSyncing(false)
   }
 
   return (
@@ -80,6 +92,10 @@ export function VenueInstagramTools() {
         <button onClick={backfill} disabled={backfilling}
           className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50">
           {backfilling ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />} Website'ten IG Doldur
+        </button>
+        <button onClick={syncSources} disabled={syncing}
+          className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50">
+          {syncing ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} IG'leri Tarama Kaynağı Yap
         </button>
       </div>
 

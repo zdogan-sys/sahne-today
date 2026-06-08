@@ -339,6 +339,21 @@ async function deriveInstagram(website: string): Promise<string | null> {
   }
 }
 
+// Mekan IG'sini etkinlik tarayıcısının kaynak listesine (instagram_sources) aktif olarak ekler.
+// Aynı username zaten varsa atlar (tekrar kayıt önlenir). Eklendiyse true döner.
+async function addInstagramSource(admin: ReturnType<typeof adminClient>, igUrl: string, city: string | null): Promise<boolean> {
+  const username = igUrl.replace(/\/$/, '').split('/').pop() ?? ''
+  if (!username) return false
+  const { data: existing } = await admin.from('instagram_sources').select('id').eq('username', username).limit(1)
+  if (existing?.length) return false
+  const { error } = await admin.from('instagram_sources').insert({
+    username,
+    instagram_url: igUrl.startsWith('http') ? igUrl : `https://www.instagram.com/${username}/`,
+    city: city ?? null,
+  })
+  return !error
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -469,18 +484,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ candidates, scanned: todo.length, debug })
   }
 
-  // ── INSTAGRAM TAHMİN ONAYLA ── seçilenleri kaydet
+  // ── INSTAGRAM TAHMİN ONAYLA ── seçilenleri kaydet + etkinlik tarayıcısına kaynak olarak ekle
   if (body.action === 'apply_instagram') {
     const admin = adminClient()
     const items: { id: string; instagram: string }[] = body.items ?? []
     let updated = 0
+    let sourcesAdded = 0
     for (const it of items) {
-      const { data: v } = await admin.from('venues').select('social_links').eq('id', it.id).single()
+      const { data: v } = await admin.from('venues').select('social_links, city').eq('id', it.id).single()
       const sl = (v as any)?.social_links ?? {}
       const { error } = await admin.from('venues').update({ social_links: { ...sl, instagram: it.instagram } }).eq('id', it.id)
-      if (!error) updated++
+      if (!error) {
+        updated++
+        if (await addInstagramSource(admin, it.instagram, (v as any)?.city ?? null)) sourcesAdded++
+      }
     }
-    return NextResponse.json({ updated })
+    return NextResponse.json({ updated, sourcesAdded })
+  }
+
+  // ── MEKAN IG'LERİNİ TARAMA KAYNAĞINA AKTAR ── (tek seferlik: IG'si olup kaynak olmayan mekanlar)
+  if (body.action === 'sync_instagram_sources') {
+    const admin = adminClient()
+    const { data } = await admin.from('venues').select('social_links, city').limit(2000)
+    let total = 0
+    let added = 0
+    for (const v of (data ?? []) as any[]) {
+      const ig = v.social_links?.instagram
+      if (!ig) continue
+      total++
+      if (await addInstagramSource(admin, ig, v.city ?? null)) added++
+    }
+    return NextResponse.json({ total, added })
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
