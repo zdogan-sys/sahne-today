@@ -36,7 +36,7 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
     try {
       const res = await fetch(`https://r.jina.ai/${viewerUrl}`, {
         headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(12000),
       })
       if (!res.ok) continue
       const text = await res.text()
@@ -69,16 +69,22 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const sourceId: string | undefined = body.source_id
 
+  // Tek kaynakta: sadece onu tara. Toplu taramada: timeout olmaması için her çağrıda
+  // en eski taranan BATCH kadar kaynağı tara (rotasyon) — tekrar tıkça hepsi sırayla taranır.
+  const BATCH = 10
   let query = admin.from('instagram_sources').select('*').eq('is_active', true)
-  if (sourceId) query = (query as any).eq('id', sourceId)
+  if (sourceId) {
+    query = (query as any).eq('id', sourceId)
+  } else {
+    query = (query as any).order('last_checked_at', { ascending: true, nullsFirst: true }).limit(BATCH)
+  }
 
   const { data: sources, error: srcError } = await query
   if (srcError) return NextResponse.json({ error: srcError.message, scanned: 0, drafts: 0 })
   if (!sources?.length) return NextResponse.json({ scanned: 0, drafts: 0, debug: 'no active sources found' })
 
-  let totalDrafts = 0
-
-  for (const source of sources) {
+  // Tek bir kaynağı tarar, oluşan taslak sayısını döner
+  async function scanSource(source: any): Promise<number> {
     try {
       const content = await fetchInstagramContent(source.instagram_url)
 
@@ -87,7 +93,7 @@ export async function POST(req: NextRequest) {
           last_checked_at: new Date().toISOString(),
           last_error: 'İçerik alınamadı (Instagram erişim engeli olabilir)',
         }).eq('id', source.id)
-        continue
+        return 0
       }
 
       const response = await anthropic.messages.create({
@@ -110,6 +116,7 @@ ${content}`,
         if (m) parsed = JSON.parse(m[0])
       } catch { /* ignore */ }
 
+      let drafts = 0
       if (parsed?.has_event && parsed.events?.length) {
         for (const event of parsed.events) {
           const titleSnippet = String(event.title ?? '').slice(0, 30)
@@ -130,7 +137,7 @@ ${content}`,
               extracted: event,
               status: 'pending',
             })
-            totalDrafts++
+            drafts++
           }
         }
       }
@@ -139,14 +146,33 @@ ${content}`,
         last_checked_at: new Date().toISOString(),
         last_error: null,
       }).eq('id', source.id)
+      return drafts
 
     } catch (err: any) {
       await admin.from('instagram_sources').update({
         last_checked_at: new Date().toISOString(),
         last_error: err?.message ?? 'Bilinmeyen hata',
       }).eq('id', source.id)
+      return 0
     }
   }
 
-  return NextResponse.json({ scanned: sources.length, drafts: totalDrafts })
+  // 4'lü paralel havuzla tara (wall-clock süreyi kısaltır, timeout'u önler)
+  let idx = 0
+  let totalDrafts = 0
+  await Promise.all(Array.from({ length: Math.min(4, sources.length) }, async () => {
+    while (idx < sources.length) {
+      const s = sources[idx++]
+      totalDrafts += await scanSource(s)
+    }
+  }))
+
+  // Kaç aktif kaynak kaldığını bildir (toplu taramada rotasyon için)
+  let remaining = 0
+  if (!sourceId) {
+    const { count } = await admin.from('instagram_sources').select('id', { count: 'exact', head: true }).eq('is_active', true)
+    remaining = Math.max(0, (count ?? 0) - sources.length)
+  }
+
+  return NextResponse.json({ scanned: sources.length, drafts: totalDrafts, remaining })
 }

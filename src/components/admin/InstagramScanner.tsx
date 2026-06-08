@@ -69,11 +69,16 @@ export function InstagramScanner() {
     setScanResult(null)
     try {
       const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-      const data = await res.json()
-      setScanResult(JSON.stringify(data))
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data) {
+        setScanResult(`Tarama hatası (${res.status}). Çok kaynak varsa parça parça tarayın.`)
+      } else {
+        const more = data.remaining > 0 ? ` ${data.remaining} kaynak kaldı — tekrar "Şimdi Tara" deyin.` : ''
+        setScanResult(`${data.scanned} kaynak tarandı, ${data.drafts} yeni taslak.${more}`)
+      }
       await load()
     } catch {
-      setScanResult('Tarama sırasında hata oluştu.')
+      setScanResult('Tarama sırasında hata oluştu (zaman aşımı olabilir).')
     }
     setScanning(false)
   }
