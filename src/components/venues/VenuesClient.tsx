@@ -9,6 +9,7 @@ import { GenreChip } from '@/components/ui/GenreChip'
 import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { VenuesMap, type MapVenue } from '@/components/venues/VenuesMap'
 
 type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[]; logo_url?: string | null }
 
@@ -61,6 +62,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [nearMode, setNearMode] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [view, setView] = useState<'list' | 'map'>('list')
 
   function toggleNearMe() {
     if (nearMode) { setNearMode(false); return }
@@ -99,6 +101,10 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     })
   }
 
+  const mapVenues: MapVenue[] = filtered
+    .filter((v) => (v as any).latitude != null && (v as any).longitude != null)
+    .map((v) => ({ id: v.id, name: v.name, lat: (v as any).latitude, lng: (v as any).longitude, district: v.district, city: v.city }))
+
   const activeFilters = [city, venueType, onlyOpenSlots].filter(Boolean).length
 
   return (
@@ -128,33 +134,61 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
             {locating ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
             {nearMode ? (locale === 'en' ? 'Nearby' : 'Yakınımda') : (locale === 'en' ? 'Near me' : 'Yakınımdakiler')}
           </button>
-          <button onClick={() => setFilterOpen(true)} className="md:hidden flex items-center gap-2 btn-outline py-1.5 text-sm">
-            <Filter size={14} />
-            Filtre
-            {activeFilters > 0 && (
-              <span className="bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{activeFilters}</span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Liste / Harita */}
+            <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)]">
+              <button onClick={() => setView('list')}
+                className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', view === 'list' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}>
+                {locale === 'en' ? 'List' : 'Liste'}
+              </button>
+              <button onClick={() => setView('map')}
+                className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', view === 'map' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary')}>
+                {locale === 'en' ? 'Map' : 'Harita'}
+              </button>
+            </div>
+            <button onClick={() => setFilterOpen(true)} className="md:hidden flex items-center gap-2 btn-outline py-1.5 text-sm">
+              <Filter size={14} />
+              Filtre
+              {activeFilters > 0 && (
+                <span className="bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{activeFilters}</span>
+              )}
+            </button>
+          </div>
         </div>
 
-        {nearMode && userLoc && (
-          <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
-        )}
-
-        {withDist.length === 0 ? (
-          <div className="text-center py-16 text-text-muted text-sm">Mekan bulunamadı.</div>
+        {view === 'map' ? (
+          mapVenues.length === 0 ? (
+            <div className="text-center py-16 text-text-muted text-sm">
+              {locale === 'en' ? 'No venues with a location yet.' : 'Henüz konumu olan mekan yok.'}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-text-muted mb-3">{mapVenues.length} {locale === 'en' ? 'venues on map' : 'mekan haritada'}</p>
+              <VenuesMap venues={mapVenues} />
+            </>
+          )
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {withDist.map(({ v, dist }) => (
-              <VenueCard
-                key={v.id}
-                venue={v}
-                canSeeSlots={canSeeSlots}
-                nearestEvent={upcomingEvents.find(e => e.venue_id === v.id) ?? null}
-                distance={dist}
-              />
-            ))}
-          </div>
+          <>
+            {nearMode && userLoc && (
+              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
+            )}
+
+            {withDist.length === 0 ? (
+              <div className="text-center py-16 text-text-muted text-sm">Mekan bulunamadı.</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {withDist.map(({ v, dist }) => (
+                  <VenueCard
+                    key={v.id}
+                    venue={v}
+                    canSeeSlots={canSeeSlots}
+                    nearestEvent={upcomingEvents.find(e => e.venue_id === v.id) ?? null}
+                    distance={dist}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
