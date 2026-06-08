@@ -13,6 +13,7 @@ import { formatTime } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS } from '@/lib/constants'
+import { EventsMap, type MapEvent } from '@/components/events/EventsMap'
 
 type EventFull = Event & {
   poster_url?: string | null
@@ -71,7 +72,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   const [entryType, setEntryType] = useState('')
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [filterOpen, setFilterOpen] = useState(false)
-  const [view, setView] = useState<'list' | 'calendar'>('list')
+  const [view, setView] = useState<'list' | 'calendar' | 'map'>('list')
   const [popupDate, setPopupDate] = useState<Date | null>(null)
   const [popupEvents, setPopupEvents] = useState<EventFull[]>([])
   const [mounted, setMounted] = useState(false)
@@ -119,6 +120,18 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
 
   const grouped = groupByDate(filtered)
   const activeFilters = [genre, city, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
+
+  // Harita görünümü: mekan koordinatı olan etkinlikler
+  const mapEvents: MapEvent[] = filtered
+    .filter((e) => (e.venues as any)?.latitude != null && (e.venues as any)?.longitude != null)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      dateLabel: new Date(e.event_date).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' }) + ' · ' + formatTime(e.start_time),
+      venueName: e.venues?.name ?? '',
+      lat: (e.venues as any).latitude,
+      lng: (e.venues as any).longitude,
+    }))
 
   // Yakınımda modu: etkinlikleri mekan mesafesine göre sırala
   const nearList = nearMode && userLoc
@@ -261,6 +274,12 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
               >
                 {locale === 'en' ? 'Calendar' : 'Takvim'}
               </button>
+              <button
+                onClick={() => setView('map')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'map' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                {locale === 'en' ? 'Map' : 'Harita'}
+              </button>
             </div>
 
             {/* Mobile filter button */}
@@ -287,6 +306,20 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
               onDayClick={handleDayClick}
             />
           </div>
+        )}
+
+        {/* Map view */}
+        {view === 'map' && (
+          mapEvents.length === 0 ? (
+            <div className="text-center py-16 text-text-muted text-sm">
+              {locale === 'en' ? 'No events with a location yet.' : 'Henüz konumu olan etkinlik yok.'}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-text-muted mb-3">{mapEvents.length} {locale === 'en' ? 'events on map' : 'etkinlik haritada'}</p>
+              <EventsMap events={mapEvents} />
+            </>
+          )
         )}
 
         {/* List view */}
