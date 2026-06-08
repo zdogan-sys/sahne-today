@@ -140,23 +140,46 @@ function normalizeIg(handle: string): string | null {
   return `https://www.instagram.com/${h}/`
 }
 
-// İsimden Instagram tahmini — DuckDuckGo arama sonuçlarından ilk IG handle'ı
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
+function extractIg(html: string): string | null {
+  const m = html.match(/instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/i)
+  if (!m) return null
+  try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
+}
+
+// İsimden Instagram tahmini — birden çok arama motoru dener, ilk IG handle'ı döner
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
+  const query = `${name} ${city} instagram`
+
+  // 1) DuckDuckGo lite (POST) — sunucu tarafı scraping için en güvenilir
   try {
-    const q = encodeURIComponent(`${name} ${city} instagram`)
-    const res = await fetch(`https://html.duckduckgo.com/html/?q=${q}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36' },
+    const res = await fetch('https://lite.duckduckgo.com/lite/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
+      body: `q=${encodeURIComponent(query)}`,
       signal: AbortSignal.timeout(9000),
     })
-    if (!res.ok) return null
-    const html = await res.text()
-    // Hem düz (instagram.com/x) hem URL-encoded (instagram.com%2Fx) eşleştir
-    const m = html.match(/instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/i)
-    if (m) return normalizeIg(decodeURIComponent(m[1]))
-    return null
-  } catch {
-    return null
-  }
+    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
+  } catch { /* sonraki */ }
+
+  // 2) DuckDuckGo html (GET)
+  try {
+    const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+      headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(9000),
+    })
+    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
+  } catch { /* sonraki */ }
+
+  // 3) Bing (GET)
+  try {
+    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr`, {
+      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(9000),
+    })
+    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
+  } catch { /* bitti */ }
+
+  return null
 }
 
 // Website'ten Instagram linkini bulur: website zaten IG ise onu, değilse site içindeki IG linkini
