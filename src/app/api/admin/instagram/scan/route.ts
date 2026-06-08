@@ -26,10 +26,11 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
   const username = extractUsername(instagramUrl)
   if (!username) return ''
 
-  // imginn.com üzerinden Jina.ai ile çek (instagram içeriğini oturum açmadan gösteriyor)
+  // Instagram içeriğini oturum açmadan gösteren viewer'lar üzerinden Jina.ai ile çek.
+  // (imginn/picuki öldü/engellendi; picnob + aynası pixwox şu an çalışıyor.)
   const viewerUrls = [
-    `https://imginn.com/${username}/`,
-    `https://picuki.com/profile/${username}`,
+    `https://www.picnob.com/profile/${username}/`,
+    `https://www.pixwox.com/profile/${username}/`,
   ]
 
   for (const viewerUrl of viewerUrls) {
@@ -40,8 +41,10 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
       })
       if (!res.ok) continue
       const text = await res.text()
-      // Login/hata sayfası değil gerçek içerik mi?
-      if (text.length > 500 && !text.toLowerCase().includes('sign in') && !text.toLowerCase().includes('giriş')) {
+      // Engel/login/hata sayfası değil, gerçek içerik mi? (block sayfaları ~250-660 karakter)
+      const head = text.slice(0, 600).toLowerCase()
+      const blocked = /sign in|log in|giriş|you have been blocked|security verification|captcha|cloudflare|404 not found/.test(head)
+      if (text.length > 800 && !blocked) {
         return text.slice(0, 5000)
       }
     } catch { /* sonraki kaynağa geç */ }
