@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Plus, Trash2, RefreshCw, Check, X, Loader2, Instagram, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CITY_OPTIONS } from '@/lib/constants'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
@@ -108,6 +108,18 @@ export function InstagramScanner() {
     await load()
   }
 
+  // Tek seferlik: önceden 'free' kaydedilmiş taranan etkinlikleri 'Kapıda Öde' yap
+  async function fixEntryTypes() {
+    if (!confirm('Taranan (performer\'lı) ücretsiz etkinlikler "Kapıda Öde" olarak güncellenecek. Devam?')) return
+    setScanning(true); setScanResult(null)
+    try {
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'fix_entry_types' }) })
+      const data = await res.json().catch(() => ({}))
+      setScanResult(res.ok ? `${data.updated ?? 0} etkinlik "Kapıda Öde" yapıldı.` : (data.error ?? 'Hata'))
+    } catch { setScanResult('Güncelleme sırasında hata oluştu.') }
+    setScanning(false)
+  }
+
   async function toggleSource(id: string, current: boolean) {
     await fetch('/api/admin/instagram/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle', id, is_active: !current }) })
     await load()
@@ -149,6 +161,9 @@ export function InstagramScanner() {
         <div className="flex gap-2">
           <button onClick={() => setShowAdd(!showAdd)} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5">
             <Plus size={14} /> Hesap Ekle
+          </button>
+          <button onClick={fixEntryTypes} disabled={scanning} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50" title="Taranan ücretsiz etkinlikleri Kapıda Öde yap (tek seferlik)">
+            <Ticket size={14} /> Ücretleri Düzelt
           </button>
           <button onClick={scanAll} disabled={scanning} className="btn-accent py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50">
             {scanning ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}

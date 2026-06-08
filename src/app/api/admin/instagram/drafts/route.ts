@@ -122,6 +122,20 @@ export async function POST(req: NextRequest) {
   const admin = adminClient()
   const body = await req.json()
 
+  // Tek seferlik: IG'den taranmış (performer'ı olan, artist_id'siz) confirmed 'free'
+  // etkinlikleri 'door' (Kapıda Öde) yap. Elle eklenmiş gerçek ücretsizlere dokunmaz.
+  if (body.action === 'fix_entry_types') {
+    const { data, error } = await admin.from('events')
+      .update({ entry_type: 'door' } as any)
+      .eq('entry_type', 'free')
+      .eq('status', 'confirmed')
+      .not('artist_name', 'is', null)
+      .is('artist_id', null)
+      .select('id')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ updated: (data ?? []).length })
+  }
+
   if (body.action === 'add') {
     const url: string = body.url?.trim()
     if (!url) return NextResponse.json({ error: 'URL gerekli' }, { status: 400 })
