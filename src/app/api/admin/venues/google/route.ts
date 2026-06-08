@@ -430,6 +430,7 @@ export async function POST(req: NextRequest) {
         latitude: v.latitude,
         longitude: v.longitude,
         verified: false,
+        is_hidden: false,
       })
       if (error) errors.push(`${v.name}: ${error.message}`)
       else imported++

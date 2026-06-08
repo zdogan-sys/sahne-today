@@ -27,7 +27,7 @@ export default async function VenuesPage() {
   const today = new Date().toISOString().split('T')[0]
 
   const [venuesRes, eventsRes] = await Promise.all([
-    supabase.from('venues').select('*, slots(id, status)').eq('is_hidden', false).order('created_at', { ascending: false }),
+    supabase.from('venues').select('*, slots(id, status)').not('is_hidden', 'is', true).order('created_at', { ascending: false }),
     supabase.from('events')
       .select('id, venue_id, title, event_date, start_time')
       .eq('status', 'confirmed')

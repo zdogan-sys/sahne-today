@@ -44,7 +44,7 @@ export default function NewCoursePage() {
   useEffect(() => {
     supabase.from('venues')
       .select('id, name, city, district, venue_type')
-      .eq('is_hidden', false)
+      .not('is_hidden', 'is', true)
       .order('name')
       .then(({ data }) => setVenues(data ?? []))
   // eslint-disable-next-line react-hooks/exhaustive-deps
