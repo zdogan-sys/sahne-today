@@ -114,8 +114,11 @@ export function InstagramScanner() {
   }
 
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
-    await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+    const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
     setDrafts(prev => prev.filter(d => d.id !== id))
+    if (status === 'approved') setScanResult('Etkinlik oluşturuldu ✓')
   }
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-accent" /></div>
