@@ -51,6 +51,7 @@ export function InstagramScanner() {
   const [newCity, setNewCity] = useState('Ankara')
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const admin = adminClient()
@@ -132,11 +133,19 @@ export function InstagramScanner() {
   }
 
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
-    const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
-    setDrafts(prev => prev.filter(d => d.id !== id))
-    if (status === 'approved') setScanResult('Etkinlik oluşturuldu ✓')
+    if (processingId) return
+    setProcessingId(id); setScanResult(null)
+    try {
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
+      setDrafts(prev => prev.filter(d => d.id !== id))
+      if (status === 'approved') setScanResult('Etkinlik oluşturuldu ✓')
+    } catch {
+      setScanResult('Bağlantı hatası — tekrar deneyin.')
+    } finally {
+      setProcessingId(null)
+    }
   }
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-accent" /></div>
@@ -299,12 +308,12 @@ export function InstagramScanner() {
                     </a>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => updateDraft(draft.id, 'approved')}
-                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors">
-                      <Check size={12} /> Kaydet
+                    <button onClick={() => updateDraft(draft.id, 'approved')} disabled={processingId !== null}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-40">
+                      {processingId === draft.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Kaydet
                     </button>
-                    <button onClick={() => updateDraft(draft.id, 'skipped')}
-                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-[rgba(228,224,216,0.04)] text-text-muted border border-[rgba(228,224,216,0.1)] hover:text-red-400 transition-colors">
+                    <button onClick={() => updateDraft(draft.id, 'skipped')} disabled={processingId !== null}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-[rgba(228,224,216,0.04)] text-text-muted border border-[rgba(228,224,216,0.1)] hover:text-red-400 transition-colors disabled:opacity-40">
                       <X size={12} /> Atla
                     </button>
                   </div>

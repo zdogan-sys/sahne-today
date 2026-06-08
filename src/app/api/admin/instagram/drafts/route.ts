@@ -17,7 +17,7 @@ function adminClient() {
 // IG/picnob URL'leri süreli olduğu için saklamak şart. Başarısızsa null (etkinlik yine oluşur).
 async function storeEventPoster(admin: ReturnType<typeof adminClient>, imageUrl: string, eventId: string): Promise<string | null> {
   try {
-    const res = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) })
+    const res = await fetch(imageUrl, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const contentType = res.headers.get('content-type') ?? 'image/jpeg'
     if (!contentType.startsWith('image/')) return null
