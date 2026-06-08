@@ -23,6 +23,7 @@ import { updateListConfig, type ListConfigKey } from '@/app/actions/site'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { InstagramScanner } from '@/components/admin/InstagramScanner'
 import { VenueImport } from '@/components/admin/VenueImport'
+import { LocationPicker } from '@/components/ui/LocationPicker'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -981,6 +982,8 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [verified, setVerified] = useState(initial?.verified ?? false)
   const [pricePerHour, setPricePerHour] = useState(initial?.price_per_hour?.toString() ?? '')
   const [instagram, setInstagram] = useState(initial?.social_links?.instagram ?? '')
+  const [latitude, setLatitude] = useState<number | null>(initial?.latitude ?? null)
+  const [longitude, setLongitude] = useState<number | null>(initial?.longitude ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -997,6 +1000,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
       phone: phone || null, email: email || null, verified,
       price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
       social_links: socialLinks,
+      latitude, longitude,
     }
     const res = initial?.id
       ? await adminUpdateVenue(initial.id, data)
@@ -1065,6 +1069,12 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
           <label className="label">Instagram</label>
           <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/mekan" className="input-field text-sm" />
         </div>
+        <LocationPicker
+          lat={latitude}
+          lng={longitude}
+          address={[address, district, city].filter(Boolean).join(', ')}
+          onChange={(la, ln) => { setLatitude(la); setLongitude(ln) }}
+        />
         <div className="flex items-center justify-between py-2 border-t border-[rgba(228,224,216,0.1)]">
           <p className="text-sm text-text-muted">Onaylı Mekan</p>
           <button type="button" onClick={() => setVerified(!verified)}
