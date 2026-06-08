@@ -168,33 +168,20 @@ function normalizeIg(handle: string): string | null {
   return `https://www.instagram.com/${h}/`
 }
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-
 function extractIg(html: string): string | null {
   const m = html.match(/instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/i)
   if (!m) return null
   try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
 }
 
-// Bir arama sonucu HTML'inden en olası IG handle'ını seçer.
-// Tüm instagram.com/<handle> eşleşmelerini toplar, geçersizleri (p/reel/explore…) eler,
-// en sık geçen handle'ı döner — profil linki tekil post linklerinden daha çok tekrar eder.
-function extractIgBest(html: string): string | null {
-  const counts = new Map<string, number>()
-  const re = /instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/gi
-  let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null) {
-    let h: string
-    try { h = decodeURIComponent(m[1]) } catch { h = m[1] }
-    h = h.replace(/\/$/, '').split('/')[0].split('?')[0].trim().toLowerCase()
-    if (!h || IG_NON_HANDLE.has(h) || h.length < 2) continue
-    counts.set(h, (counts.get(h) ?? 0) + 1)
-  }
-  if (counts.size === 0) return null
-  let best = ''
-  let bestN = 0
-  counts.forEach((n, h) => { if (n > bestN) { bestN = n; best = h } })
-  return `https://www.instagram.com/${best}/`
+// Bir arama sonucu linki DİREKT bir IG profili mi? (post /p/, reel, explore değil) → handle döner.
+// instagram.com/<handle> ya da /<handle>/ ya da /<handle>?... biçimini kabul eder, alt yolları reddeder.
+function profileHandleFromUrl(u: string): string | null {
+  const m = u.match(/^https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9_.]+)\/?(?:\?|$)/i)
+  if (!m) return null
+  const h = m[1].toLowerCase()
+  if (IG_NON_HANDLE.has(h) || h.length < 2) return null
+  return h
 }
 
 // Google Custom Search API — resmi, JSON, instagram linklerini direkt verir
@@ -218,30 +205,35 @@ async function googleCseInstagram(name: string, city: string): Promise<string | 
   }
 }
 
-// DuckDuckGo HTML ucu — keysiz ve güvenilir; arama sonuçlarından IG profilini bulur.
-// (Bing artık sonuç döndürmüyor, lite ucu format değiştirdi — bu uç sağlam.)
-async function ddgHtmlInstagram(query: string): Promise<string | null> {
+// Serper.dev (Google sonuçları) — sitesiz mekanlar için. Gerçek API, rate-limit/429 yok.
+// Yüksek isabet: ilk 3 organik sonuçtaki İLK direkt-profil linkini alır; profil yoksa null
+// döner (alakasız bir handle önermez). SERPER_API_KEY tanımlı değilse pas geçer.
+async function serperInstagram(name: string, city: string): Promise<string | null> {
+  const key = process.env.SERPER_API_KEY
+  if (!key) return null
   try {
-    const res = await fetch('https://html.duckduckgo.com/html/', {
+    const res = await fetch('https://google.serper.dev/search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': UA,
-        'Accept-Language': 'tr-TR,tr;q=0.9',
-      },
-      body: `q=${encodeURIComponent(query)}`,
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: `${name} ${city} instagram`, gl: 'tr', hl: 'tr', num: 10 }),
       signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) return null
-    return extractIgBest(await res.text())
+    const data = await res.json()
+    const links: string[] = (data.organic ?? []).map((o: any) => o.link).filter(Boolean)
+    for (const l of links.slice(0, 3)) {
+      const h = profileHandleFromUrl(l)
+      if (h) return `https://www.instagram.com/${h}/`
+    }
+    return null
   } catch {
     return null
   }
 }
 
-// İsimden Instagram tahmini. Sıra güvenilirliğe göre:
-// 1) Google Places (çalışıyor) → mekanın web sitesi → siteden IG linki. Rate-limit yok, en sağlam.
-// 2) DuckDuckGo HTML (keysiz, best-effort) — DDG art arda isteklerde 202/challenge dönebilir.
+// İsimden Instagram tahmini. Sıra: ucuzdan/güvenilirden pahalıya.
+// 1) Google Places (çalışıyor, ücretsiz) → mekanın web sitesi → siteden IG linki. Rate-limit yok.
+// 2) Serper/Google (sitesiz mekanlar için) — sorgu başına 1 kredi, yüksek isabetli.
 // 3) Google CSE — env tanımlı ve projede erişim varsa otomatik devreye girer.
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
   const site = await placeWebsite(name, city)
@@ -250,8 +242,8 @@ async function guessInstagramByName(name: string, city: string): Promise<string 
     if (ig) return ig
   }
 
-  const ddg = await ddgHtmlInstagram(`${name} ${city} instagram`)
-  if (ddg) return ddg
+  const serper = await serperInstagram(name, city)
+  if (serper) return serper
 
   const cse = await googleCseInstagram(name, city)
   if (cse) return cse
@@ -287,16 +279,26 @@ async function probeEngines(name: string, city: string) {
       } catch (e: any) { out.push({ engine: 'google-cse', error: e?.name ?? 'err' }) }
     }
   }
-  // Asıl kaynak: DuckDuckGo HTML ucu
-  try {
-    const res = await fetch('https://html.duckduckgo.com/html/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' },
-      body: `q=${encodeURIComponent(query)}`, signal: AbortSignal.timeout(6000),
-    })
-    const html = await res.text()
-    out.push({ engine: 'ddg-html', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html), best: extractIgBest(html) })
-  } catch (e: any) { out.push({ engine: 'ddg-html', error: e?.name ?? 'err' }) }
+  // Sitesiz mekanlar için kaynak: Serper (Google)
+  {
+    const key = process.env.SERPER_API_KEY
+    if (!key) {
+      out.push({ engine: 'serper', note: 'SERPER_API_KEY tanımlı değil' })
+    } else {
+      try {
+        const res = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: query, gl: 'tr', hl: 'tr', num: 10 }), signal: AbortSignal.timeout(6000),
+        })
+        const data = await res.json().catch(() => ({}))
+        const links: string[] = (data.organic ?? []).map((o: any) => o.link).filter(Boolean)
+        let pick: string | null = null
+        for (const l of links.slice(0, 3)) { const h = profileHandleFromUrl(l); if (h) { pick = h; break } }
+        out.push({ engine: 'serper', status: res.status, topLinks: links.slice(0, 3), pick, credits: data.credits, apiError: data.message ?? null })
+      } catch (e: any) { out.push({ engine: 'serper', error: e?.name ?? 'err' }) }
+    }
+  }
   return { query, results: out }
 }
 
