@@ -6,6 +6,7 @@ import { HeroSection } from '@/components/home/HeroSection'
 import { LandingFeatures } from '@/components/home/LandingFeatures'
 import { StatsBar } from '@/components/home/StatsBar'
 import { EventFeed } from '@/components/home/EventFeed'
+import { NearbyEvents } from '@/components/home/NearbyEvents'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
@@ -31,6 +32,9 @@ export default async function HomePage() {
       <Suspense fallback={<StatsSkeleton />}>
         <StatsBarServer />
       </Suspense>
+      <section className="max-w-7xl mx-auto px-4 pt-6">
+        <NearbyEvents />
+      </section>
       <section className="max-w-7xl mx-auto px-4 py-6">
         <ErrorBoundary>
           <Suspense fallback={
