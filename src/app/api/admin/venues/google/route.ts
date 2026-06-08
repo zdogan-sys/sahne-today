@@ -207,6 +207,9 @@ async function guessInstagramByName(name: string, city: string): Promise<string 
 async function probeEngines(name: string, city: string) {
   const query = `${name} ${city} instagram`
   const out: any[] = []
+  // Runtime'ın gördüğü GOOGLE/CSE değişken isimleri (değer değil, sadece ad)
+  const envKeys = Object.keys(process.env).filter(k => /google|cse/i.test(k))
+  out.push({ engine: '_env', googleKeys: envKeys, cseIdSet: !!process.env.GOOGLE_CSE_ID, cseKeySet: !!process.env.GOOGLE_CSE_KEY, mapsKeySet: !!process.env.GOOGLE_MAPS_API_KEY })
   // Google CSE durumu
   {
     const key = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_MAPS_API_KEY
