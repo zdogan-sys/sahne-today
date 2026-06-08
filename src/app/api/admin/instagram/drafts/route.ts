@@ -13,6 +13,27 @@ function adminClient() {
   )
 }
 
+// Gönderi görselini indirip 'venues' bucket'ına yükler, public URL döner (afiş için).
+// IG/picnob URL'leri süreli olduğu için saklamak şart. Başarısızsa null (etkinlik yine oluşur).
+async function storeEventPoster(admin: ReturnType<typeof adminClient>, imageUrl: string, eventId: string): Promise<string | null> {
+  try {
+    const res = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) })
+    if (!res.ok) return null
+    const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+    if (!contentType.startsWith('image/')) return null
+    const buffer = Buffer.from(await res.arrayBuffer())
+    if (buffer.length < 500) return null
+    const ext = contentType.includes('png') ? 'png' : 'jpg'
+    const path = `events/${eventId}.${ext}`
+    const { error } = await admin.storage.from('venues').upload(path, buffer, { contentType, upsert: true })
+    if (error) return null
+    const { data } = admin.storage.from('venues').getPublicUrl(path)
+    return data.publicUrl ?? null
+  } catch {
+    return null
+  }
+}
+
 // IG handle'ından mekanı bulur (venue.social_links.instagram ile eşleştirir).
 // ilike ile aday çeker, sonra handle'ı tam eşleştirip yanlış-pozitifi (zula ⊂ zulabar) eler.
 async function findVenueByIgHandle(admin: ReturnType<typeof adminClient>, handle: string) {
@@ -64,7 +85,7 @@ export async function PATCH(req: NextRequest) {
       .ilike('title', `%${titleKey}%`).limit(1)
 
     if (!dup?.length) {
-      const { error: evErr } = await admin.from('events').insert({
+      const { data: ev, error: evErr } = await admin.from('events').insert({
         venue_id: venue.id,
         venue_name: venue.name,
         title: ex.title || 'Canlı Müzik',
@@ -75,8 +96,14 @@ export async function PATCH(req: NextRequest) {
         description: ex.description || null,
         entry_type: 'free',
         status: 'confirmed',
-      } as any)
-      if (evErr) return NextResponse.json({ error: 'Etkinlik oluşturulamadı: ' + evErr.message }, { status: 500 })
+      } as any).select('id').single()
+      if (evErr || !ev) return NextResponse.json({ error: 'Etkinlik oluşturulamadı: ' + (evErr?.message ?? '') }, { status: 500 })
+
+      // Gönderi görselini indirip afiş (poster_url) olarak sakla — best-effort, başarısızsa etkinlik yine durur
+      if (ex.image) {
+        const poster = await storeEventPoster(admin, ex.image, (ev as any).id)
+        if (poster) await admin.from('events').update({ poster_url: poster } as any).eq('id', (ev as any).id)
+      }
     }
   }
 

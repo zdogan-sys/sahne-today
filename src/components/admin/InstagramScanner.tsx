@@ -35,6 +35,7 @@ type Draft = {
     date?: string | null
     time?: string | null
     description?: string
+    image?: string | null
   } | null
   status: 'pending' | 'approved' | 'skipped'
   created_at: string
@@ -244,6 +245,10 @@ export function InstagramScanner() {
             {drafts.map(draft => (
               <div key={draft.id} className="card p-4">
                 <div className="flex items-start justify-between gap-3">
+                  {draft.extracted?.image && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={draft.extracted.image} alt="" referrerPolicy="no-referrer" className="w-16 h-16 rounded-lg object-cover flex-shrink-0 border border-[rgba(228,224,216,0.1)]" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-text-muted">@{draft.source_username}</span>
