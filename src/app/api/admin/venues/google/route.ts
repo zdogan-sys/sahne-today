@@ -148,27 +148,34 @@ function extractIg(html: string): string | null {
   try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
 }
 
-// İsimden Instagram tahmini — DDG lite (POST) + Bing yedek, kısa timeout
+// Bing sonuç linkleri base64 ile gizli (u=a1<base64>) — çözüp instagram ara
+function extractIgFromBing(html: string): string | null {
+  // Önce düz dene
+  const plain = extractIg(html)
+  if (plain) return plain
+  const matches = Array.from(html.matchAll(/u=a1([A-Za-z0-9_\-]+)/g))
+  for (const m of matches) {
+    try {
+      const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
+      const decoded = Buffer.from(b64, 'base64').toString('utf8')
+      if (/instagram\.com/i.test(decoded)) {
+        const ig = extractIg(decoded)
+        if (ig) return ig
+      }
+    } catch { /* sonraki */ }
+  }
+  return null
+}
+
+// İsimden Instagram tahmini — Bing (redirect linklerini base64 çözerek)
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
   const query = `${name} ${city} instagram`
-
   try {
-    const res = await fetch('https://lite.duckduckgo.com/lite/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
-      body: `q=${encodeURIComponent(query)}`,
-      signal: AbortSignal.timeout(6000),
+    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr&count=10`, {
+      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(8000),
     })
-    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
-  } catch { /* yedek */ }
-
-  try {
-    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr`, {
-      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
-    })
-    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
+    if (res.ok) return extractIgFromBing(await res.text())
   } catch { /* bitti */ }
-
   return null
 }
 
@@ -190,7 +197,7 @@ async function probeEngines(name: string, city: string) {
       headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
     })
     const html = await res.text()
-    out.push({ engine: 'bing', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html) })
+    out.push({ engine: 'bing', status: res.status, len: html.length, decoded: extractIgFromBing(html) })
   } catch (e: any) { out.push({ engine: 'bing', error: e?.name ?? 'err' }) }
   return { query, results: out }
 }
