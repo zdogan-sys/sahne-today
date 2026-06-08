@@ -172,6 +172,29 @@ async function guessInstagramByName(name: string, city: string): Promise<string 
   return null
 }
 
+// Tanı: motorların gerçekte ne döndürdüğünü gösterir
+async function probeEngines(name: string, city: string) {
+  const query = `${name} ${city} instagram`
+  const out: any[] = []
+  try {
+    const res = await fetch('https://lite.duckduckgo.com/lite/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
+      body: `q=${encodeURIComponent(query)}`, signal: AbortSignal.timeout(6000),
+    })
+    const html = await res.text()
+    out.push({ engine: 'ddg-lite', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html) })
+  } catch (e: any) { out.push({ engine: 'ddg-lite', error: e?.name ?? 'err' }) }
+  try {
+    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr`, {
+      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
+    })
+    const html = await res.text()
+    out.push({ engine: 'bing', status: res.status, len: html.length, hasIg: /instagram\.com/i.test(html) })
+  } catch (e: any) { out.push({ engine: 'bing', error: e?.name ?? 'err' }) }
+  return { query, results: out }
+}
+
 // Sınırlı eşzamanlılıkla map (wall-clock süreyi kısaltır)
 async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length)
@@ -330,7 +353,13 @@ export async function POST(req: NextRequest) {
     })
     const candidates = results.filter(Boolean) as { id: string; name: string; city: string; instagram: string }[]
 
-    return NextResponse.json({ candidates, scanned: todo.length })
+    // Hiç aday yoksa ilk mekanda tanı çalıştır
+    let debug: any = undefined
+    if (candidates.length === 0 && todo.length > 0) {
+      debug = await probeEngines(todo[0].name, todo[0].city ?? '')
+    }
+
+    return NextResponse.json({ candidates, scanned: todo.length, debug })
   }
 
   // ── INSTAGRAM TAHMİN ONAYLA ── seçilenleri kaydet

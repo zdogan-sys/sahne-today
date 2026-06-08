@@ -48,7 +48,9 @@ export function VenueImport() {
       if (!res.ok) { setError(data.error ?? 'Hata'); setGuessing(false); return }
       setGuessCands(data.candidates ?? [])
       setGuessSel(new Set((data.candidates ?? []).map((c: any) => c.id)))
-      if (!data.candidates?.length) setMessage(`${data.scanned} mekan tarandı, tahmin bulunamadı.`)
+      if (!data.candidates?.length) {
+        setMessage(`${data.scanned} mekan tarandı, tahmin bulunamadı.` + (data.debug ? ' Tanı: ' + JSON.stringify(data.debug) : ''))
+      }
     } catch {
       setError('Tahmin sırasında hata oluştu')
     }
