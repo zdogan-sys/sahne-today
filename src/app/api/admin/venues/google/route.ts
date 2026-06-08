@@ -148,38 +148,42 @@ function extractIg(html: string): string | null {
   try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
 }
 
-// İsimden Instagram tahmini — birden çok arama motoru dener, ilk IG handle'ı döner
+// İsimden Instagram tahmini — DDG lite (POST) + Bing yedek, kısa timeout
 async function guessInstagramByName(name: string, city: string): Promise<string | null> {
   const query = `${name} ${city} instagram`
 
-  // 1) DuckDuckGo lite (POST) — sunucu tarafı scraping için en güvenilir
   try {
     const res = await fetch('https://lite.duckduckgo.com/lite/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
       body: `q=${encodeURIComponent(query)}`,
-      signal: AbortSignal.timeout(9000),
+      signal: AbortSignal.timeout(6000),
     })
     if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
-  } catch { /* sonraki */ }
+  } catch { /* yedek */ }
 
-  // 2) DuckDuckGo html (GET)
-  try {
-    const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-      headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(9000),
-    })
-    if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
-  } catch { /* sonraki */ }
-
-  // 3) Bing (GET)
   try {
     const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=tr`, {
-      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(9000),
+      headers: { 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(6000),
     })
     if (res.ok) { const ig = extractIg(await res.text()); if (ig) return ig }
   } catch { /* bitti */ }
 
   return null
+}
+
+// Sınırlı eşzamanlılıkla map (wall-clock süreyi kısaltır)
+async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let idx = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (idx < items.length) {
+      const i = idx++
+      results[i] = await fn(items[i])
+    }
+  })
+  await Promise.all(workers)
+  return results
 }
 
 // Website'ten Instagram linkini bulur: website zaten IG ise onu, değilse site içindeki IG linkini
@@ -316,16 +320,17 @@ export async function POST(req: NextRequest) {
     if (cityFilter) q = (q as any).eq('city', cityFilter)
     const { data } = await q
 
-    const candidates: { id: string; name: string; city: string; instagram: string }[] = []
-    let scanned = 0
-    for (const v of (data ?? []) as any[]) {
-      if (v.social_links?.instagram) continue
-      scanned++
-      if (scanned > 40) break // DDG sorgularını sınırla
+    // IG'si olmayanları al, parti başına en fazla 18 mekan tara
+    const todo = ((data ?? []) as any[]).filter(v => !v.social_links?.instagram).slice(0, 18)
+
+    // 6'lı paralel havuzla tara
+    const results = await mapPool(todo, 6, async (v) => {
       const ig = await guessInstagramByName(v.name, v.city ?? '')
-      if (ig) candidates.push({ id: v.id, name: v.name, city: v.city, instagram: ig })
-    }
-    return NextResponse.json({ candidates, scanned })
+      return ig ? { id: v.id, name: v.name, city: v.city, instagram: ig } : null
+    })
+    const candidates = results.filter(Boolean) as { id: string; name: string; city: string; instagram: string }[]
+
+    return NextResponse.json({ candidates, scanned: todo.length })
   }
 
   // ── INSTAGRAM TAHMİN ONAYLA ── seçilenleri kaydet
