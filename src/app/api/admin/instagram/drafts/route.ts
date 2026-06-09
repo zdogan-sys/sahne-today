@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-  const { id, status } = await req.json()
+  const { id, status, date: bodyDate, time: bodyTime } = await req.json()
   if (!id || !['approved', 'skipped'].includes(status))
     return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
@@ -68,8 +68,11 @@ export async function PATCH(req: NextRequest) {
     if (!draft) return NextResponse.json({ error: 'Taslak bulunamadı' }, { status: 404 })
 
     const ex = (draft as any).extracted ?? {}
-    if (!ex.date) {
-      return NextResponse.json({ error: 'Taslakta tarih yok — etkinlik oluşturulamadı. Tarih netleşince elle ekleyin.' }, { status: 400 })
+    // Tarih/saat: taslakta yoksa kullanıcının elle girdiğini (body) kullan
+    const date = ex.date || (typeof bodyDate === 'string' && bodyDate ? bodyDate : null)
+    const time = ex.time || (typeof bodyTime === 'string' && bodyTime ? bodyTime : null)
+    if (!date) {
+      return NextResponse.json({ error: 'Tarih yok — taslaktaki tarih alanını doldurup tekrar kaydedin.' }, { status: 400 })
     }
 
     const handle = String((draft as any).source_username ?? '').replace(/^@/, '').trim().toLowerCase()
@@ -81,7 +84,7 @@ export async function PATCH(req: NextRequest) {
     // Aynı mekan + tarih + benzer başlıkta etkinlik varsa tekrar oluşturma
     const titleKey = String(ex.title ?? '').slice(0, 20)
     const { data: dup } = await admin.from('events')
-      .select('id').eq('venue_id', venue.id).eq('event_date', ex.date)
+      .select('id').eq('venue_id', venue.id).eq('event_date', date)
       .ilike('title', `%${titleKey}%`).limit(1)
 
     if (!dup?.length) {
@@ -89,8 +92,8 @@ export async function PATCH(req: NextRequest) {
         venue_id: venue.id,
         venue_name: venue.name,
         title: ex.title || 'Canlı Müzik',
-        event_date: ex.date,
-        start_time: ex.time || '21:00',
+        event_date: date,
+        start_time: time || '21:00',
         end_time: null,
         artist_name: ex.performer || null,
         description: ex.description || null,

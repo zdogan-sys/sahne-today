@@ -52,6 +52,7 @@ export function InstagramScanner() {
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [edits, setEdits] = useState<Record<string, { date: string; time: string }>>({})
 
   const load = useCallback(async () => {
     const admin = adminClient()
@@ -135,8 +136,10 @@ export function InstagramScanner() {
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
     if (processingId) return
     setProcessingId(id); setScanResult(null)
+    const d = drafts.find(x => x.id === id)
+    const eff = edits[id] ?? { date: d?.extracted?.date ?? '', time: d?.extracted?.time ?? '' }
     try {
-      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
@@ -287,9 +290,16 @@ export function InstagramScanner() {
                         {draft.extracted.performer && (
                           <p className="text-xs text-accent">{draft.extracted.performer}</p>
                         )}
-                        <div className="flex gap-3 text-xs text-text-muted">
-                          {draft.extracted.date && <span>📅 {draft.extracted.date}</span>}
-                          {draft.extracted.time && <span>🕐 {draft.extracted.time}</span>}
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <input type="date"
+                            value={edits[draft.id]?.date ?? draft.extracted?.date ?? ''}
+                            onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { date: ev.target.value, time: p[draft.id]?.time ?? draft.extracted?.time ?? '' } }))}
+                            className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary" />
+                          <input type="time"
+                            value={edits[draft.id]?.time ?? draft.extracted?.time ?? ''}
+                            onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { date: p[draft.id]?.date ?? draft.extracted?.date ?? '', time: ev.target.value } }))}
+                            className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary" />
+                          {!(edits[draft.id]?.date ?? draft.extracted?.date) && <span className="text-[10px] text-amber-400">tarih gir →</span>}
                         </div>
                         {draft.extracted.description && (
                           <p className="text-xs text-text-muted mt-1">{draft.extracted.description}</p>
