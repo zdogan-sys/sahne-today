@@ -7,6 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Navigation, Loader2, MapPin, Clock } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
+import { EventsMap, type MapEvent } from '@/components/events/EventsMap'
+
+const RADIUS_KM = 1
 
 type Row = {
   id: string
@@ -35,6 +38,9 @@ export function NearbyEvents() {
   const [done, setDone] = useState(false)
   const [items, setItems] = useState<{ row: Row; dist: number }[]>([])
   const [error, setError] = useState('')
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
+  const [mapEvents, setMapEvents] = useState<MapEvent[]>([])
+  const [view, setView] = useState<'list' | 'map'>('list')
 
   async function findNearby() {
     if (!('geolocation' in navigator)) { setError(isEn ? 'Location not supported' : 'Konum desteklenmiyor'); return }
@@ -52,13 +58,22 @@ export function NearbyEvents() {
         .limit(200)
 
       const rows = (data ?? []) as any as Row[]
-      const withDist = rows
-        .filter(r => r.venues?.latitude != null && r.venues?.longitude != null)
+      const located = rows.filter(r => r.venues?.latitude != null && r.venues?.longitude != null)
+      const withDist = located
         .map(r => ({ row: r, dist: distanceKm(user, { lat: r.venues!.latitude!, lng: r.venues!.longitude! }) }))
         .sort((a, b) => a.dist - b.dist)
-        .slice(0, 6)
 
-      setItems(withDist)
+      // Liste: en yakın 6; Harita: konumu olan tüm etkinlikler (zoom out'ta 1 km dışı da görünür)
+      setItems(withDist.slice(0, 6))
+      setMapEvents(located.map(r => ({
+        id: r.id,
+        title: r.title,
+        dateLabel: new Date(r.event_date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'short' }) + ' · ' + formatTime(r.start_time),
+        venueName: r.venues!.name,
+        lat: r.venues!.latitude!,
+        lng: r.venues!.longitude!,
+      })))
+      setUserLoc(user)
       setDone(true)
       setLoading(false)
     }, () => {
@@ -74,12 +89,23 @@ export function NearbyEvents() {
           <Navigation size={18} className="text-accent" />
           <h2 className="font-bebas text-2xl text-text-primary">{isEn ? 'EVENTS NEAR YOU' : 'YAKININDAKİ ETKİNLİKLER'}</h2>
         </div>
-        {!done && (
+        {!done ? (
           <button onClick={findNearby} disabled={loading}
             className="btn-accent py-2 px-4 text-sm flex items-center gap-1.5 disabled:opacity-50 flex-shrink-0">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
             {isEn ? 'Use my location' : 'Konumumu kullan'}
           </button>
+        ) : (
+          <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)] flex-shrink-0">
+            <button onClick={() => setView('list')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+              {isEn ? 'List' : 'Liste'}
+            </button>
+            <button onClick={() => setView('map')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'map' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+              {isEn ? 'Map' : 'Harita'}
+            </button>
+          </div>
         )}
       </div>
 
@@ -93,7 +119,13 @@ export function NearbyEvents() {
         <p className="text-text-muted text-sm mt-2">{isEn ? 'No upcoming events with a location nearby.' : 'Yakında konumu belirli yaklaşan etkinlik bulunamadı.'}</p>
       )}
 
-      {items.length > 0 && (
+      {done && view === 'map' && mapEvents.length > 0 && (
+        <div className="mt-3">
+          <EventsMap events={mapEvents} userLoc={userLoc} radiusKm={RADIUS_KM} />
+        </div>
+      )}
+
+      {view === 'list' && items.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
           {items.map(({ row, dist }) => {
             const d = new Date(row.event_date)
