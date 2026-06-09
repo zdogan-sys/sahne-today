@@ -76,9 +76,11 @@ Sana mekanın son gönderileri "[1]", "[2]" gibi numaralarla verilir. Her etkinl
 Yanıtını MUTLAKA şu JSON formatında ver, başka hiçbir şey yazma:
 
 Etkinlik varsa:
-{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>}]}
+{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
 
-Not: "free" alanını yalnızca metinde net biçimde "giriş ücretsiz/serbest/bedava" gibi ifadeler varsa true yap. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
+Notlar:
+- "free": yalnızca metinde net "giriş ücretsiz/serbest/bedava" varsa true. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
+- "weekday": metin "her perşembe", "her cumartesi geceleri", "salı akşamları" gibi HAFTALIK TEKRAR belirtiyorsa o günün numarasını ver (0=Pazar, 1=Pazartesi, 2=Salı, 3=Çarşamba, 4=Perşembe, 5=Cuma, 6=Cumartesi). Tek seferlik/belirli tarihli etkinlikte null. Tekrar eden etkinlikte "date" null olabilir.
 
 Etkinlik yoksa:
 {"has_event": false, "events": []}`

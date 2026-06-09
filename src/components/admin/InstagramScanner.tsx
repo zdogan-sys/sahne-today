@@ -41,6 +41,17 @@ type Draft = {
   created_at: string
 }
 
+// JS getDay() değerleri: 0=Pazar .. 6=Cumartesi
+const WEEKDAYS = [
+  { v: 1, l: 'Her Pazartesi' },
+  { v: 2, l: 'Her Salı' },
+  { v: 3, l: 'Her Çarşamba' },
+  { v: 4, l: 'Her Perşembe' },
+  { v: 5, l: 'Her Cuma' },
+  { v: 6, l: 'Her Cumartesi' },
+  { v: 0, l: 'Her Pazar' },
+]
+
 export function InstagramScanner() {
   const [sources, setSources] = useState<Source[]>([])
   const [drafts, setDrafts] = useState<Draft[]>([])
@@ -52,7 +63,18 @@ export function InstagramScanner() {
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [edits, setEdits] = useState<Record<string, { date: string; time: string }>>({})
+  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekday?: number | null }>>({})
+
+  // Bir taslağın geçerli (düzenleme + AI çıkarımı birleşik) tarih/saat/tekrar değerleri
+  function effOf(d?: Draft) {
+    const e = d ? edits[d.id] : undefined
+    const ex: any = d?.extracted ?? {}
+    return {
+      date: e?.date ?? ex.date ?? '',
+      time: e?.time ?? ex.time ?? '',
+      weekday: e && 'weekday' in e ? (e.weekday ?? null) : (typeof ex.weekday === 'number' ? ex.weekday : null),
+    }
+  }
 
   const load = useCallback(async () => {
     const admin = adminClient()
@@ -136,14 +158,13 @@ export function InstagramScanner() {
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
     if (processingId) return
     setProcessingId(id); setScanResult(null)
-    const d = drafts.find(x => x.id === id)
-    const eff = edits[id] ?? { date: d?.extracted?.date ?? '', time: d?.extracted?.time ?? '' }
+    const eff = effOf(drafts.find(x => x.id === id))
     try {
-      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined }) })
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekday: eff.weekday ?? undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
-      if (status === 'approved') setScanResult('Etkinlik oluşturuldu ✓')
+      if (status === 'approved') setScanResult(`${data.created ?? 1} etkinlik oluşturuldu ✓`)
     } catch {
       setScanResult('Bağlantı hatası — tekrar deneyin.')
     } finally {
@@ -290,17 +311,30 @@ export function InstagramScanner() {
                         {draft.extracted.performer && (
                           <p className="text-xs text-accent">{draft.extracted.performer}</p>
                         )}
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <input type="date"
-                            value={edits[draft.id]?.date ?? draft.extracted?.date ?? ''}
-                            onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { date: ev.target.value, time: p[draft.id]?.time ?? draft.extracted?.time ?? '' } }))}
-                            className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary" />
-                          <input type="time"
-                            value={edits[draft.id]?.time ?? draft.extracted?.time ?? ''}
-                            onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { date: p[draft.id]?.date ?? draft.extracted?.date ?? '', time: ev.target.value } }))}
-                            className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary" />
-                          {!(edits[draft.id]?.date ?? draft.extracted?.date) && <span className="text-[10px] text-amber-400">tarih gir →</span>}
-                        </div>
+                        {(() => {
+                          const ef = effOf(draft)
+                          const inputCls = 'bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary'
+                          return (
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <select value={ef.weekday === null ? '' : String(ef.weekday)}
+                                onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], weekday: ev.target.value === '' ? null : Number(ev.target.value) } }))}
+                                className={inputCls}>
+                                <option value="">Tek seferlik</option>
+                                {WEEKDAYS.map(w => <option key={w.v} value={w.v}>{w.l}</option>)}
+                              </select>
+                              {ef.weekday === null && (
+                                <input type="date" value={ef.date}
+                                  onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], date: ev.target.value } }))}
+                                  className={inputCls} />
+                              )}
+                              <input type="time" value={ef.time}
+                                onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], time: ev.target.value } }))}
+                                className={inputCls} />
+                              {ef.weekday === null && !ef.date && <span className="text-[10px] text-amber-400">tarih gir →</span>}
+                              {ef.weekday !== null && <span className="text-[10px] text-accent">önümüzdeki ~8 hafta oluşturulur</span>}
+                            </div>
+                          )
+                        })()}
                         {draft.extracted.description && (
                           <p className="text-xs text-text-muted mt-1">{draft.extracted.description}</p>
                         )}

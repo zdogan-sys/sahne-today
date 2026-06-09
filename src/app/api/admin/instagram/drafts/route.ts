@@ -68,11 +68,28 @@ export async function PATCH(req: NextRequest) {
     if (!draft) return NextResponse.json({ error: 'Taslak bulunamadı' }, { status: 404 })
 
     const ex = (draft as any).extracted ?? {}
-    // Tarih/saat: taslakta yoksa kullanıcının elle girdiğini (body) kullan
-    const date = ex.date || (typeof bodyDate === 'string' && bodyDate ? bodyDate : null)
     const time = ex.time || (typeof bodyTime === 'string' && bodyTime ? bodyTime : null)
-    if (!date) {
-      return NextResponse.json({ error: 'Tarih yok — taslaktaki tarih alanını doldurup tekrar kaydedin.' }, { status: 400 })
+    const isoLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    // Hedef tarih(ler): haftalık tekrar gün (0=Paz..6=Cmt) verildiyse önümüzdeki N haftanın
+    // o gününü üret; yoksa tek tarih (taslaktaki ya da elle girilen).
+    const wd = typeof body.weekday === 'number' ? body.weekday : null
+    let dates: string[] = []
+    if (wd !== null && wd >= 0 && wd <= 6) {
+      const weeks = Math.min(Math.max(Number(body.weeks) || 8, 1), 12)
+      const base = new Date()
+      const diff = (wd - base.getDay() + 7) % 7
+      for (let i = 0; i < weeks; i++) {
+        const d = new Date(base)
+        d.setDate(base.getDate() + diff + i * 7)
+        dates.push(isoLocal(d))
+      }
+    } else {
+      const date = ex.date || (typeof bodyDate === 'string' && bodyDate ? bodyDate : null)
+      if (!date) {
+        return NextResponse.json({ error: 'Tarih yok — taslaktaki tarih alanını doldurup tekrar kaydedin.' }, { status: 400 })
+      }
+      dates = [date]
     }
 
     const handle = String((draft as any).source_username ?? '').replace(/^@/, '').trim().toLowerCase()
@@ -81,37 +98,40 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: `@${handle} bir mekanla eşleşmiyor — etkinlik oluşturulamadı.` }, { status: 400 })
     }
 
-    // Aynı mekan + tarih + benzer başlıkta etkinlik varsa tekrar oluşturma
     const titleKey = String(ex.title ?? '').slice(0, 20)
-    const { data: dup } = await admin.from('events')
-      .select('id').eq('venue_id', venue.id).eq('event_date', date)
-      .ilike('title', `%${titleKey}%`).limit(1)
+    const createdIds: string[] = []
+    for (const dt of dates) {
+      // Aynı mekan + tarih + benzer başlıkta varsa atla (mükerrer engeli)
+      const { data: dup } = await admin.from('events')
+        .select('id').eq('venue_id', venue.id).eq('event_date', dt)
+        .ilike('title', `%${titleKey}%`).limit(1)
+      if (dup?.length) continue
 
-    if (!dup?.length) {
-      const { data: ev, error: evErr } = await admin.from('events').insert({
+      const { data: ev } = await admin.from('events').insert({
         venue_id: venue.id,
         venue_name: venue.name,
         title: ex.title || 'Canlı Müzik',
-        event_date: date,
+        event_date: dt,
         start_time: time || '21:00',
         end_time: null,
         artist_name: ex.performer || null,
         description: ex.description || null,
-        // Çoğu mekan kapıda ödemeli; yalnızca caption açıkça ücretsiz diyorsa 'free'
         entry_type: ex.free === true ? 'free' : 'door',
         status: 'confirmed',
       } as any).select('id').single()
-      if (evErr || !ev) return NextResponse.json({ error: 'Etkinlik oluşturulamadı: ' + (evErr?.message ?? '') }, { status: 500 })
-
-      // Afişi ARKA PLANDA indir — yanıtı bekletmesin (storage yavaşsa istek takılmasın).
-      // Coolify'da kalıcı Node süreci olduğu için yanıttan sonra da tamamlanır; başarısızsa afişsiz kalır.
-      const evId = (ev as any).id
-      if (ex.image) {
-        void storeEventPoster(admin, ex.image, evId)
-          .then((poster) => { if (poster) return admin.from('events').update({ poster_url: poster } as any).eq('id', evId) })
-          .catch(() => {})
-      }
+      if (ev) createdIds.push((ev as any).id)
     }
+
+    // Afişi ARKA PLANDA bir kez indir, tüm oluşan etkinliklere ata (yanıtı bekletmez)
+    if (ex.image && createdIds.length) {
+      void storeEventPoster(admin, ex.image, createdIds[0])
+        .then((poster) => { if (poster) return admin.from('events').update({ poster_url: poster } as any).in('id', createdIds) })
+        .catch(() => {})
+    }
+
+    const { error: dErr } = await admin.from('event_drafts').update({ status }).eq('id', id)
+    if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 })
+    return NextResponse.json({ success: true, created: createdIds.length })
   }
 
   const { error } = await admin.from('event_drafts').update({ status }).eq('id', id)
