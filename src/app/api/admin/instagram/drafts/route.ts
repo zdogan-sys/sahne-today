@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-  const { id, status, date: bodyDate, time: bodyTime } = await req.json()
+  const { id, status, date: bodyDate, time: bodyTime, weekday: bodyWeekday, weeks: bodyWeeks } = await req.json()
   if (!id || !['approved', 'skipped'].includes(status))
     return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
@@ -73,10 +73,10 @@ export async function PATCH(req: NextRequest) {
 
     // Hedef tarih(ler): haftalık tekrar gün (0=Paz..6=Cmt) verildiyse önümüzdeki N haftanın
     // o gününü üret; yoksa tek tarih (taslaktaki ya da elle girilen).
-    const wd = typeof body.weekday === 'number' ? body.weekday : null
+    const wd = typeof bodyWeekday === 'number' ? bodyWeekday : null
     let dates: string[] = []
     if (wd !== null && wd >= 0 && wd <= 6) {
-      const weeks = Math.min(Math.max(Number(body.weeks) || 8, 1), 12)
+      const weeks = Math.min(Math.max(Number(bodyWeeks) || 8, 1), 12)
       const base = new Date()
       const diff = (wd - base.getDay() + 7) % 7
       for (let i = 0; i < weeks; i++) {
