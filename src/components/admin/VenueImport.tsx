@@ -18,7 +18,20 @@ type Result = {
   already_exists: boolean
 }
 
-const PRESET_QUERIES = ['canlı müzik', 'rock bar', 'jazz bar', 'pub', 'türkü bar', 'konser mekanı', 'sahne']
+// Hazır arama terimleri — tıklayınca arama terimi + uygun mekan türü birlikte ayarlanır
+const PRESET_QUERIES: { q: string; type: string }[] = [
+  { q: 'canlı müzik', type: 'live_music' },
+  { q: 'rock bar', type: 'live_music' },
+  { q: 'jazz bar', type: 'live_music' },
+  { q: 'pub', type: 'pub' },
+  { q: 'türkü bar', type: 'turku_bar' },
+  { q: 'konser mekanı', type: 'live_music' },
+  { q: 'sahne', type: 'live_music' },
+  { q: 'dans stüdyosu', type: 'dance_studio' },
+  { q: 'prova stüdyosu', type: 'studio' },
+  { q: 'kayıt stüdyosu', type: 'studio' },
+  { q: 'müzik kursu', type: 'music_school' },
+]
 
 export function VenueImport() {
   const [city, setCity] = useState('Ankara')
@@ -114,8 +127,8 @@ export function VenueImport() {
 
         {/* Hazır arama terimleri */}
         <div className="flex flex-wrap gap-1.5">
-          {PRESET_QUERIES.map(q => (
-            <button key={q} onClick={() => setQuery(q)}
+          {PRESET_QUERIES.map(({ q, type }) => (
+            <button key={q} onClick={() => { setQuery(q); setVenueType(type) }}
               className={cn('text-[11px] px-2.5 py-1 rounded-full border transition-colors',
                 query === q ? 'bg-accent/10 text-accent border-accent/30' : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary')}>
               {q}
