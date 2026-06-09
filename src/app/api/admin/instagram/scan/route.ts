@@ -80,7 +80,8 @@ Etkinlik varsa:
 
 Notlar:
 - "free": yalnızca metinde net "giriş ücretsiz/serbest/bedava" varsa true. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
-- "weekday": metin "her perşembe", "her cumartesi geceleri", "salı akşamları" gibi HAFTALIK TEKRAR belirtiyorsa o günün numarasını ver (0=Pazar, 1=Pazartesi, 2=Salı, 3=Çarşamba, 4=Perşembe, 5=Cuma, 6=Cumartesi). Tek seferlik/belirli tarihli etkinlikte null. Tekrar eden etkinlikte "date" null olabilir.
+- "weekday": SADECE açıkça SÜREKLİ HAFTALIK tekrarı belirten ifadelerde doldur — "HER perşembe", "her hafta cumartesi", "perşembe GECELERİ/akşamları" (süreklilik). Gün no: 0=Pazar,1=Pazartesi,2=Salı,3=Çarşamba,4=Perşembe,5=Cuma,6=Cumartesi.
+- "Bu perşembe", "bu cumartesi", "önümüzdeki cuma" gibi TEK bir yaklaşan günü kastediyorsa → weekday=null; bunun yerine "date"i bugünden hesaplayıp o günün GERÇEK tarihini (YYYY-MM-DD) ver. Şüphedeysen weekday=null (tek seferlik varsay).
 
 Etkinlik yoksa:
 {"has_event": false, "events": []}`

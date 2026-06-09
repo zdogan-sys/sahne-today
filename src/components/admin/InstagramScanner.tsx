@@ -41,6 +41,14 @@ type Draft = {
   created_at: string
 }
 
+// Bir haftagününün (0=Paz..6=Cmt) önümüzdeki en yakın tarihini ISO döner
+function nextDateOfWeekday(wd: number): string {
+  const base = new Date()
+  const diff = (wd - base.getDay() + 7) % 7
+  const d = new Date(base); d.setDate(base.getDate() + diff)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // JS getDay() değerleri: 0=Pazar .. 6=Cumartesi
 const WEEKDAYS = [
   { v: 1, l: 'Her Pazartesi' },
@@ -65,14 +73,17 @@ export function InstagramScanner() {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekday?: number | null }>>({})
 
-  // Bir taslağın geçerli (düzenleme + AI çıkarımı birleşik) tarih/saat/tekrar değerleri
+  // Bir taslağın geçerli tarih/saat/tekrar değerleri.
+  // Varsayılan TEK SEFERLİK (AI tekrar tahmini otomatik uygulanmaz — çoğu yanlış pozitif).
+  // AI sadece bir gün verdiyse (tarih yoksa) tek seferlik için o günün en yakın tarihini öneririz.
   function effOf(d?: Draft) {
     const e = d ? edits[d.id] : undefined
     const ex: any = d?.extracted ?? {}
+    const suggestedDate = ex.date || (typeof ex.weekday === 'number' ? nextDateOfWeekday(ex.weekday) : '')
     return {
-      date: e?.date ?? ex.date ?? '',
+      date: e?.date ?? suggestedDate,
       time: e?.time ?? ex.time ?? '',
-      weekday: e && 'weekday' in e ? (e.weekday ?? null) : (typeof ex.weekday === 'number' ? ex.weekday : null),
+      weekday: e && 'weekday' in e ? (e.weekday ?? null) : null,
     }
   }
 
