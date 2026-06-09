@@ -25,6 +25,9 @@ type EventFull = Event & {
 
 const CITIES = CITY_OPTIONS
 
+// "Yakınımda" modunda gösterilecek yarıçap (km)
+const RADIUS_KM = 1
+
 // İki koordinat arası mesafe (km) — Haversine
 function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371
@@ -121,9 +124,14 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   const grouped = groupByDate(filtered)
   const activeFilters = [genre, city, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
 
-  // Harita görünümü: mekan koordinatı olan etkinlikler
+  // Harita görünümü: mekan koordinatı olan etkinlikler (yakınımda modunda 1 km içiyle sınırlı)
   const mapEvents: MapEvent[] = filtered
     .filter((e) => (e.venues as any)?.latitude != null && (e.venues as any)?.longitude != null)
+    .filter((e) => {
+      if (!(nearMode && userLoc)) return true
+      const d = eventDist(e)
+      return d != null && d <= RADIUS_KM
+    })
     .map((e) => ({
       id: e.id,
       title: e.title,
@@ -133,13 +141,11 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       lng: (e.venues as any).longitude,
     }))
 
-  // Yakınımda modu: etkinlikleri mekan mesafesine göre sırala
+  // Yakınımda modu: etkinlikleri 1 km içiyle sınırla + mekan mesafesine göre sırala
   const nearList = nearMode && userLoc
-    ? filtered.map((e) => ({ e, dist: eventDist(e) })).sort((a, b) => {
-        if (a.dist == null) return 1
-        if (b.dist == null) return -1
-        return a.dist - b.dist
-      })
+    ? filtered.map((e) => ({ e, dist: eventDist(e) }))
+        .filter((x) => x.dist != null && x.dist <= RADIUS_KM)
+        .sort((a, b) => (a.dist! - b.dist!))
     : null
 
   const calendarEvents: CalendarEventItem[] = filtered.map(e => ({
@@ -312,12 +318,18 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
         {view === 'map' && (
           mapEvents.length === 0 ? (
             <div className="text-center py-16 text-text-muted text-sm">
-              {locale === 'en' ? 'No events with a location yet.' : 'Henüz konumu olan etkinlik yok.'}
+              {nearMode && userLoc
+                ? (locale === 'en' ? `No events within ${RADIUS_KM} km.` : `${RADIUS_KM} km içinde etkinlik yok.`)
+                : (locale === 'en' ? 'No events with a location yet.' : 'Henüz konumu olan etkinlik yok.')}
             </div>
           ) : (
             <>
-              <p className="text-xs text-text-muted mb-3">{mapEvents.length} {locale === 'en' ? 'events on map' : 'etkinlik haritada'}</p>
-              <EventsMap events={mapEvents} />
+              <p className="text-xs text-text-muted mb-3">
+                {nearMode && userLoc
+                  ? (locale === 'en' ? `${mapEvents.length} events within ${RADIUS_KM} km` : `${RADIUS_KM} km içinde ${mapEvents.length} etkinlik`)
+                  : `${mapEvents.length} ${locale === 'en' ? 'events on map' : 'etkinlik haritada'}`}
+              </p>
+              <EventsMap events={mapEvents} userLoc={nearMode ? userLoc : null} radiusKm={RADIUS_KM} />
             </>
           )
         )}
@@ -342,12 +354,16 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
             </div>
           ) : nearList ? (
             <>
-              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
-              <div className="space-y-2">
-                {nearList.map(({ e, dist }) => (
-                  <EventListCard key={e.id} event={e} locale={locale} distance={dist} />
-                ))}
-              </div>
+              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? `Events within ${RADIUS_KM} km of you` : `Konumuna ${RADIUS_KM} km mesafedeki etkinlikler`}</p>
+              {nearList.length === 0 ? (
+                <div className="text-center py-16 text-text-muted text-sm">{locale === 'en' ? `No events within ${RADIUS_KM} km.` : `${RADIUS_KM} km içinde etkinlik yok.`}</div>
+              ) : (
+                <div className="space-y-2">
+                  {nearList.map(({ e, dist }) => (
+                    <EventListCard key={e.id} event={e} locale={locale} distance={dist} />
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <div className="space-y-6">

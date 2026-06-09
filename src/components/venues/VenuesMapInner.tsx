@@ -16,7 +16,7 @@ function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-export default function VenuesMapInner({ venues }: { venues: MapVenue[] }) {
+export default function VenuesMapInner({ venues, userLoc, radiusKm = 1 }: { venues: MapVenue[]; userLoc?: { lat: number; lng: number } | null; radiusKm?: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
 
@@ -46,12 +46,21 @@ export default function VenuesMapInner({ venues }: { venues: MapVenue[] }) {
       pts.push([v.lat, v.lng])
     }
 
-    if (pts.length === 1) map.setView(pts[0], 14)
-    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [40, 40] })
+    if (userLoc) {
+      // Kullanıcı konumu + radiusKm'lik çerçeve
+      L.circleMarker([userLoc.lat, userLoc.lng], { radius: 7, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9, weight: 2 })
+        .addTo(map).bindPopup('Buradasın')
+      const circle = L.circle([userLoc.lat, userLoc.lng], { radius: radiusKm * 1000, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.07, weight: 1 }).addTo(map)
+      map.fitBounds(circle.getBounds(), { padding: [20, 20] })
+    } else if (pts.length === 1) {
+      map.setView(pts[0], 14)
+    } else if (pts.length > 1) {
+      map.fitBounds(L.latLngBounds(pts), { padding: [40, 40] })
+    }
 
     return () => { map.remove(); mapRef.current = null }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues])
+  }, [venues, userLoc, radiusKm])
 
   return <div ref={ref} className="w-full h-[70vh] rounded-xl overflow-hidden border border-[rgba(228,224,216,0.1)] z-0" />
 }
