@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
     const wd = typeof bodyWeekday === 'number' ? bodyWeekday : null
     let dates: string[] = []
     if (wd !== null && wd >= 0 && wd <= 6) {
-      const weeks = Math.min(Math.max(Number(bodyWeeks) || 8, 1), 12)
+      const weeks = Math.min(Math.max(Number(bodyWeeks) || 4, 1), 12)
       const base = new Date()
       const diff = (wd - base.getDay() + 7) % 7
       for (let i = 0; i < weeks; i++) {

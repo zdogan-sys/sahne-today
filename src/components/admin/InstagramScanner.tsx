@@ -331,7 +331,7 @@ export function InstagramScanner() {
                                 onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], time: ev.target.value } }))}
                                 className={inputCls} />
                               {ef.weekday === null && !ef.date && <span className="text-[10px] text-amber-400">tarih gir →</span>}
-                              {ef.weekday !== null && <span className="text-[10px] text-accent">önümüzdeki ~8 hafta oluşturulur</span>}
+                              {ef.weekday !== null && <span className="text-[10px] text-accent">önümüzdeki 4 hafta oluşturulur</span>}
                             </div>
                           )
                         })()}
