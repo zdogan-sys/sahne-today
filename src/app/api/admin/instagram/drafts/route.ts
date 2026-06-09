@@ -100,10 +100,13 @@ export async function PATCH(req: NextRequest) {
       } as any).select('id').single()
       if (evErr || !ev) return NextResponse.json({ error: 'Etkinlik oluşturulamadı: ' + (evErr?.message ?? '') }, { status: 500 })
 
-      // Gönderi görselini indirip afiş (poster_url) olarak sakla — best-effort, başarısızsa etkinlik yine durur
+      // Afişi ARKA PLANDA indir — yanıtı bekletmesin (storage yavaşsa istek takılmasın).
+      // Coolify'da kalıcı Node süreci olduğu için yanıttan sonra da tamamlanır; başarısızsa afişsiz kalır.
+      const evId = (ev as any).id
       if (ex.image) {
-        const poster = await storeEventPoster(admin, ex.image, (ev as any).id)
-        if (poster) await admin.from('events').update({ poster_url: poster } as any).eq('id', (ev as any).id)
+        void storeEventPoster(admin, ex.image, evId)
+          .then((poster) => { if (poster) return admin.from('events').update({ poster_url: poster } as any).eq('id', evId) })
+          .catch(() => {})
       }
     }
   }
