@@ -89,22 +89,24 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     return true
   })
 
-  // Yakınımda modu: mesafe hesapla, 1 km içiyle sınırla + sırala
-  let withDist = filtered.map((v) => ({
+  // Yakınımda modu: mesafe hesapla + en yakından uzağa sırala (sınır yok, hepsi listelenir)
+  const withDist = filtered.map((v) => ({
     v,
     dist: (nearMode && userLoc && (v as any).latitude != null && (v as any).longitude != null)
       ? distanceKm(userLoc, { lat: (v as any).latitude, lng: (v as any).longitude })
       : null,
   }))
   if (nearMode && userLoc) {
-    withDist = withDist
-      .filter((x) => x.dist != null && x.dist <= RADIUS_KM)
-      .sort((a, b) => (a.dist! - b.dist!))
+    withDist.sort((a, b) => {
+      if (a.dist == null) return 1
+      if (b.dist == null) return -1
+      return a.dist - b.dist
+    })
   }
 
+  // Haritada tüm konumlu mekanlar (zoom out/kaydırınca 1 km dışı da görünür)
   const mapVenues: MapVenue[] = filtered
     .filter((v) => (v as any).latitude != null && (v as any).longitude != null)
-    .filter((v) => !(nearMode && userLoc) || distanceKm(userLoc, { lat: (v as any).latitude, lng: (v as any).longitude }) <= RADIUS_KM)
     .map((v) => ({ id: v.id, name: v.name, lat: (v as any).latitude, lng: (v as any).longitude, district: v.district, city: v.city }))
 
   const activeFilters = [city, venueType, onlyOpenSlots].filter(Boolean).length
@@ -161,16 +163,13 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
         {view === 'map' ? (
           mapVenues.length === 0 ? (
             <div className="text-center py-16 text-text-muted text-sm">
-              {nearMode && userLoc
-                ? (locale === 'en' ? `No venues within ${RADIUS_KM} km.` : `${RADIUS_KM} km içinde mekan yok.`)
-                : (locale === 'en' ? 'No venues with a location yet.' : 'Henüz konumu olan mekan yok.')}
+              {locale === 'en' ? 'No venues with a location yet.' : 'Henüz konumu olan mekan yok.'}
             </div>
           ) : (
             <>
               <p className="text-xs text-text-muted mb-3">
-                {nearMode && userLoc
-                  ? (locale === 'en' ? `${mapVenues.length} venues within ${RADIUS_KM} km` : `${RADIUS_KM} km içinde ${mapVenues.length} mekan`)
-                  : `${mapVenues.length} ${locale === 'en' ? 'venues on map' : 'mekan haritada'}`}
+                {mapVenues.length} {locale === 'en' ? 'venues on map' : 'mekan haritada'}
+                {nearMode && userLoc && (locale === 'en' ? ` · ${RADIUS_KM} km framed` : ` · ${RADIUS_KM} km çerçevede`)}
               </p>
               <VenuesMap venues={mapVenues} userLoc={nearMode ? userLoc : null} radiusKm={RADIUS_KM} />
             </>
@@ -178,15 +177,11 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
         ) : (
           <>
             {nearMode && userLoc && (
-              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? `Venues within ${RADIUS_KM} km of you` : `Konumuna ${RADIUS_KM} km mesafedeki mekanlar`}</p>
+              <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
             )}
 
             {withDist.length === 0 ? (
-              <div className="text-center py-16 text-text-muted text-sm">
-                {nearMode && userLoc
-                  ? (locale === 'en' ? `No venues within ${RADIUS_KM} km.` : `${RADIUS_KM} km içinde mekan yok.`)
-                  : (locale === 'en' ? 'No venues found.' : 'Mekan bulunamadı.')}
-              </div>
+              <div className="text-center py-16 text-text-muted text-sm">{locale === 'en' ? 'No venues found.' : 'Mekan bulunamadı.'}</div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {withDist.map(({ v, dist }) => (
