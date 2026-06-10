@@ -4,7 +4,7 @@ export const MUSIC_GENRES = [
 ]
 
 export const STAGE_GENRES = [
-  'Stand-Up', 'Doğaçlama', 'Alternatif Sahne',
+  'Stand-Up', 'Doğaçlama', 'Tiyatro', 'Alternatif Sahne',
 ]
 
 export const ALL_GENRES = [...MUSIC_GENRES, ...STAGE_GENRES]
@@ -26,6 +26,7 @@ export const GENRE_COLORS: Record<string, string> = {
   Arabesk:           '#EF4444',
   'Stand-Up':        '#d4a820',
   Doğaçlama:         '#14B8A6',
+  Tiyatro:           '#DB2777',
   'Alternatif Sahne':'#6366F1',
 }
 

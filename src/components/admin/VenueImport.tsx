@@ -148,7 +148,7 @@ export function VenueImport() {
         {/* Müzik türleri (çoklu seçim) */}
         <div>
           <label className="label text-xs mb-1 block">
-            Müzik Türleri <span className="text-text-muted font-normal">(opsiyonel, birkaç seçebilirsin)</span>
+            Etkinlik Türü <span className="text-text-muted font-normal">(opsiyonel, birkaç seçebilirsin)</span>
             {genres.length > 0 && <span className="text-accent ml-1">· {genres.join(', ')}</span>}
           </label>
           <div className="flex flex-wrap gap-1.5">
