@@ -160,7 +160,7 @@ export default async function VenuePage({ params }: Props) {
     },
     maximumAttendeeCapacity: (venue as any).capacity_standing ?? (venue as any).capacity_seated ?? undefined,
     sameAs: [
-      socialLinks.instagram ? `https://instagram.com/${socialLinks.instagram.replace('@', '')}` : null,
+      socialLinks.instagram ? (socialLinks.instagram.startsWith('http') ? socialLinks.instagram : `https://instagram.com/${socialLinks.instagram.replace('@', '')}`) : null,
       socialLinks.facebook ?? null,
     ].filter(Boolean),
   }
