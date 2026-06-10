@@ -79,6 +79,7 @@ Etkinlik varsa:
 {"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
 
 Notlar:
+- SADECE YAKLAŞAN etkinlikleri ver. Tarihi bugünden ÖNCE olan (geçmiş/olmuş) etkinlikleri DAHİL ETME. Geçmiş bir gönderiden bahsediliyorsa onu atla.
 - "free": yalnızca metinde net "giriş ücretsiz/serbest/bedava" varsa true. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
 - "weekday": SADECE açıkça SÜREKLİ HAFTALIK tekrarı belirten ifadelerde doldur — "HER perşembe", "her hafta cumartesi", "perşembe GECELERİ/akşamları" (süreklilik). Gün no: 0=Pazar,1=Pazartesi,2=Salı,3=Çarşamba,4=Perşembe,5=Cuma,6=Cumartesi.
 - "Bu perşembe", "bu cumartesi", "önümüzdeki cuma" gibi TEK bir yaklaşan günü kastediyorsa → weekday=null; bunun yerine "date"i bugünden hesaplayıp o günün GERÇEK tarihini (YYYY-MM-DD) ver. Şüphedeysen weekday=null (tek seferlik varsay).
@@ -184,6 +185,10 @@ ${promptBody}`,
       let drafts = 0
       if (parsed?.has_event && parsed.events?.length) {
         for (const event of parsed.events) {
+          // Güvenlik filtresi: geçmiş tarihli (bugünden önce) tekil etkinlikleri atla.
+          // Tekrarlayan (weekday dolu) ya da tarihsiz olanlar elenmez.
+          if (typeof event.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(event.date) && event.date < today && event.weekday == null) continue
+
           // Gönderi numarasından görseli eşleştir; numarayı sakla, ham 'post' alanını çıkar
           const pIdx = typeof event.post === 'number' ? event.post - 1 : -1
           const post = pIdx >= 0 ? posts[pIdx] : undefined
