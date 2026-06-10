@@ -58,17 +58,27 @@ export function EventFeed() {
   const [events, setEvents] = useState<EventWithRelations[]>([])
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week')
   const [activeGenre, setActiveGenre] = useState<string>('all')
+  const [city, setCity] = useState<string>('Tümü')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+
+  // Üstteki şehir seçicisini dinle (localStorage + 'city_changed' event'i)
+  useEffect(() => {
+    const read = () => setCity(localStorage.getItem('sahne_city') || 'Tümü')
+    read()
+    window.addEventListener('city_changed', read)
+    return () => window.removeEventListener('city_changed', read)
+  }, [])
 
   useEffect(() => {
     async function fetchEvents() {
       setLoading(true)
       const { from, to } = getDateRange(timePeriod)
 
+      const cityFilter = city && city !== 'Tümü'
       let query = supabase
         .from('events')
-        .select('*, venues(name, district, city), artists(stage_name)')
+        .select(`*, venues${cityFilter ? '!inner' : ''}(name, district, city), artists(stage_name)`)
         .eq('status', 'confirmed')
         .gte('event_date', from)
         .lte('event_date', to)
@@ -76,16 +86,15 @@ export function EventFeed() {
         .order('start_time', { ascending: true })
         .limit(30)
 
-      if (activeGenre !== 'all') {
-        query = query.eq('genre', activeGenre)
-      }
+      if (cityFilter) query = query.eq('venues.city', city)
+      if (activeGenre !== 'all') query = query.eq('genre', activeGenre)
 
       const { data } = await query
       setEvents((data as EventWithRelations[]) ?? [])
       setLoading(false)
     }
     fetchEvents()
-  }, [timePeriod, activeGenre])
+  }, [timePeriod, activeGenre, city])
 
   return (
     <div>
