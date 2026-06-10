@@ -23,6 +23,7 @@ type PlaceResult = {
   name: string
   address: string
   district: string | null
+  place_city: string | null
   phone: string | null
   website: string | null
   rating: number | null
@@ -39,6 +40,18 @@ function extractDistrict(components: any[]): string | null {
   if (lvl2) return lvl2.longText ?? lvl2.shortText ?? null
   const sub = components.find(c => c.types?.includes('sublocality') || c.types?.includes('locality'))
   return sub?.longText ?? null
+}
+
+// Adres bileşenlerinden il (administrative_area_level_1 — TR'de şehir) çıkar
+function extractCity(components: any[]): string | null {
+  if (!Array.isArray(components)) return null
+  const il = components.find(c => c.types?.includes('administrative_area_level_1'))
+  return il?.longText ?? il?.shortText ?? null
+}
+
+// Şehir adlarını karşılaştırmak için normalize (TR büyük/küçük harf + boşluk)
+function normCity(s: string): string {
+  return (s ?? '').trim().toLocaleLowerCase('tr-TR')
 }
 
 // Google Places'ten mekanın web sitesini bulur — çalışan Places API kullanır, arama motoru gerekmez.
@@ -76,6 +89,7 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': apiKey,
       'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.addressComponents,places.photos,places.location',
+
     },
     body: JSON.stringify({
       textQuery,
@@ -99,6 +113,7 @@ async function searchPlaces(query: string, city: string): Promise<PlaceResult[]>
     name: p.displayName?.text ?? '',
     address: p.formattedAddress ?? '',
     district: extractDistrict(p.addressComponents),
+    place_city: extractCity(p.addressComponents),
     phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber ?? null,
     website: p.websiteUri ?? null,
     rating: typeof p.rating === 'number' ? p.rating : null,
@@ -364,7 +379,14 @@ export async function POST(req: NextRequest) {
   // ── ARAMA ──
   if (body.action === 'search') {
     try {
-      const results = await searchPlaces(body.query ?? '', body.city ?? '')
+      const selectedCity: string = body.city ?? ''
+      const all = await searchPlaces(body.query ?? '', selectedCity)
+
+      // Seçilen şehirde olmayan sonuçları ele (Places bazen komşu ilden mekan döndürür).
+      // Şehri belirlenemeyenler (place_city null) korunur — yanlışlıkla geçerli sonuç atılmasın.
+      const results = selectedCity
+        ? all.filter(r => !r.place_city || normCity(r.place_city) === normCity(selectedCity))
+        : all
 
       // Sistemde zaten kayıtlı olanları işaretle (isim + şehir ile)
       const admin = adminClient()
