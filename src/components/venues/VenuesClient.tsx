@@ -10,6 +10,7 @@ import { VENUE_TYPE_LABELS, cn, formatTime } from '@/lib/utils'
 import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { VenuesMap, type MapVenue } from '@/components/venues/VenuesMap'
+import { useSelectedCity } from '@/lib/use-selected-city'
 
 type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[]; logo_url?: string | null }
 
@@ -21,8 +22,6 @@ type UpcomingEvent = {
   start_time: string
 }
 
-const CITIES_TR = ['İstanbul', 'Ankara', 'İzmir', 'Bursa']
-const CITIES_EN = ['Istanbul', 'Ankara', 'Izmir', 'Bursa']
 
 // "Yakınımda" modunda gösterilecek yarıçap (km)
 const RADIUS_KM = 1
@@ -45,7 +44,6 @@ function fmtDistance(km: number): string {
 export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }: { initialVenues: VenueFull[]; upcomingEvents?: UpcomingEvent[]; canSeeSlots: boolean }) {
   const t = useTranslations('filters')
   const locale = useLocale()
-  const CITIES = locale === 'en' ? CITIES_EN : CITIES_TR
   const VENUE_TYPES = [
     { key: 'pub', label: t('venueTypes.pub') },
     { key: 'turku_bar', label: t('venueTypes.turku_bar') },
@@ -58,7 +56,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     { key: 'music_school', label: t('venueTypes.music_school') },
     { key: 'other', label: t('venueTypes.other') },
   ]
-  const [city, setCity] = useState('')
+  const city = useSelectedCity() // üstteki global şehir seçicisinden
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -109,7 +107,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
     .filter((v) => (v as any).latitude != null && (v as any).longitude != null)
     .map((v) => ({ id: v.id, name: v.name, lat: (v as any).latitude, lng: (v as any).longitude, district: v.district, city: v.city }))
 
-  const activeFilters = [city, venueType, onlyOpenSlots].filter(Boolean).length
+  const activeFilters = [venueType, onlyOpenSlots].filter(Boolean).length
 
   return (
     <div className="md:flex md:gap-6">
@@ -118,11 +116,9 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
         <div className="card p-4 sticky top-20 space-y-5">
           <h3 className="text-sm font-semibold text-text-primary">{t('title')}</h3>
           <FilterContent
-            city={city} setCity={setCity}
             venueType={venueType} setVenueType={setVenueType}
             onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
             canSeeSlots={canSeeSlots}
-            cities={CITIES}
             venueTypes={VENUE_TYPES}
             locale={locale}
             t={t}
@@ -201,11 +197,9 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
 
       <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={locale === 'en' ? 'Filter Venues' : 'Mekanları Filtrele'}>
         <FilterContent
-          city={city} setCity={setCity}
           venueType={venueType} setVenueType={setVenueType}
           onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
           canSeeSlots={canSeeSlots}
-          cities={CITIES}
           venueTypes={VENUE_TYPES}
           locale={locale}
           t={t}
@@ -218,33 +212,16 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
   )
 }
 
-function FilterContent({ city, setCity, venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots, canSeeSlots, cities, venueTypes, locale, t }: {
-  city: string; setCity: (v: string) => void
+function FilterContent({ venueType, setVenueType, onlyOpenSlots, setOnlyOpenSlots, canSeeSlots, venueTypes, locale, t }: {
   venueType: string; setVenueType: (v: string) => void
   onlyOpenSlots: boolean; setOnlyOpenSlots: (v: boolean) => void
   canSeeSlots: boolean
-  cities: string[]
   venueTypes: Array<{ key: string; label: string }>
   locale: string
   t: (key: string) => string
 }) {
   return (
     <div className="space-y-5">
-      <div>
-        <label className="label">{t('city')}</label>
-        <div className="flex flex-wrap gap-1.5">
-          {cities.map((c: string) => (
-            <button key={c} onClick={() => setCity(city === c ? '' : c)}
-              className={cn('chip border transition-colors', city === c
-                ? 'bg-accent/10 text-accent border-accent/30'
-                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-              )}>
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div>
         <label className="label">{locale === 'en' ? 'Venue Type' : 'Mekan Türü'}</label>
         <div className="flex flex-col gap-2">

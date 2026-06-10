@@ -12,8 +12,8 @@ import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCale
 import { formatTime } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { MUSIC_GENRES, STAGE_GENRES, CITY_OPTIONS } from '@/lib/constants'
 import { EventsMap, type MapEvent } from '@/components/events/EventsMap'
+import { useSelectedCity } from '@/lib/use-selected-city'
 
 type EventFull = Event & {
   poster_url?: string | null
@@ -22,8 +22,6 @@ type EventFull = Event & {
   bands: { name: string; photo_url?: string | null } | null
   artist_name?: string | null
 }
-
-const CITIES = CITY_OPTIONS
 
 // "Yakınımda" modunda gösterilecek yarıçap (km)
 const RADIUS_KM = 1
@@ -71,7 +69,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
     : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
 
   const [genre, setGenre] = useState('')
-  const [city, setCity] = useState('')
+  const city = useSelectedCity() // üstteki global şehir seçicisinden
   const [entryType, setEntryType] = useState('')
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -122,7 +120,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   })
 
   const grouped = groupByDate(filtered)
-  const activeFilters = [genre, city, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
+  const activeFilters = [genre, entryType, dateRange !== 'all' ? dateRange : ''].filter(Boolean).length
 
   // Harita görünümü: mekan koordinatı olan tüm etkinlikler (zoom out/kaydırınca 1 km dışı da görünür)
   const mapEvents: MapEvent[] = filtered
@@ -221,7 +219,6 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
           <h3 className="text-sm font-semibold text-text-primary mb-4">{t('title')}</h3>
           <FilterContent
             genre={genre} setGenre={setGenre}
-            city={city} setCity={setCity}
             entryType={entryType} setEntryType={setEntryType}
             musicGenres={musicGenres}
             stageGenres={stageGenres}
@@ -339,7 +336,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
               </p>
               {activeFilters > 0 && (
                 <button
-                  onClick={() => { setGenre(''); setCity(''); setEntryType(''); setDateRange('all') }}
+                  onClick={() => { setGenre(''); setEntryType(''); setDateRange('all') }}
                   className="mt-3 text-accent text-xs hover:underline"
                 >
                   {t('clearFilters')}
@@ -378,7 +375,6 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
       <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)} title={`${t('title')} Etkinlikler`}>
         <FilterContent
           genre={genre} setGenre={setGenre}
-          city={city} setCity={setCity}
           entryType={entryType} setEntryType={setEntryType}
           musicGenres={musicGenres}
           stageGenres={stageGenres}
@@ -393,9 +389,8 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   )
 }
 
-function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType, musicGenres, stageGenres }: {
+function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, stageGenres }: {
   genre: string; setGenre: (v: string) => void
-  city: string; setCity: (v: string) => void
   entryType: string; setEntryType: (v: string) => void
   musicGenres: string[]
   stageGenres: string[]
@@ -410,7 +405,6 @@ function FilterContent({ genre, setGenre, city, setCity, entryType, setEntryType
     <div className="space-y-5">
       <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
       <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
-      <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
       <div>
         <label className="label">{t('entry')}</label>
         <div className="space-y-1">
