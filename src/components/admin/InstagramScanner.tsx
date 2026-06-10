@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Plus, Trash2, RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { CITY_OPTIONS } from '@/lib/constants'
+import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
 
 function adminClient() {
@@ -66,10 +64,6 @@ export function InstagramScanner() {
   const [loading, setLoading] = useState(true)
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<string | null>(null)
-  const [newUrl, setNewUrl] = useState('')
-  const [newCity, setNewCity] = useState('Ankara')
-  const [adding, setAdding] = useState(false)
-  const [showAdd, setShowAdd] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekday?: number | null }>>({})
 
@@ -133,16 +127,6 @@ export function InstagramScanner() {
     setScanning(false)
   }
 
-  async function addSource() {
-    if (!newUrl.trim()) return
-    setAdding(true)
-    await fetch('/api/admin/instagram/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', url: newUrl.trim(), city: newCity || null }) })
-    setNewUrl('')
-    setShowAdd(false)
-    setAdding(false)
-    await load()
-  }
-
   // Tek seferlik: önceden 'free' kaydedilmiş taranan etkinlikleri 'Kapıda Öde' yap
   async function fixEntryTypes() {
     if (!confirm('Taranan (performer\'lı) ücretsiz etkinlikler "Kapıda Öde" olarak güncellenecek. Devam?')) return
@@ -153,17 +137,6 @@ export function InstagramScanner() {
       setScanResult(res.ok ? `${data.updated ?? 0} etkinlik "Kapıda Öde" yapıldı.` : (data.error ?? 'Hata'))
     } catch { setScanResult('Güncelleme sırasında hata oluştu.') }
     setScanning(false)
-  }
-
-  async function toggleSource(id: string, current: boolean) {
-    await fetch('/api/admin/instagram/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle', id, is_active: !current }) })
-    await load()
-  }
-
-  async function deleteSource(id: string) {
-    if (!confirm('Bu kaynağı silmek istediğinizden emin misiniz?')) return
-    await fetch('/api/admin/instagram/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) })
-    await load()
   }
 
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
@@ -185,7 +158,8 @@ export function InstagramScanner() {
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-accent" /></div>
 
-  const byCity = sources.reduce<Record<string, Source[]>>((acc, s) => {
+  // Sadece aktif (taranacak) hesapları göster — liste profillerden otomatik yönetiliyor
+  const byCity = sources.filter(s => s.is_active).reduce<Record<string, Source[]>>((acc, s) => {
     const c = s.city ?? 'Diğer'
     acc[c] = [...(acc[c] ?? []), s]
     return acc
@@ -200,12 +174,9 @@ export function InstagramScanner() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-bebas text-2xl text-text-primary">Instagram Tarayıcı</h2>
-          <p className="text-text-muted text-xs mt-0.5">Takip edilen hesaplar otomatik taranır, etkinlikler sana gelir</p>
+          <p className="text-text-muted text-xs mt-0.5">Mekan profillerindeki Instagram'lar otomatik taranır, etkinlikler sana gelir</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowAdd(!showAdd)} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5">
-            <Plus size={14} /> Hesap Ekle
-          </button>
           <button onClick={fixEntryTypes} disabled={scanning} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50" title="Taranan ücretsiz etkinlikleri Kapıda Öde yap (tek seferlik)">
             <Ticket size={14} /> Ücretleri Düzelt
           </button>
@@ -220,28 +191,6 @@ export function InstagramScanner() {
         <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-lg px-4 py-2">{scanResult}</div>
       )}
 
-      {/* Add form */}
-      {showAdd && (
-        <div className="card p-4 space-y-3">
-          <p className="text-sm text-text-primary font-medium">Yeni hesap ekle</p>
-          <div className="flex gap-2">
-            <input
-              value={newUrl}
-              onChange={e => setNewUrl(e.target.value)}
-              placeholder="https://www.instagram.com/hesap/"
-              className="input-field flex-1 text-sm"
-            />
-            <select value={newCity} onChange={e => setNewCity(e.target.value)} className="input-field text-sm w-36">
-              <option value="">Şehir seç</option>
-              {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <button onClick={addSource} disabled={adding || !newUrl.trim()} className="btn-accent px-4 text-sm disabled:opacity-50">
-              {adding ? <Loader2 size={14} className="animate-spin" /> : 'Ekle'}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Sources */}
       <div className="space-y-4">
         {Object.entries(byCity).map(([city, citySources]) => (
@@ -249,7 +198,7 @@ export function InstagramScanner() {
             <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wide">{city}</p>
             <div className="space-y-1.5">
               {citySources.map(src => (
-                <div key={src.id} className={cn('card px-4 py-3 flex items-center gap-3', !src.is_active && 'opacity-50')}>
+                <div key={src.id} className="card px-4 py-3 flex items-center gap-3">
                   <Instagram size={14} className="text-pink-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -269,16 +218,6 @@ export function InstagramScanner() {
                     <button onClick={() => scanOne(src.id)} disabled={scanning} title="Bu hesabı tara"
                       className="p-1.5 text-text-muted hover:text-accent transition-colors disabled:opacity-40">
                       <RefreshCw size={13} />
-                    </button>
-                    <button onClick={() => toggleSource(src.id, src.is_active)}
-                      className={cn('text-xs px-2 py-1 rounded border transition-colors', src.is_active
-                        ? 'text-accent border-accent/30 hover:bg-accent/10'
-                        : 'text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary')}>
-                      {src.is_active ? 'Aktif' : 'Pasif'}
-                    </button>
-                    <button onClick={() => deleteSource(src.id)}
-                      className="p-1.5 text-text-muted hover:text-red-400 transition-colors">
-                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
