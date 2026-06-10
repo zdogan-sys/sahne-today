@@ -66,6 +66,8 @@ export function InstagramScanner() {
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekday?: number | null }>>({})
+  const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
+  const [errorById, setErrorById] = useState<Record<string, string>>({})
 
   // Bir taslağın geçerli tarih/saat/tekrar değerleri.
   // Varsayılan TEK SEFERLİK (AI tekrar tahmini otomatik uygulanmaz — çoğu yanlış pozitif).
@@ -141,16 +143,16 @@ export function InstagramScanner() {
 
   async function updateDraft(id: string, status: 'approved' | 'skipped') {
     if (processingId) return
-    setProcessingId(id); setScanResult(null)
+    setProcessingId(id)
+    setErrorById(p => { const n = { ...p }; delete n[id]; return n })
     const eff = effOf(drafts.find(x => x.id === id))
     try {
       const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekday: eff.weekday ?? undefined }) })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setScanResult(data.error ?? 'İşlem başarısız oldu.'); return }
+      if (!res.ok) { setErrorById(p => ({ ...p, [id]: data.error ?? 'İşlem başarısız oldu.' })); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
-      if (status === 'approved') setScanResult(`${data.created ?? 1} etkinlik oluşturuldu ✓`)
     } catch {
-      setScanResult('Bağlantı hatası — tekrar deneyin.')
+      setErrorById(p => ({ ...p, [id]: 'Bağlantı hatası — tekrar deneyin.' }))
     } finally {
       setProcessingId(null)
     }
@@ -166,10 +168,7 @@ export function InstagramScanner() {
   }, {})
 
   return (
-    <div className="space-y-8">
-      {/* Mekan Instagram linklerini doldurma araçları */}
-      <VenueInstagramTools />
-
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -187,12 +186,27 @@ export function InstagramScanner() {
         </div>
       </div>
 
+      {/* Sekmeler */}
+      <div className="flex gap-0.5 bg-surface rounded-lg p-0.5 border border-[rgba(228,224,216,0.08)] w-fit">
+        <button onClick={() => setTab('sources')}
+          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'sources' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+          Taranan Hesaplar
+        </button>
+        <button onClick={() => setTab('drafts')}
+          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'drafts' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+          Onay Bekleyen Taslaklar{drafts.length > 0 ? ` (${drafts.length})` : ''}
+        </button>
+      </div>
+
       {scanResult && (
         <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-lg px-4 py-2">{scanResult}</div>
       )}
 
-      {/* Sources */}
-      <div className="space-y-4">
+      {tab === 'sources' && (
+      <div className="space-y-6">
+        <VenueInstagramTools />
+        {/* Sources */}
+        <div className="space-y-4">
         {Object.entries(byCity).map(([city, citySources]) => (
           <div key={city}>
             <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wide">{city}</p>
@@ -225,9 +239,11 @@ export function InstagramScanner() {
             </div>
           </div>
         ))}
+        </div>
       </div>
+      )}
 
-      {/* Drafts */}
+      {tab === 'drafts' && (
       <div>
         <h3 className="font-bebas text-xl text-text-primary mb-3">
           Onay Bekleyen Taslaklar
@@ -312,11 +328,15 @@ export function InstagramScanner() {
                     </button>
                   </div>
                 </div>
+                {errorById[draft.id] && (
+                  <p className="text-xs text-red-400 mt-2 bg-red-500/10 border border-red-500/20 rounded px-2 py-1">{errorById[draft.id]}</p>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }
