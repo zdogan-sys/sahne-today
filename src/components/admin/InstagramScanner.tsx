@@ -169,6 +169,9 @@ export function InstagramScanner() {
 
   return (
     <div className="space-y-6">
+      {/* Mekan Instagram linklerini doldurma araçları — en üstte */}
+      <VenueInstagramTools />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -204,7 +207,6 @@ export function InstagramScanner() {
 
       {tab === 'sources' && (
       <div className="space-y-6">
-        <VenueInstagramTools />
         {/* Sources */}
         <div className="space-y-4">
         {Object.entries(byCity).map(([city, citySources]) => (
