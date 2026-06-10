@@ -66,7 +66,7 @@ export function InstagramScanner() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[] }>>({})
+  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[]; performer?: string }>>({})
   const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
   const [errorById, setErrorById] = useState<Record<string, string>>({})
 
@@ -81,6 +81,7 @@ export function InstagramScanner() {
       date: e?.date ?? suggestedDate,
       time: e?.time ?? ex.time ?? '',
       weekdays: e && 'weekdays' in e ? (e.weekdays ?? []) : [],
+      performer: e?.performer ?? ex.performer ?? '',
     }
   }
 
@@ -148,7 +149,7 @@ export function InstagramScanner() {
     setErrorById(p => { const n = { ...p }; delete n[id]; return n })
     const eff = effOf(drafts.find(x => x.id === id))
     try {
-      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekdays: eff.weekdays.length ? eff.weekdays : undefined }) })
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekdays: eff.weekdays.length ? eff.weekdays : undefined, performer: eff.performer || undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setErrorById(p => ({ ...p, [id]: data.error ?? 'İşlem başarısız oldu.' })); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
@@ -277,9 +278,12 @@ export function InstagramScanner() {
                         {draft.extracted.title && (
                           <p className="text-sm font-medium text-text-primary">{draft.extracted.title}</p>
                         )}
-                        {draft.extracted.performer && (
-                          <p className="text-xs text-accent">{draft.extracted.performer}</p>
-                        )}
+                        <input
+                          value={edits[draft.id]?.performer ?? draft.extracted.performer ?? ''}
+                          onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], performer: ev.target.value } }))}
+                          placeholder="Sanatçı / grup adı"
+                          className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-accent w-full max-w-[240px]" />
+                        <p className="text-[10px] text-text-muted">Kayıtlı grup/sanatçıyla aynı isimse otomatik bağlanır</p>
                         {(() => {
                           const ef = effOf(draft)
                           const inputCls = 'bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary'

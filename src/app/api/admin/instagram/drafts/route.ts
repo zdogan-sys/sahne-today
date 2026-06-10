@@ -66,7 +66,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-  const { id, status, date: bodyDate, time: bodyTime, weekdays: bodyWeekdays, weeks: bodyWeeks } = await req.json()
+  const { id, status, date: bodyDate, time: bodyTime, weekdays: bodyWeekdays, weeks: bodyWeeks, performer: bodyPerformer } = await req.json()
   if (!id || !['approved', 'skipped'].includes(status))
     return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
@@ -113,6 +113,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: `@${handle} bir mekanla eşleşmiyor — etkinlik oluşturulamadı.` }, { status: 400 })
     }
 
+    // Performer: elle düzenlenmişse onu kullan; mevcut grup/sanatçıyla eşleşirse bağla
+    const perf = (typeof bodyPerformer === 'string' && bodyPerformer.trim() ? bodyPerformer.trim() : (ex.performer || null)) as string | null
+    let bandId: string | null = null
+    let artistId: string | null = null
+    if (perf) {
+      const { data: b } = await admin.from('bands').select('id').ilike('name', perf).limit(1)
+      if (b?.length) bandId = (b[0] as any).id
+      else {
+        const { data: a } = await admin.from('artists').select('id').ilike('stage_name', perf).limit(1)
+        if (a?.length) artistId = (a[0] as any).id
+      }
+    }
+
     const titleKey = String(ex.title ?? '').slice(0, 20)
     const createdIds: string[] = []
     for (const dt of dates) {
@@ -129,7 +142,9 @@ export async function PATCH(req: NextRequest) {
         event_date: dt,
         start_time: time || '21:00',
         end_time: null,
-        artist_name: ex.performer || null,
+        artist_name: perf,
+        artist_id: artistId,
+        band_id: bandId,
         description: ex.description || null,
         entry_type: ex.free === true ? 'free' : 'door',
         status: 'confirmed',
