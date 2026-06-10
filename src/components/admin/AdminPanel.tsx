@@ -1041,9 +1041,11 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
           </select>
         </div>
         <TabbedGenreSelector
-          label="Müzik Türleri"
+          label="Etkinlik Türü"
           selected={genres}
           onToggle={(g) => setGenres(genres.includes(g) ? genres.filter(x => x !== g) : [...genres, g])}
+          danceSelected={genres}
+          onDanceToggle={(g) => setGenres(genres.includes(g) ? genres.filter(x => x !== g) : [...genres, g])}
         />
         <div>
           <label className="label">Açıklama</label>
