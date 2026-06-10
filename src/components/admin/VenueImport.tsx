@@ -83,7 +83,7 @@ export function VenueImport() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'İçe aktarma hatası'); setImporting(false); return }
-      setMessage(`${data.imported} mekan eklendi${data.skipped ? `, ${data.skipped} zaten vardı` : ''}.`)
+      setMessage(`${data.imported} yeni mekan eklendi${data.updated ? `, ${data.updated} mevcut mekan güncellendi` : ''}${data.skipped ? `, ${data.skipped} atlandı` : ''}.`)
       if (data.errors?.length) setError(data.errors.join(' · '))
       // Eklenenleri "zaten var" işaretle
       setResults(prev => prev.map(r => selected.has(r.place_id) ? { ...r, already_exists: true } : r))

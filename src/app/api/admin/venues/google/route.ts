@@ -393,26 +393,55 @@ export async function POST(req: NextRequest) {
 
     const admin = adminClient()
     let imported = 0
+    let updated = 0
     const errors: string[] = []
 
     for (const v of venues) {
-      // Duplicate kontrolü
-      const { data: dup } = await admin
+      // Aynı isimli mekan (büyük/küçük harf duyarsız) + aynı şehir var mı?
+      const { data: existing } = await admin
         .from('venues')
-        .select('id')
-        .eq('name', v.name)
+        .select('id, social_links, phone, district, address, photo_url, logo_url, latitude, longitude')
+        .ilike('name', v.name)
         .eq('city', city)
         .limit(1)
-      if (dup?.length) continue
+      const ex = existing?.[0] as any
 
-      const social_links: Record<string, string> = {}
+      // Website'ten IG/website türet
+      const derivedSl: Record<string, string> = {}
       if (v.website) {
         const ig = await deriveInstagram(v.website)
-        if (ig) social_links.instagram = ig
-        // Website Instagram değilse website olarak da sakla
-        if (!ig || !/instagram\.com/i.test(v.website)) social_links.website = v.website
+        if (ig) derivedSl.instagram = ig
+        if (!ig || !/instagram\.com/i.test(v.website)) derivedSl.website = v.website
       }
 
+      if (ex) {
+        // ── MEVCUDU GÜNCELLE (yeni kayıt açma) — sadece boş alanları doldur, mevcut veriyi ezme ──
+        const update: Record<string, any> = {}
+        if (!ex.phone && v.phone) update.phone = v.phone
+        if (!ex.district && v.district) update.district = v.district
+        if ((!ex.address || ex.address === '') && v.address) update.address = v.address
+        if (ex.latitude == null && v.latitude != null) update.latitude = v.latitude
+        if (ex.longitude == null && v.longitude != null) update.longitude = v.longitude
+        if (!ex.photo_url && v.photo_name) {
+          const p = await fetchAndStorePhoto(v.photo_name, v.place_id, admin)
+          if (p) update.photo_url = p
+        }
+        if (!ex.logo_url && v.website) {
+          const l = await fetchAndStoreLogo(v.website, v.place_id, admin)
+          if (l) update.logo_url = l
+        }
+        // social_links: mevcut değerler korunur, eksik olanlar (örn. instagram) eklenir
+        const mergedSl = { ...derivedSl, ...((ex.social_links as Record<string, string>) ?? {}) }
+        if (JSON.stringify(mergedSl) !== JSON.stringify(ex.social_links ?? {})) update.social_links = mergedSl
+        if (Object.keys(update).length) {
+          const { error } = await admin.from('venues').update(update).eq('id', ex.id)
+          if (error) { errors.push(`${v.name}: ${error.message}`); continue }
+        }
+        updated++
+        continue
+      }
+
+      // ── YENİ MEKAN EKLE ──
       const photo_url = v.photo_name ? await fetchAndStorePhoto(v.photo_name, v.place_id, admin) : null
       const logo_url = v.website ? await fetchAndStoreLogo(v.website, v.place_id, admin) : null
 
@@ -424,7 +453,7 @@ export async function POST(req: NextRequest) {
         venue_type: venueType,
         genres,
         phone: v.phone || null,
-        social_links,
+        social_links: derivedSl,
         photo_url,
         logo_url,
         latitude: v.latitude,
@@ -436,7 +465,7 @@ export async function POST(req: NextRequest) {
       else imported++
     }
 
-    return NextResponse.json({ imported, skipped: venues.length - imported - errors.length, errors })
+    return NextResponse.json({ imported, updated, skipped: venues.length - imported - updated - errors.length, errors })
   }
 
   // ── INSTAGRAM BACKFILL ── (websitesi olup IG'si olmayan mevcut mekanlar)
