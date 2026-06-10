@@ -34,8 +34,18 @@ async function storeEventPoster(admin: ReturnType<typeof adminClient>, imageUrl:
   }
 }
 
+// Saklanmış bir IG değerinden handle çıkarır — tam URL, düz handle ya da @handle hepsini tanır.
+function extractIgHandle(s: string): string | null {
+  if (!s) return null
+  const m = s.match(/instagram\.com\/([A-Za-z0-9_.]+)/i)
+  if (m) return m[1].toLowerCase()
+  const bare = s.trim().replace(/^@/, '').replace(/\/+$/, '').split(/[/?#\s]/)[0]
+  return /^[A-Za-z0-9_.]+$/.test(bare) ? bare.toLowerCase() : null
+}
+
 // IG handle'ından mekanı bulur (venue.social_links.instagram ile eşleştirir).
 // ilike ile aday çeker, sonra handle'ı tam eşleştirip yanlış-pozitifi (zula ⊂ zulabar) eler.
+// Mekanın IG'si tam URL / düz handle / @handle hangi biçimde olursa olsun eşleşir.
 async function findVenueByIgHandle(admin: ReturnType<typeof adminClient>, handle: string) {
   if (!handle) return null
   const { data } = await admin
@@ -44,8 +54,7 @@ async function findVenueByIgHandle(admin: ReturnType<typeof adminClient>, handle
     .ilike('social_links->>instagram', `%${handle}%`)
     .limit(10)
   for (const v of (data ?? []) as any[]) {
-    const m = (v.social_links?.instagram ?? '').match(/instagram\.com\/([A-Za-z0-9_.]+)/i)
-    if (m && m[1].toLowerCase() === handle.toLowerCase()) return v
+    if (extractIgHandle(v.social_links?.instagram ?? '') === handle.toLowerCase()) return v
   }
   return null
 }
