@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
 
 function adminClient() {
@@ -49,13 +50,13 @@ function nextDateOfWeekday(wd: number): string {
 
 // JS getDay() değerleri: 0=Pazar .. 6=Cumartesi
 const WEEKDAYS = [
-  { v: 1, l: 'Her Pazartesi' },
-  { v: 2, l: 'Her Salı' },
-  { v: 3, l: 'Her Çarşamba' },
-  { v: 4, l: 'Her Perşembe' },
-  { v: 5, l: 'Her Cuma' },
-  { v: 6, l: 'Her Cumartesi' },
-  { v: 0, l: 'Her Pazar' },
+  { v: 1, s: 'Pzt' },
+  { v: 2, s: 'Sal' },
+  { v: 3, s: 'Çar' },
+  { v: 4, s: 'Per' },
+  { v: 5, s: 'Cum' },
+  { v: 6, s: 'Cmt' },
+  { v: 0, s: 'Paz' },
 ]
 
 export function InstagramScanner() {
@@ -65,7 +66,7 @@ export function InstagramScanner() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekday?: number | null }>>({})
+  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[] }>>({})
   const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
   const [errorById, setErrorById] = useState<Record<string, string>>({})
 
@@ -79,7 +80,7 @@ export function InstagramScanner() {
     return {
       date: e?.date ?? suggestedDate,
       time: e?.time ?? ex.time ?? '',
-      weekday: e && 'weekday' in e ? (e.weekday ?? null) : null,
+      weekdays: e && 'weekdays' in e ? (e.weekdays ?? []) : [],
     }
   }
 
@@ -147,7 +148,7 @@ export function InstagramScanner() {
     setErrorById(p => { const n = { ...p }; delete n[id]; return n })
     const eff = effOf(drafts.find(x => x.id === id))
     try {
-      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekday: eff.weekday ?? undefined }) })
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekdays: eff.weekdays.length ? eff.weekdays : undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setErrorById(p => ({ ...p, [id]: data.error ?? 'İşlem başarısız oldu.' })); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
@@ -282,24 +283,39 @@ export function InstagramScanner() {
                         {(() => {
                           const ef = effOf(draft)
                           const inputCls = 'bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary'
+                          const recurring = ef.weekdays.length > 0
                           return (
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <select value={ef.weekday === null ? '' : String(ef.weekday)}
-                                onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], weekday: ev.target.value === '' ? null : Number(ev.target.value) } }))}
-                                className={inputCls}>
-                                <option value="">Tek seferlik</option>
-                                {WEEKDAYS.map(w => <option key={w.v} value={w.v}>{w.l}</option>)}
-                              </select>
-                              {ef.weekday === null && (
-                                <input type="date" value={ef.date}
-                                  onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], date: ev.target.value } }))}
+                            <div className="space-y-1.5 mt-1">
+                              <div className="flex flex-wrap items-center gap-1">
+                                <span className="text-[10px] text-text-muted mr-1">Her hafta:</span>
+                                {WEEKDAYS.map(w => {
+                                  const on = ef.weekdays.includes(w.v)
+                                  return (
+                                    <button key={w.v} type="button"
+                                      onClick={() => setEdits(p => {
+                                        const cur = (p[draft.id] && 'weekdays' in p[draft.id]! ? p[draft.id]!.weekdays! : ef.weekdays)
+                                        const next = cur.includes(w.v) ? cur.filter(x => x !== w.v) : [...cur, w.v]
+                                        return { ...p, [draft.id]: { ...p[draft.id], weekdays: next } }
+                                      })}
+                                      className={cn('text-[11px] w-9 py-1 rounded border transition-colors',
+                                        on ? 'bg-accent text-white border-accent' : 'text-text-muted border-[rgba(228,224,216,0.15)] hover:text-text-primary')}>
+                                      {w.s}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {!recurring && (
+                                  <input type="date" value={ef.date}
+                                    onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], date: ev.target.value } }))}
+                                    className={inputCls} />
+                                )}
+                                <input type="time" value={ef.time}
+                                  onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], time: ev.target.value } }))}
                                   className={inputCls} />
-                              )}
-                              <input type="time" value={ef.time}
-                                onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], time: ev.target.value } }))}
-                                className={inputCls} />
-                              {ef.weekday === null && !ef.date && <span className="text-[10px] text-amber-400">tarih gir →</span>}
-                              {ef.weekday !== null && <span className="text-[10px] text-accent">önümüzdeki 4 hafta oluşturulur</span>}
+                                {!recurring && !ef.date && <span className="text-[10px] text-amber-400">tarih gir →</span>}
+                                {recurring && <span className="text-[10px] text-accent">seçili günlerde 4 hafta oluşturulur</span>}
+                              </div>
                             </div>
                           )
                         })()}

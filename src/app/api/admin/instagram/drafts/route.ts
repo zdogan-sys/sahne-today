@@ -66,7 +66,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-  const { id, status, date: bodyDate, time: bodyTime, weekday: bodyWeekday, weeks: bodyWeeks } = await req.json()
+  const { id, status, date: bodyDate, time: bodyTime, weekdays: bodyWeekdays, weeks: bodyWeeks } = await req.json()
   if (!id || !['approved', 'skipped'].includes(status))
     return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
@@ -80,19 +80,25 @@ export async function PATCH(req: NextRequest) {
     const time = ex.time || (typeof bodyTime === 'string' && bodyTime ? bodyTime : null)
     const isoLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-    // Hedef tarih(ler): haftalık tekrar gün (0=Paz..6=Cmt) verildiyse önümüzdeki N haftanın
-    // o gününü üret; yoksa tek tarih (taslaktaki ya da elle girilen).
-    const wd = typeof bodyWeekday === 'number' ? bodyWeekday : null
+    // Hedef tarih(ler): bir veya birden çok haftalık tekrar günü (0=Paz..6=Cmt) verildiyse
+    // her gün için önümüzdeki N haftanın o gününü üret; yoksa tek tarih.
+    const wds: number[] = Array.isArray(bodyWeekdays)
+      ? bodyWeekdays.filter((n: any) => typeof n === 'number' && n >= 0 && n <= 6)
+      : []
     let dates: string[] = []
-    if (wd !== null && wd >= 0 && wd <= 6) {
+    if (wds.length > 0) {
       const weeks = Math.min(Math.max(Number(bodyWeeks) || 4, 1), 12)
       const base = new Date()
-      const diff = (wd - base.getDay() + 7) % 7
-      for (let i = 0; i < weeks; i++) {
-        const d = new Date(base)
-        d.setDate(base.getDate() + diff + i * 7)
-        dates.push(isoLocal(d))
+      const set = new Set<string>()
+      for (const wd of wds) {
+        const diff = (wd - base.getDay() + 7) % 7
+        for (let i = 0; i < weeks; i++) {
+          const d = new Date(base)
+          d.setDate(base.getDate() + diff + i * 7)
+          set.add(isoLocal(d))
+        }
       }
+      dates = Array.from(set).sort()
     } else {
       const date = ex.date || (typeof bodyDate === 'string' && bodyDate ? bodyDate : null)
       if (!date) {
