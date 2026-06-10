@@ -90,7 +90,10 @@ export function EventFeed() {
       if (activeGenre !== 'all') query = query.eq('genre', activeGenre)
 
       const { data } = await query
-      setEvents((data as EventWithRelations[]) ?? [])
+      let rows = (data as EventWithRelations[]) ?? []
+      // Client-side yedek filtre (sunucu gömülü filtresi tutmazsa garanti)
+      if (cityFilter) rows = rows.filter(e => (e.venues?.city ?? '') === city)
+      setEvents(rows)
       setLoading(false)
     }
     fetchEvents()
