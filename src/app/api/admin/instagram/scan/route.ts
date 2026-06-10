@@ -244,11 +244,16 @@ ${promptBody}`,
     }
   }))
 
-  // Kaç aktif kaynak kaldığını bildir (toplu taramada rotasyon için)
+  // Kalan = son 12 saatte taranmamış (henüz sıraya gelmemiş) aktif hesap sayısı.
+  // Şimdi taradıklarımız "taze" olduğu için sayılmaz → her tıkta düşer, hepsi bitince 0 olur.
   let remaining = 0
   if (!sourceId) {
-    const { count } = await admin.from('instagram_sources').select('id', { count: 'exact', head: true }).eq('is_active', true)
-    remaining = Math.max(0, (count ?? 0) - sources.length)
+    const staleBefore = new Date(Date.now() - 12 * 3600 * 1000).toISOString()
+    const { count } = await admin.from('instagram_sources')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .or(`last_checked_at.is.null,last_checked_at.lt.${staleBefore}`)
+    remaining = count ?? 0
   }
 
   return NextResponse.json({ scanned: sources.length, drafts: totalDrafts, remaining })
