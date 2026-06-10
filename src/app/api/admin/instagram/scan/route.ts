@@ -86,6 +86,37 @@ Notlar:
 Etkinlik yoksa:
 {"has_event": false, "events": []}`
 
+// Tarama kaynaklarını mekan profillerindeki IG'lerle EŞİTLER (profil = tek doğru kaynak).
+// Profilde IG olan mekanı aktif kaynak yapar; profilde artık olmayan eski adresleri pasifleştirir
+// (örn. mekanın IG'si değişince eski hesap bir daha taranmaz). Manuel/eşleşmeyen hesaplar da pasifleşir.
+async function syncSourcesFromVenues(admin: ReturnType<typeof adminClient>) {
+  const { data: venues } = await admin.from('venues').select('social_links, city').limit(5000)
+  const venueHandles = new Map<string, string | null>()
+  for (const v of (venues ?? []) as any[]) {
+    const ig = v.social_links?.instagram
+    if (!ig) continue
+    const m = String(ig).match(/instagram\.com\/([A-Za-z0-9_.]+)/i)
+    if (m) venueHandles.set(m[1].toLowerCase(), v.city ?? null)
+  }
+  const { data: sources } = await admin.from('instagram_sources').select('id, username, is_active')
+  const existing = new Map<string, { id: string; is_active: boolean }>()
+  for (const s of (sources ?? []) as any[]) existing.set(String(s.username).toLowerCase(), { id: s.id, is_active: s.is_active })
+
+  const toInsert: any[] = []
+  const toActivate: string[] = []
+  venueHandles.forEach((city, h) => {
+    const e = existing.get(h)
+    if (!e) toInsert.push({ username: h, instagram_url: `https://www.instagram.com/${h}/`, city, is_active: true })
+    else if (!e.is_active) toActivate.push(e.id)
+  })
+  const toDeactivate: string[] = []
+  existing.forEach((e, h) => { if (!venueHandles.has(h) && e.is_active) toDeactivate.push(e.id) })
+
+  if (toInsert.length) await admin.from('instagram_sources').insert(toInsert)
+  if (toActivate.length) await admin.from('instagram_sources').update({ is_active: true }).in('id', toActivate)
+  if (toDeactivate.length) await admin.from('instagram_sources').update({ is_active: false }).in('id', toDeactivate)
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -95,13 +126,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const sourceId: string | undefined = body.source_id
 
-  // Tek kaynakta: sadece onu tara. Toplu taramada: timeout olmaması için her çağrıda
-  // en eski taranan BATCH kadar kaynağı tara (rotasyon) — tekrar tıkça hepsi sırayla taranır.
+  // Tek kaynakta: sadece onu tara. Toplu taramada: önce profillerle eşitle, sonra timeout
+  // olmaması için en eski taranan BATCH kadar kaynağı tara (rotasyon).
   const BATCH = 10
   let query = admin.from('instagram_sources').select('*').eq('is_active', true)
   if (sourceId) {
     query = (query as any).eq('id', sourceId)
   } else {
+    await syncSourcesFromVenues(admin)
     query = (query as any).order('last_checked_at', { ascending: true, nullsFirst: true }).limit(BATCH)
   }
 
