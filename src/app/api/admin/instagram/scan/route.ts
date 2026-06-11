@@ -197,13 +197,15 @@ ${promptBody}`,
           const caption = post?.caption ?? content.slice(0, 600)
 
           const titleSnippet = String(event.title ?? '').slice(0, 30)
-          const { data: existing } = await admin
+          // Mükerrer kontrolü TÜM durumlara bakar (pending/approved/skipped) — onaylanan/atlanan
+          // etkinlik yeni taramada tekrar taslak olmasın. Aynı başlık + (varsa) aynı tarih = dup.
+          let dupQ = admin
             .from('event_drafts')
             .select('id')
             .eq('source_id', source.id)
-            .eq('status', 'pending')
             .ilike('extracted->>title', `%${titleSnippet}%`)
-            .limit(1)
+          if (typeof event.date === 'string' && event.date) dupQ = dupQ.eq('extracted->>date', event.date)
+          const { data: existing } = await dupQ.limit(1)
 
           if (!existing?.length) {
             await admin.from('event_drafts').insert({
