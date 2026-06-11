@@ -107,7 +107,13 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   }
 
   const filtered = initialEvents.filter((e) => {
-    if (genre && e.genre !== genre) return false
+    if (genre) {
+      const g = e.genre ?? ''
+      if (genre === 'cat:music') { if (!musicGenres.includes(g)) return false }
+      else if (genre === 'cat:stage') { if (!stageGenres.includes(g)) return false }
+      else if (genre === 'cat:dance') { if (!danceGenres.includes(g)) return false }
+      else if (g !== genre) return false
+    }
     if (city && e.venues?.city !== city) return false
     if (entryType && e.entry_type !== entryType) return false
     if (dateRange !== 'all') {
@@ -408,9 +414,14 @@ function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, 
   ]
   return (
     <div className="space-y-5">
-      <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
-      <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
-      <FilterGroup label="Dans" options={danceGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
+      {/* Genel Hepsi — tüm kategoriler */}
+      <button onClick={() => setGenre('')}
+        className={`chip border transition-colors ${genre === '' ? 'bg-accent text-white border-accent' : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>
+        {t('all')}
+      </button>
+      <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allValue="cat:music" allLabel={t('all')} />
+      <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allValue="cat:stage" allLabel={t('all')} />
+      <FilterGroup label="Dans" options={danceGenres} value={genre} onChange={setGenre} showAll allValue="cat:dance" allLabel={t('all')} />
       <div>
         <label className="label">{t('entry')}</label>
         <div className="space-y-1">
@@ -433,8 +444,8 @@ function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, 
   )
 }
 
-function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All' }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean; allLabel?: string
+function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All', allValue = '' }: {
+  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean; allLabel?: string; allValue?: string
 }) {
   return (
     <div>
@@ -442,9 +453,9 @@ function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All
       <div className="flex flex-wrap gap-1.5">
         {showAll && (
           <button
-            onClick={() => onChange('')}
+            onClick={() => onChange(allValue)}
             className={`chip border transition-colors ${
-              value === ''
+              value === allValue
                 ? 'bg-accent/10 text-accent border-accent/30'
                 : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
             }`}

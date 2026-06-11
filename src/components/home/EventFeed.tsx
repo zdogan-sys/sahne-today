@@ -90,7 +90,10 @@ export function EventFeed() {
         .limit(30)
 
       if (cityFilter) query = query.eq('venues.city', city)
-      if (activeGenre !== 'all') query = query.eq('genre', activeGenre)
+      if (activeGenre === 'cat:music') query = query.in('genre', MUSIC_GENRES)
+      else if (activeGenre === 'cat:stage') query = query.in('genre', STAGE_GENRES)
+      else if (activeGenre === 'cat:dance') query = query.in('genre', DANCE_GENRES)
+      else if (activeGenre !== 'all') query = query.eq('genre', activeGenre)
 
       const { data } = await query
       let rows = (data as EventWithRelations[]) ?? []
@@ -125,9 +128,9 @@ export function EventFeed() {
       <div className="space-y-3 mb-5">
         {[
           { label: null, genres: [{ key: 'all', display: ALL_LABEL }] },
-          { label: MUSIC_LABEL, genres: MUSIC_GENRES.map((g, i) => ({ key: g, display: g })) },
-          { label: STAGE_LABEL, genres: STAGE_GENRES.map((g) => ({ key: g, display: g })) },
-          { label: DANCE_LABEL, genres: DANCE_GENRES.map((g) => ({ key: g, display: g })) },
+          { label: MUSIC_LABEL, genres: [{ key: 'cat:music', display: ALL_LABEL }, ...MUSIC_GENRES.map((g) => ({ key: g, display: g }))] },
+          { label: STAGE_LABEL, genres: [{ key: 'cat:stage', display: ALL_LABEL }, ...STAGE_GENRES.map((g) => ({ key: g, display: g }))] },
+          { label: DANCE_LABEL, genres: [{ key: 'cat:dance', display: ALL_LABEL }, ...DANCE_GENRES.map((g) => ({ key: g, display: g }))] },
         ].map(({ label, genres }) => (
           <div key={label ?? 'all'}>
             {label && <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{label}</p>}
