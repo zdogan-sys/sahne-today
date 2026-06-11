@@ -62,15 +62,16 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
 
 type IgPost = { image: string | null; caption: string }
 
-// picnob markdown'ını gönderilere ayırır: her post = [ ![](görsel) ](post-linki) + caption.
-// En fazla 12 gönderi döner; caption'ı boş olanları atlar.
+// picnob markdown'ını gönderilere ayırır. Caption picnob'da GÖRSEL ALT-METNİNDE
+// (![<caption>](.../p/<img>)) — sayfa düzeni değişse de orada. Sadece /p/ post
+// görsellerini alır (profil avatarını /a/ atlar). En fazla 12 gönderi, görselle eşli.
 function parsePosts(md: string): IgPost[] {
   const posts: IgPost[] = []
-  const re = /!\[[^\]]*\]\((https:\/\/sp\d+\.picnob\.com\/[^)]+)\)\s*\]\([^)]+\)\s*([\s\S]*?)(?=\n\s*\d+\s+\d+\s*\n|\n\s*\[\s*\n!\[|$)/g
+  const re = /!\[([^\]]*)\]\((https:\/\/sp\d+\.picnob\.com\/p\/[^)]+)\)/g
   let m: RegExpExecArray | null
   while ((m = re.exec(md)) !== null && posts.length < 12) {
-    const caption = m[2].replace(/\s+/g, ' ').trim()
-    if (caption.length >= 8) posts.push({ image: m[1], caption: caption.slice(0, 600) })
+    const caption = (m[1] || '').replace(/^Image\s*\d+:\s*/i, '').replace(/\s+/g, ' ').trim()
+    if (caption.length >= 8) posts.push({ image: m[2], caption: caption.slice(0, 600) })
   }
   return posts
 }
