@@ -148,6 +148,14 @@ export function EventFeed() {
             </div>
           </div>
         ))}
+        {/* En altta: Müzik Kursları → Kurslar sayfası */}
+        <div>
+          <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{locale === 'en' ? 'Courses' : 'Kurslar'}</p>
+          <Link href="/courses?category=music"
+            className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
+            🎵 {locale === 'en' ? 'Music Courses' : 'Müzik Kursları'}
+          </Link>
+        </div>
       </div>
 
       {loading ? (
