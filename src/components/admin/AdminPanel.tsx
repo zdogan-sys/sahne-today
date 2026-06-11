@@ -33,7 +33,7 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
+import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
 import { getDayNames, FEE_MODEL_LABELS } from '@/lib/utils'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
@@ -1179,6 +1179,7 @@ function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; ven
             <option value="">Seçin</option>
             <optgroup label="Müzik">{MUSIC_GENRES.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>
             <optgroup label="Sahne">{STAGE_GENRES.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>
+            <optgroup label="Dans">{DANCE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}</optgroup>
           </select>
         </div>
         <div>

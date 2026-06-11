@@ -7,7 +7,7 @@ import { Trash2, Plus, Pencil } from 'lucide-react'
 import { getDayNames, FEE_MODEL_LABELS, formatTime, translateGenre } from '@/lib/utils'
 import { closeSlot, createSlot, updateSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
+import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
 
 interface SlotEntry {
   id: string
@@ -308,6 +308,9 @@ function SlotForm({ form, setForm, error, dayNames }: {
           </optgroup>
           <optgroup label={isEn ? 'Stage' : 'Sahne'}>
             {STAGE_GENRES.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
+          </optgroup>
+          <optgroup label={isEn ? 'Dance' : 'Dans'}>
+            {DANCE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </optgroup>
         </select>
       </div>

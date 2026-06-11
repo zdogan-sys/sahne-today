@@ -8,7 +8,7 @@ import { useLocale } from 'next-intl'
 import { ChevronLeft, ChevronRight, X, Music2, Users, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn, translateGenre } from '@/lib/utils'
-import { MUSIC_GENRES, STAGE_GENRES } from '@/lib/constants'
+import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
 import { addVenueEvent } from '@/app/actions/event'
 
 interface SlotEntry {
@@ -789,6 +789,11 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                         <optgroup label={isEn ? 'Stage' : 'Sahne'}>
                           {STAGE_GENRES.map(t => (
                             <option key={t} value={t}>{translateGenre(t, locale)}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label={isEn ? 'Dance' : 'Dans'}>
+                          {DANCE_OPTIONS.map(t => (
+                            <option key={t} value={t}>{t}</option>
                           ))}
                         </optgroup>
                       </select>

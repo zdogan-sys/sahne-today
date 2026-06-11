@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
 
 function adminClient() {
@@ -66,7 +67,7 @@ export function InstagramScanner() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[]; performer?: string }>>({})
+  const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[]; performer?: string; genre?: string }>>({})
   const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
   const [errorById, setErrorById] = useState<Record<string, string>>({})
 
@@ -82,6 +83,7 @@ export function InstagramScanner() {
       time: e?.time ?? ex.time ?? '',
       weekdays: e && 'weekdays' in e ? (e.weekdays ?? []) : [],
       performer: e?.performer ?? ex.performer ?? '',
+      genre: e?.genre ?? ex.genre ?? '',
     }
   }
 
@@ -149,7 +151,7 @@ export function InstagramScanner() {
     setErrorById(p => { const n = { ...p }; delete n[id]; return n })
     const eff = effOf(drafts.find(x => x.id === id))
     try {
-      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekdays: eff.weekdays.length ? eff.weekdays : undefined, performer: eff.performer || undefined }) })
+      const res = await fetch('/api/admin/instagram/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status, date: eff.date || undefined, time: eff.time || undefined, weekdays: eff.weekdays.length ? eff.weekdays : undefined, performer: eff.performer || undefined, genre: eff.genre || undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setErrorById(p => ({ ...p, [id]: data.error ?? 'İşlem başarısız oldu.' })); return }
       setDrafts(prev => prev.filter(d => d.id !== id))
@@ -284,6 +286,15 @@ export function InstagramScanner() {
                           placeholder="Sanatçı / grup adı"
                           className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-accent w-full max-w-[240px]" />
                         <p className="text-[10px] text-text-muted">Kayıtlı grup/sanatçıyla aynı isimse otomatik bağlanır</p>
+                        <select
+                          value={edits[draft.id]?.genre ?? (draft.extracted as any).genre ?? ''}
+                          onChange={(ev) => setEdits(p => ({ ...p, [draft.id]: { ...p[draft.id], genre: ev.target.value } }))}
+                          className="bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary mt-1 max-w-[240px]">
+                          <option value="">Tür seç (opsiyonel)</option>
+                          <optgroup label="Müzik">{MUSIC_GENRES.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                          <optgroup label="Sahne">{STAGE_GENRES.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                          <optgroup label="Dans">{DANCE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                        </select>
                         {(() => {
                           const ef = effOf(draft)
                           const inputCls = 'bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary'

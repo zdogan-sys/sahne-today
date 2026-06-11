@@ -66,7 +66,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-  const { id, status, date: bodyDate, time: bodyTime, weekdays: bodyWeekdays, weeks: bodyWeeks, performer: bodyPerformer } = await req.json()
+  const { id, status, date: bodyDate, time: bodyTime, weekdays: bodyWeekdays, weeks: bodyWeeks, performer: bodyPerformer, genre: bodyGenre } = await req.json()
   if (!id || !['approved', 'skipped'].includes(status))
     return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
@@ -145,6 +145,7 @@ export async function PATCH(req: NextRequest) {
         artist_name: perf,
         artist_id: artistId,
         band_id: bandId,
+        genre: (typeof bodyGenre === 'string' && bodyGenre) ? bodyGenre : null,
         description: ex.description || null,
         entry_type: ex.free === true ? 'free' : 'door',
         status: 'confirmed',
