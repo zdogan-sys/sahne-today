@@ -23,6 +23,7 @@ export function TopNav() {
     { href: '/events' as const, label: t('nav.events') },
     { href: '/venues' as const, label: t('nav.venues') },
     { href: '/artists' as const, label: t('nav.artists') },
+    { href: '/courses' as const, label: locale === 'en' ? 'Courses' : 'Kurslar' },
     { href: '/bands' as const, label: t('nav.bands') },
   ]
 

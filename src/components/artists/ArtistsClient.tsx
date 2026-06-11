@@ -41,16 +41,20 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
   const [genre, setGenre] = useState('')
   const [city, setCity] = useState('')
   const [instrument, setInstrument] = useState('')
+  const [onlyTeaching, setOnlyTeaching] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
+  const teachingLabel = locale === 'en' ? 'Gives lessons' : 'Ders veren'
 
   const filtered = initialArtists.filter((a) => {
     if (genre && !a.genres.includes(genre)) return false
     if (city && a.city !== city) return false
-    if (instrument && !a.instruments.includes(instrument)) return false
+    // Enstrüman filtresi: çaldığı VEYA öğrettiği enstrümanı kapsar
+    if (instrument && !(a.instruments?.includes(instrument) || (a as any).teaching_instruments?.includes(instrument))) return false
+    if (onlyTeaching && !((a as any).is_teaching && (a as any).teaching_instruments?.length > 0)) return false
     return true
   })
 
-  const activeFilters = [genre, city, instrument].filter(Boolean).length
+  const activeFilters = [genre, city, instrument, onlyTeaching ? 'x' : ''].filter(Boolean).length
 
   return (
     <div className="md:flex md:gap-6">
@@ -61,6 +65,15 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
           <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
           <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
+          <div>
+            <label className="label">{locale === 'en' ? 'Lessons' : 'Ders'}</label>
+            <button onClick={() => setOnlyTeaching(!onlyTeaching)}
+              className={cn('chip border flex items-center gap-1 transition-colors', onlyTeaching
+                ? 'bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30'
+                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]')}>
+              <GraduationCap size={11} /> {teachingLabel}
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -91,6 +104,15 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
           <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
           <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
+          <div>
+            <label className="label">{locale === 'en' ? 'Lessons' : 'Ders'}</label>
+            <button onClick={() => setOnlyTeaching(!onlyTeaching)}
+              className={cn('chip border flex items-center gap-1 transition-colors', onlyTeaching
+                ? 'bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30'
+                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]')}>
+              <GraduationCap size={11} /> {teachingLabel}
+            </button>
+          </div>
         </div>
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           {t('title')} ({filtered.length})
