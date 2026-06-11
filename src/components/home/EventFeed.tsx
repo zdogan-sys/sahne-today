@@ -151,13 +151,23 @@ export function EventFeed() {
             </div>
           </div>
         ))}
-        {/* En altta: Müzik Kursları → Kurslar sayfası */}
+        {/* En altta: Kurslar → Kurslar sayfası (kategoriye göre) */}
         <div>
           <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{locale === 'en' ? 'Courses' : 'Kurslar'}</p>
-          <Link href="/courses?category=music"
-            className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
-            🎵 {locale === 'en' ? 'Music Courses' : 'Müzik Kursları'}
-          </Link>
+          <div className="flex flex-wrap gap-1.5">
+            <Link href="/courses?category=music"
+              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
+              🎵 {locale === 'en' ? 'Music Courses' : 'Müzik Kursları'}
+            </Link>
+            <Link href="/courses?category=dance"
+              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
+              💃 {locale === 'en' ? 'Dance Courses' : 'Dans Kursları'}
+            </Link>
+            <Link href="/courses?category=theater"
+              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
+              🎭 {locale === 'en' ? 'Theater Courses' : 'Tiyatro Kursları'}
+            </Link>
+          </div>
         </div>
       </div>
 
