@@ -21,6 +21,12 @@ function extractUsername(url: string): string {
   return url.replace(/\/$/, '').split('/').pop() ?? ''
 }
 
+// Eşsiz (lone) surrogate karakterleri temizler — bozuk emoji vb. JSON'u geçersiz kılıp
+// Anthropic API'sine 400 ("no low surrogate") attırıyordu. Geçerli çiftler korunur.
+function stripBadChars(s: string): string {
+  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+}
+
 // Instagram içeriği çeker — viewer siteler üzerinden (oturum açmadan erişim)
 async function fetchInstagramContent(instagramUrl: string): Promise<string> {
   const username = extractUsername(instagramUrl)
@@ -46,7 +52,7 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
       const head = text.slice(0, 600).toLowerCase()
       const blocked = /sign in|log in|giriş|you have been blocked|security verification|captcha|cloudflare|404 not found/.test(head)
       if (text.length > 800 && !blocked) {
-        return text.slice(0, 14000)
+        return stripBadChars(text.slice(0, 14000))
       }
     } catch { /* sonraki kaynağa geç */ }
   }
