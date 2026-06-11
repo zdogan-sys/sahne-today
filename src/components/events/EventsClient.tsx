@@ -65,8 +65,10 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
     : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
 
   const stageGenres = locale === 'en'
-    ? ['Stand-Up', 'Improvisation', 'Alternative Stage']
-    : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+    ? ['Stand-Up', 'Improvisation', 'Theater', 'Alternative Stage']
+    : ['Stand-Up', 'Doğaçlama', 'Tiyatro', 'Alternatif Sahne']
+
+  const danceGenres = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal']
 
   const [genre, setGenre] = useState('')
   const city = useSelectedCity() // üstteki global şehir seçicisinden
@@ -222,6 +224,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
             entryType={entryType} setEntryType={setEntryType}
             musicGenres={musicGenres}
             stageGenres={stageGenres}
+            danceGenres={danceGenres}
           />
         </div>
       </aside>
@@ -378,6 +381,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
           entryType={entryType} setEntryType={setEntryType}
           musicGenres={musicGenres}
           stageGenres={stageGenres}
+          danceGenres={danceGenres}
         />
         <button onClick={() => setFilterOpen(false)} className="btn-accent w-full mt-4">
           {t('title')} ({filtered.length})
@@ -389,11 +393,12 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
   )
 }
 
-function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, stageGenres }: {
+function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, stageGenres, danceGenres }: {
   genre: string; setGenre: (v: string) => void
   entryType: string; setEntryType: (v: string) => void
   musicGenres: string[]
   stageGenres: string[]
+  danceGenres: string[]
 }) {
   const t = useTranslations('filters')
   const ENTRY_TYPES = [
@@ -405,6 +410,7 @@ function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, 
     <div className="space-y-5">
       <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
       <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
+      <FilterGroup label="Dans" options={danceGenres} value={genre} onChange={setGenre} showAll allLabel={t('all')} />
       <div>
         <label className="label">{t('entry')}</label>
         <div className="space-y-1">

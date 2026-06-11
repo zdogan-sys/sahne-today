@@ -42,12 +42,15 @@ export function EventFeed() {
     : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
 
   const STAGE_GENRES = locale === 'en'
-    ? ['Stand-Up', 'Improvisation', 'Alternative Stage']
-    : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+    ? ['Stand-Up', 'Improvisation', 'Theater', 'Alternative Stage']
+    : ['Stand-Up', 'Doğaçlama', 'Tiyatro', 'Alternatif Sahne']
+
+  const DANCE_GENRES = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal']
 
   const ALL_LABEL = t('all')
   const MUSIC_LABEL = locale === 'en' ? 'Music' : 'Müzik'
   const STAGE_LABEL = locale === 'en' ? 'Stage' : 'Sahne'
+  const DANCE_LABEL = locale === 'en' ? 'Dance' : 'Dans'
 
   const TIME_FILTERS: { value: TimePeriod; label: string }[] = [
     { value: 'today', label: t('dateRanges.today') },
@@ -124,6 +127,7 @@ export function EventFeed() {
           { label: null, genres: [{ key: 'all', display: ALL_LABEL }] },
           { label: MUSIC_LABEL, genres: MUSIC_GENRES.map((g, i) => ({ key: g, display: g })) },
           { label: STAGE_LABEL, genres: STAGE_GENRES.map((g) => ({ key: g, display: g })) },
+          { label: DANCE_LABEL, genres: DANCE_GENRES.map((g) => ({ key: g, display: g })) },
         ].map(({ label, genres }) => (
           <div key={label ?? 'all'}>
             {label && <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{label}</p>}
