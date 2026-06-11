@@ -89,7 +89,7 @@ export function InstagramScanner() {
     const admin = adminClient()
     const [srcRes, draftRes] = await Promise.all([
       admin.from('instagram_sources').select('*').order('city').order('username'),
-      admin.from('event_drafts').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(50),
+      admin.from('event_drafts').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(2000),
     ])
     setSources((srcRes.data ?? []) as Source[])
     setDrafts((draftRes.data ?? []) as Draft[])
