@@ -184,6 +184,7 @@ export default async function VenuePage({ params }: Props) {
               phone: venue.phone,
               email: venue.email,
               venue_type: venue.venue_type,
+              venue_types: (venue as any).venue_types ?? [],
               capacity_seated: venue.capacity_seated,
               capacity_standing: venue.capacity_standing,
               stage_area_m2: venue.stage_area_m2,
@@ -234,9 +235,11 @@ export default async function VenuePage({ params }: Props) {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
-                  {VENUE_TYPE_LABELS[venue.venue_type]}
-                </span>
+                {((venue as any).venue_types?.length ? (venue as any).venue_types : [venue.venue_type]).map((t: string) => (
+                  <span key={t} className="chip bg-[rgba(228,224,216,0.1)] text-text-muted border-[rgba(228,224,216,0.15)]">
+                    {VENUE_TYPE_LABELS[t] ?? t}
+                  </span>
+                ))}
                 {venue.verified && (
                   <span className="chip bg-success/10 text-success border-success/20">Doğrulandı</span>
                 )}

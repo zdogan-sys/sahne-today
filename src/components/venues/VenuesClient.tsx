@@ -11,6 +11,8 @@ import type { Venue, Slot } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { VenuesMap, type MapVenue } from '@/components/venues/VenuesMap'
 import { useSelectedCity } from '@/lib/use-selected-city'
+import { VENUE_TYPES } from '@/lib/constants'
+import { translateVenueType } from '@/lib/utils'
 
 type VenueFull = Venue & { slots: Pick<Slot, 'id' | 'status'>[]; logo_url?: string | null }
 
@@ -44,18 +46,7 @@ function fmtDistance(km: number): string {
 export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }: { initialVenues: VenueFull[]; upcomingEvents?: UpcomingEvent[]; canSeeSlots: boolean }) {
   const t = useTranslations('filters')
   const locale = useLocale()
-  const VENUE_TYPES = [
-    { key: 'pub', label: t('venueTypes.pub') },
-    { key: 'turku_bar', label: t('venueTypes.turku_bar') },
-    { key: 'live_music', label: t('venueTypes.live_music') },
-    { key: 'bookstore', label: t('venueTypes.bookstore') },
-    { key: 'theater', label: t('venueTypes.theater') },
-    { key: 'cafe', label: t('venueTypes.cafe') },
-    { key: 'studio', label: t('venueTypes.studio') },
-    { key: 'dance_studio', label: t('venueTypes.dance_studio') },
-    { key: 'music_school', label: t('venueTypes.music_school') },
-    { key: 'other', label: t('venueTypes.other') },
-  ]
+  const venueTypeList = VENUE_TYPES.map(v => ({ key: v.key, label: translateVenueType(v.key, locale) }))
   const city = useSelectedCity() // üstteki global şehir seçicisinden
   const [venueType, setVenueType] = useState('')
   const [onlyOpenSlots, setOnlyOpenSlots] = useState(false)
@@ -79,7 +70,10 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
 
   const filtered = initialVenues.filter((v) => {
     if (city && v.city !== city) return false
-    if (venueType && v.venue_type !== venueType) return false
+    if (venueType) {
+      const types = (v as any).venue_types?.length ? (v as any).venue_types : [v.venue_type]
+      if (!types.includes(venueType)) return false
+    }
     if (onlyOpenSlots) {
       const hasOpen = v.slots?.some((s) => s.status === 'open')
       if (!hasOpen) return false
@@ -119,7 +113,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
             venueType={venueType} setVenueType={setVenueType}
             onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
             canSeeSlots={canSeeSlots}
-            venueTypes={VENUE_TYPES}
+            venueTypes={venueTypeList}
             locale={locale}
             t={t}
           />
@@ -200,7 +194,7 @@ export function VenuesClient({ initialVenues, upcomingEvents = [], canSeeSlots }
           venueType={venueType} setVenueType={setVenueType}
           onlyOpenSlots={onlyOpenSlots} setOnlyOpenSlots={setOnlyOpenSlots}
           canSeeSlots={canSeeSlots}
-          venueTypes={VENUE_TYPES}
+          venueTypes={venueTypeList}
           locale={locale}
           t={t}
         />
@@ -322,9 +316,11 @@ function VenueCard({ venue, canSeeSlots, nearestEvent, distance }: { venue: Venu
           <span className="truncate">{venue.district}, {venue.city}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
-          <span className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
-            {VENUE_TYPE_LABELS[venue.venue_type] ?? venue.venue_type}
-          </span>
+          {((venue as any).venue_types?.length ? (venue as any).venue_types : [venue.venue_type]).map((t: string) => (
+            <span key={t} className="chip bg-[rgba(228,224,216,0.06)] text-text-muted border border-[rgba(228,224,216,0.1)]">
+              {VENUE_TYPE_LABELS[t] ?? t}
+            </span>
+          ))}
           {venue.genres?.slice(0, 2).map((g) => (
             <GenreChip key={g} genre={g} />
           ))}

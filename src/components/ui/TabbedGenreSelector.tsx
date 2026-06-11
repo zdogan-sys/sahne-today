@@ -9,21 +9,19 @@ type TabKey = 'music' | 'stage' | 'dance'
 
 export function TabbedGenreSelector({ selected, onToggle, label, onTabChange, danceSelected, onDanceToggle }: {
   selected: string[]; onToggle: (v: string) => void; label?: string; onTabChange?: (tab: TabKey) => void
-  danceSelected?: string[]; onDanceToggle?: (v: string) => void
+  danceSelected?: string[]; onDanceToggle?: (v: string) => void  // opsiyonel: ayrı dans state'i için
 }) {
   const locale = useLocale()
   const isEn = locale === 'en'
   const [tab, setTab] = useState<TabKey>('music')
-  const hasDance = !!onDanceToggle
-
   useEffect(() => {
     if (onTabChange) onTabChange(tab)
   }, [tab, onTabChange])
 
   const isDance = tab === 'dance'
   const options = isDance ? DANCE_OPTIONS : (tab === 'music' ? MUSIC_GENRES : STAGE_GENRES)
-  const sel = isDance ? (danceSelected ?? []) : selected
-  const toggle = isDance ? (onDanceToggle ?? (() => {})) : onToggle
+  const sel = isDance ? (danceSelected ?? selected) : selected
+  const toggle = isDance ? (onDanceToggle ?? onToggle) : onToggle
 
   return (
     <div>
@@ -37,12 +35,10 @@ export function TabbedGenreSelector({ selected, onToggle, label, onTabChange, da
           className={cn('pb-2 text-sm transition-colors border-b-2', tab === 'stage' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary')}>
           {isEn ? 'Stage' : 'Sahne'}
         </button>
-        {hasDance && (
-          <button type="button" onClick={() => setTab('dance')}
-            className={cn('pb-2 text-sm transition-colors border-b-2', tab === 'dance' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary')}>
-            {isEn ? 'Dance' : 'Dans'}
-          </button>
-        )}
+        <button type="button" onClick={() => setTab('dance')}
+          className={cn('pb-2 text-sm transition-colors border-b-2', tab === 'dance' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-primary')}>
+          {isEn ? 'Dance' : 'Dans'}
+        </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => (

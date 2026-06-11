@@ -8,7 +8,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { cn } from '@/lib/utils'
-import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
+import { CITY_OPTIONS, DISTRICTS_BY_CITY, VENUE_TYPES } from '@/lib/constants'
 
 const EQUIPMENT_OPTIONS_TR = ['Ses Sistemi', 'Mikrofon', 'Klavye', 'Davul Kiti', 'Işık', 'Projeksiyon', 'Sahne']
 const EQUIPMENT_OPTIONS_EN = ['Sound System', 'Microphone', 'Keyboard', 'Drum Kit', 'Lighting', 'Projector', 'Stage']
@@ -25,26 +25,13 @@ const MUSIC_INSTRUMENTS = ['Gitar', 'Piyano', 'Keman', 'Saksafon', 'Davul', 'Bas
 const MUSIC_SCHOOL_EQUIPMENT_TR = ['Piyano / Klavye', 'Gitar Stüdyosu', 'Davul Odası', 'Ses Yalıtımı', 'Kayıt İmkânı', 'Nota Tahtası', 'PA Sistemi', 'Klima', 'Soyunma Odası', 'Bekleme Salonu']
 const MUSIC_SCHOOL_EQUIPMENT_EN = ['Piano / Keyboard', 'Guitar Studio', 'Drum Room', 'Sound Insulation', 'Recording Option', 'Music Stand', 'PA System', 'Air Conditioning', 'Changing Room', 'Waiting Area']
 
-const VENUE_TYPES: { key: VenueType; tr: string; en: string }[] = [
-  { key: 'pub', tr: 'Pub', en: 'Pub' },
-  { key: 'turku_bar', tr: 'Türkü Bar', en: 'Turkish Folk Bar' },
-  { key: 'live_music', tr: 'Canlı Müzik', en: 'Live Music Venue' },
-  { key: 'bookstore', tr: 'Kitabevi', en: 'Bookstore' },
-  { key: 'theater', tr: 'Tiyatro', en: 'Theater' },
-  { key: 'cafe', tr: 'Kafe', en: 'Cafe' },
-  { key: 'studio', tr: 'Prova / Kayıt Stüdyosu', en: 'Rehearsal / Recording Studio' },
-  { key: 'dance_studio', tr: 'Dans Stüdyosu', en: 'Dance Studio' },
-  { key: 'music_school', tr: 'Müzik Dersanesi', en: 'Music School' },
-  { key: 'other', tr: 'Diğer', en: 'Other' },
-]
-
 type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'studio' | 'dance_studio' | 'music_school' | 'other'
 
 const STUDIO_TYPES: VenueType[] = ['studio', 'dance_studio', 'music_school']
 
-function venueTypeLabel(key: VenueType | '', isEn: boolean): string {
+function venueTypeLabel(key: string, isEn: boolean): string {
   const found = VENUE_TYPES.find((v) => v.key === key)
-  if (!found) return ''
+  if (!found) return key
   return isEn ? found.en : found.tr
 }
 
@@ -117,7 +104,7 @@ export function VenueRegisterForm() {
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [venueType, setVenueType] = useState<VenueType | ''>('')
+  const [venueTypes, setVenueTypes] = useState<string[]>([])
 
   const [capacitySeated, setCapacitySeated] = useState('')
   const [capacityStanding, setCapacityStanding] = useState('')
@@ -144,7 +131,8 @@ export function VenueRegisterForm() {
         name, city, district, address,
         phone: phone || null,
         email: email || null,
-        venue_type: venueType as VenueType,
+        venue_type: venueTypes[0] as VenueType,
+        venue_types: venueTypes,
         description: description || null,
         photo_url: photoUrl || null,
         capacity_seated: capacitySeated ? parseInt(capacitySeated) : null,
@@ -223,11 +211,12 @@ export function VenueRegisterForm() {
             </div>
           </div>
           <div>
-            <label className="label">{isEn ? 'Venue Type *' : 'Mekan Türü *'}</label>
+            <label className="label">{isEn ? 'Venue Type * (multiple allowed)' : 'Mekan Türü * (birden fazla seçilebilir)'}</label>
             <div className="flex flex-wrap gap-2 mt-1">
               {VENUE_TYPES.map(({ key, tr, en }) => (
-                <button key={key} type="button" onClick={() => setVenueType(key)}
-                  className={cn('chip border transition-colors', venueType === key
+                <button key={key} type="button"
+                  onClick={() => setVenueTypes(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key])}
+                  className={cn('chip border transition-colors', venueTypes.includes(key)
                     ? 'bg-accent/10 text-accent border-accent/30'
                     : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
                   )}>
@@ -236,8 +225,8 @@ export function VenueRegisterForm() {
               ))}
             </div>
           </div>
-          <button onClick={() => { if (name && city && district && address && venueType) setStep(2) }}
-            disabled={!name || !city || !district || !address || !venueType}
+          <button onClick={() => { if (name && city && district && address && venueTypes.length > 0) setStep(2) }}
+            disabled={!name || !city || !district || !address || venueTypes.length === 0}
             className="btn-accent w-full py-3 disabled:opacity-40">
             {isEn ? 'Continue →' : 'Devam Et →'}
           </button>
@@ -246,7 +235,7 @@ export function VenueRegisterForm() {
 
       {step === 2 && (
         <div className="card p-6 space-y-5">
-          {venueType === 'music_school' ? (
+          {venueTypes.includes('music_school') && !venueTypes.includes('studio') && !venueTypes.includes('dance_studio') ? (
             <>
               <h2 className="font-semibold text-text-primary">{isEn ? 'Music School Details' : 'Müzik Dersanesi Detayları'}</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -282,7 +271,7 @@ export function VenueRegisterForm() {
                 </div>
               </div>
             </>
-          ) : venueType === 'dance_studio' ? (
+          ) : venueTypes.includes('dance_studio') && !venueTypes.includes('studio') ? (
             <>
               <h2 className="font-semibold text-text-primary">{isEn ? 'Dance Studio Details' : 'Dans Stüdyosu Detayları'}</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -322,7 +311,7 @@ export function VenueRegisterForm() {
                 <p className="text-text-muted text-xs mt-1">{isEn ? 'Hourly rate for studio rental.' : 'Stüdyo kiralama saatlik ücreti.'}</p>
               </div>
             </>
-          ) : venueType === 'studio' ? (
+          ) : venueTypes.includes('studio') ? (
             <>
               <h2 className="font-semibold text-text-primary">{isEn ? 'Studio Details' : 'Stüdyo Detayları'}</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -390,7 +379,7 @@ export function VenueRegisterForm() {
             <div className="space-y-3 text-sm">
               <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Venue:' : 'Mekan:'}</span><span className="text-text-primary font-medium">{name}</span></div>
               <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Location:' : 'Konum:'}</span><span className="text-text-primary">{district}, {city}</span></div>
-              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Type:' : 'Tür:'}</span><span className="text-text-primary">{venueTypeLabel(venueType, isEn)}</span></div>
+              <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Type:' : 'Tür:'}</span><span className="text-text-primary">{venueTypes.map(t => venueTypeLabel(t, isEn)).join(', ')}</span></div>
               {genres.length > 0 && <div className="flex gap-2"><span className="text-text-muted w-28">{isEn ? 'Genres:' : 'Türler:'}</span><span className="text-text-primary">{genres.join(', ')}</span></div>}
             </div>
           </div>

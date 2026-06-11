@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { VENUE_TYPES as VENUE_TYPES_LIST } from '@/lib/constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -42,31 +43,8 @@ export function translateGenre(genre: string, locale: string): string {
   return GENRE_LABELS_EN[genre] ?? genre
 }
 
-export const VENUE_TYPE_LABELS: Record<string, string> = {
-  pub: 'Pub',
-  turku_bar: 'Türkü Bar',
-  live_music: 'Canlı Müzik',
-  bookstore: 'Kitabevi',
-  theater: 'Tiyatro',
-  cafe: 'Kafe',
-  studio: 'Prova / Kayıt Stüdyosu',
-  dance_studio: 'Dans Stüdyosu',
-  music_school: 'Müzik Dersanesi',
-  other: 'Diğer',
-}
-
-export const VENUE_TYPE_LABELS_EN: Record<string, string> = {
-  pub: 'Pub',
-  turku_bar: 'Turkish Folk Bar',
-  live_music: 'Live Music Venue',
-  bookstore: 'Bookstore',
-  theater: 'Theater',
-  cafe: 'Cafe',
-  studio: 'Rehearsal / Recording Studio',
-  dance_studio: 'Dance Studio',
-  music_school: 'Music School',
-  other: 'Other',
-}
+export const VENUE_TYPE_LABELS: Record<string, string> = Object.fromEntries(VENUE_TYPES_LIST.map(v => [v.key, v.tr]))
+export const VENUE_TYPE_LABELS_EN: Record<string, string> = Object.fromEntries(VENUE_TYPES_LIST.map(v => [v.key, v.en]))
 
 export function translateVenueType(key: string, locale: string): string {
   const map = locale === 'en' ? VENUE_TYPE_LABELS_EN : VENUE_TYPE_LABELS

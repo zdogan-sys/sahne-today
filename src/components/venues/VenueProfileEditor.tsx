@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { translateVenueType } from '@/lib/utils'
-import { CITY_OPTIONS, DISTRICTS_BY_CITY } from '@/lib/constants'
+import { CITY_OPTIONS, DISTRICTS_BY_CITY, VENUE_TYPES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { LocationPicker } from '@/components/ui/LocationPicker'
 
@@ -25,6 +25,7 @@ interface Props {
     phone: string | null
     email: string | null
     venue_type: string
+  venue_types?: string[]
     capacity_seated: number | null
     capacity_standing: number | null
     stage_area_m2: number | null
@@ -128,7 +129,6 @@ function ImageUploadField({
 export function VenueProfileEditor({ venueId, initialData }: Props) {
   const isEn = useLocale() === 'en'
   const EQUIPMENT_OPTIONS = isEn ? EQUIPMENT_OPTIONS_EN : EQUIPMENT_OPTIONS_TR
-  const VENUE_TYPE_ENTRIES: [string, string][] = ['pub','turku_bar','live_music','bookstore','theater','cafe','other'].map(k => [k, translateVenueType(k, isEn ? 'en' : 'tr')])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -140,6 +140,9 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [phone, setPhone] = useState(initialData.phone || '')
   const [email, setEmail] = useState(initialData.email || '')
   const [venueType, setVenueType] = useState(initialData.venue_type)
+  const [venueTypes, setVenueTypes] = useState<string[]>(
+    initialData.venue_types?.length ? initialData.venue_types : [initialData.venue_type]
+  )
   const [capacitySeated, setCapacitySeated] = useState(initialData.capacity_seated?.toString() || '')
   const [capacityStanding, setCapacityStanding] = useState(initialData.capacity_standing?.toString() || '')
   const [stageArea, setStageArea] = useState(initialData.stage_area_m2?.toString() || '')
@@ -152,10 +155,10 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
   const [pricePerHour, setPricePerHour] = useState(initialData.price_per_hour?.toString() || '')
   const [latitude, setLatitude] = useState<number | null>(initialData.latitude ?? null)
   const [longitude, setLongitude] = useState<number | null>(initialData.longitude ?? null)
-  const isStudio = venueType === 'studio' || venueType === 'dance_studio'
+  const isStudio = venueTypes.some(t => ['studio', 'dance_studio', 'music_school'].includes(t))
 
   async function handleSave() {
-    if (!name.trim() || !city || !venueType) {
+    if (!name.trim() || !city || venueTypes.length === 0) {
       setError(isEn ? 'Please fill in the required fields.' : 'Lütfen zorunlu alanları doldurun.')
       return
     }
@@ -173,7 +176,8 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
         address,
         phone: phone || null,
         email: email || null,
-        venue_type: venueType,
+        venue_type: venueTypes[0] ?? venueType,
+        venue_types: venueTypes,
         capacity_seated: capacitySeated ? parseInt(capacitySeated) : null,
         capacity_standing: capacityStanding ? parseInt(capacityStanding) : null,
         stage_area_m2: stageArea ? parseInt(stageArea) : null,
@@ -274,12 +278,19 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
           </div>
 
           <div>
-            <label className="label">{isEn ? 'Venue Type *' : 'Mekan Türü *'}</label>
-            <select value={venueType} onChange={(e) => setVenueType(e.target.value)} className="input-field text-sm">
-              {VENUE_TYPE_ENTRIES.map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+            <label className="label">{isEn ? 'Venue Type * (multiple allowed)' : 'Mekan Türü * (birden fazla seçilebilir)'}</label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {VENUE_TYPES.map(({ key, tr, en }) => (
+                <button key={key} type="button"
+                  onClick={() => setVenueTypes(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key])}
+                  className={cn('chip border transition-colors text-xs', venueTypes.includes(key)
+                    ? 'bg-accent/10 text-accent border-accent/30'
+                    : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                  )}>
+                  {isEn ? en : tr}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -370,7 +381,7 @@ export function VenueProfileEditor({ venueId, initialData }: Props) {
 
           <button
             onClick={handleSave}
-            disabled={loading || !name.trim() || !city || !venueType}
+            disabled={loading || !name.trim() || !city || venueTypes.length === 0}
             className="btn-accent w-full py-3 text-sm disabled:opacity-50 mt-4"
           >
             {loading ? (isEn ? 'Saving...' : 'Kaydediliyor...') : (isEn ? 'Save Changes' : 'Değişiklikleri Kaydet')}

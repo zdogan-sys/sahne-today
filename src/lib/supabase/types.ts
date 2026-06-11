@@ -1,5 +1,5 @@
 export type Role = 'artist' | 'venue' | 'audience'
-export type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'other'
+export type VenueType = 'pub' | 'turku_bar' | 'live_music' | 'bookstore' | 'theater' | 'cafe' | 'studio' | 'dance_studio' | 'music_school' | 'other'
 export type Recurrence = 'weekly' | 'biweekly' | 'once'
 export type FeeModel = 'free' | 'door_share' | 'guarantee' | 'negotiable'
 export type SlotStatus = 'open' | 'pending' | 'booked'
@@ -30,6 +30,7 @@ export interface Venue {
   phone: string | null
   email: string | null
   venue_type: VenueType
+  venue_types: VenueType[]
   description: string | null
   photo_url: string | null
   logo_url: string | null

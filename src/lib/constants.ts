@@ -42,6 +42,19 @@ export const DANCE_OPTIONS = [
   'Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal'
 ]
 
+export const VENUE_TYPES: { key: string; tr: string; en: string }[] = [
+  { key: 'pub',          tr: 'Pub',                       en: 'Pub' },
+  { key: 'turku_bar',    tr: 'Türkü Bar',                 en: 'Turkish Folk Bar' },
+  { key: 'live_music',   tr: 'Canlı Müzik',               en: 'Live Music Venue' },
+  { key: 'bookstore',    tr: 'Kitabevi',                  en: 'Bookstore' },
+  { key: 'theater',      tr: 'Tiyatro',                   en: 'Theater' },
+  { key: 'cafe',         tr: 'Kafe',                      en: 'Cafe' },
+  { key: 'studio',       tr: 'Prova / Kayıt Stüdyosu',   en: 'Rehearsal / Recording Studio' },
+  { key: 'dance_studio', tr: 'Dans Stüdyosu',             en: 'Dance Studio' },
+  { key: 'music_school', tr: 'Müzik Dersanesi',           en: 'Music School' },
+  { key: 'other',        tr: 'Diğer',                     en: 'Other' },
+]
+
 export const CITY_OPTIONS = [
   'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri'
 ]

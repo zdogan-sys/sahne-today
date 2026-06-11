@@ -33,9 +33,8 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
-import { getDayNames, FEE_MODEL_LABELS } from '@/lib/utils'
-import { VENUE_TYPE_LABELS } from '@/lib/utils'
+import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS, VENUE_TYPES } from '@/lib/constants'
+import { getDayNames, FEE_MODEL_LABELS, VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions' | 'instagram' | 'import'
 
@@ -54,7 +53,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'import', label: 'Mekan Çek' },
 ]
 
-const VENUE_TYPES = Object.entries(VENUE_TYPE_LABELS)
 const EVENT_STATUSES = ['confirmed', 'pending', 'cancelled']
 const ENTRY_TYPES = ['free', 'paid', 'door']
 
@@ -464,7 +462,7 @@ function EventForm({ open, onClose, initial, venues: initialVenues, artists: ini
                   {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <select value={newVenueType} onChange={(e) => setNewVenueType(e.target.value)} className="input-field text-sm">
-                  {VENUE_TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                  {VENUE_TYPES.map(({ key: k, tr: l }) => <option key={k} value={k}>{l}</option>)}
                 </select>
               </div>
               {quickError && <p className="text-red-400 text-xs">{quickError}</p>}
@@ -974,7 +972,9 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [city, setCity] = useState(initial?.city ?? '')
   const [district, setDistrict] = useState(initial?.district ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
-  const [venueType, setVenueType] = useState(initial?.venue_type ?? 'pub')
+  const [venueTypes, setVenueTypes] = useState<string[]>(
+    initial?.venue_types?.length ? initial.venue_types : (initial?.venue_type ? [initial.venue_type] : ['pub'])
+  )
   const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
   const [description, setDescription] = useState(initial?.description ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
@@ -987,7 +987,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const isStudio = venueType === 'studio' || venueType === 'dance_studio'
+  const isStudio = venueTypes.some(t => ['studio', 'dance_studio', 'music_school'].includes(t))
 
   async function handleSave() {
     if (!name || !city) { setError('Ad ve şehir zorunludur.'); return }
@@ -995,7 +995,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
     const socialLinks = { ...(initial?.social_links ?? {}), ...(instagram ? { instagram } : { instagram: undefined }) }
     const data = {
       name, city, district: district || null, address: address || '',
-      venue_type: venueType, genres,
+      venue_type: venueTypes[0] ?? 'other', venue_types: venueTypes, genres,
       description: description || null,
       phone: phone || null, email: email || null, verified,
       price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
@@ -1035,10 +1035,19 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Sokak, bina no..." className="input-field text-sm" />
         </div>
         <div>
-          <label className="label">Mekan Türü</label>
-          <select value={venueType} onChange={(e) => setVenueType(e.target.value)} className="input-field text-sm">
-            {VENUE_TYPES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
+          <label className="label">Mekan Türü (birden fazla seçilebilir)</label>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {VENUE_TYPES.map(({ key, tr }) => (
+              <button key={key} type="button"
+                onClick={() => setVenueTypes(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key])}
+                className={cn('chip border transition-colors text-xs', venueTypes.includes(key)
+                  ? 'bg-accent/10 text-accent border-accent/30'
+                  : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
+                )}>
+                {tr}
+              </button>
+            ))}
+          </div>
         </div>
         <TabbedGenreSelector
           label="Etkinlik Türü"
