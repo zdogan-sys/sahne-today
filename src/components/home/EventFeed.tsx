@@ -169,6 +169,24 @@ export function EventFeed() {
             </Link>
           </div>
         </div>
+        {/* Stüdyolar — prova/kayıt, dans stüdyosu, müzik dersanesi */}
+        <div>
+          <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{locale === 'en' ? 'Studios' : 'Stüdyolar'}</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Link href="/studios?type=studio"
+              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
+              🎚️ {locale === 'en' ? 'Rehearsal / Recording' : 'Prova / Kayıt'}
+            </Link>
+            <Link href="/studios?type=dance_studio"
+              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
+              💃 {locale === 'en' ? 'Dance Studio' : 'Dans Stüdyosu'}
+            </Link>
+            <Link href="/studios?type=music_school"
+              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
+              🎓 {locale === 'en' ? 'Music School' : 'Müzik Dersanesi'}
+            </Link>
+          </div>
+        </div>
       </div>
 
       {loading ? (
