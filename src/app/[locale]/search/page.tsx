@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, X, Calendar, MapPin, Music2 } from 'lucide-react'
+import { Search, X, Calendar, MapPin, Music2, BookOpen } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils'
 import { GenreChip } from '@/components/ui/GenreChip'
 
-type Tab = 'events' | 'artists' | 'venues'
+type Tab = 'events' | 'artists' | 'venues' | 'courses'
 
 export default function SearchPage() {
   const t = useTranslations('search')
@@ -42,6 +42,14 @@ export default function SearchPage() {
         .eq('is_hidden', false)
         .limit(20)
       setResults(data ?? [])
+    } else if (t === 'courses') {
+      const { data } = await supabase
+        .from('courses')
+        .select('id, title, category, subcategory, profiles(display_name)')
+        .in('status', ['active', 'full'])
+        .or(`title.ilike.%${q}%,subcategory.ilike.%${q}%`)
+        .limit(20)
+      setResults(data ?? [])
     } else {
       const { data } = await supabase
         .from('venues')
@@ -62,6 +70,7 @@ export default function SearchPage() {
     { key: 'events', label: t('events'), icon: Calendar },
     { key: 'artists', label: t('artists'), icon: Music2 },
     { key: 'venues', label: t('venues'), icon: MapPin },
+    { key: 'courses', label: locale === 'en' ? 'Courses' : 'Kurslar', icon: BookOpen },
   ]
 
   return (
@@ -136,6 +145,17 @@ export default function SearchPage() {
               </div>
               <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
                 {a.genres?.slice(0, 2).map((g: string) => <GenreChip key={g} genre={g} />)}
+              </div>
+            </Link>
+          ))}
+          {tab === 'courses' && results.map((c: any) => (
+            <Link key={c.id} href={`/courses/${c.id}`} className="card p-4 flex items-center gap-3 hover:border-accent/30 transition-colors block">
+              <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <BookOpen size={15} className="text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-text-primary text-sm truncate">{c.title}</p>
+                <p className="text-text-muted text-xs truncate">{[c.subcategory, c.profiles?.display_name].filter(Boolean).join(' · ')}</p>
               </div>
             </Link>
           ))}
