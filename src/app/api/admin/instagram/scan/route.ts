@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
         messages: [{ role: 'user', content: `Kaynak: ${source.instagram_url} (${source.city ?? ''}). Bugün: ${today}.\n---\n${promptBody}` }],
       })
       claudeRaw = response.content.find(b => b.type === 'text')?.text ?? ''
-      const m = claudeRaw.match(/\{[\s\S]*\}/)
+      const m = stripBadChars(claudeRaw).match(/\{[\s\S]*\}/)
       if (m) claudeParsed = JSON.parse(m[0])
     } catch (e: any) {
       claudeRaw = `HATA: ${e?.message}`
@@ -233,7 +233,7 @@ ${promptBody}`,
 
       let parsed: { has_event: boolean; events: any[] } | null = null
       try {
-        const m = text.match(/\{[\s\S]*\}/)
+        const m = stripBadChars(text).match(/\{[\s\S]*\}/)
         if (m) parsed = JSON.parse(m[0])
       } catch { /* ignore */ }
 
