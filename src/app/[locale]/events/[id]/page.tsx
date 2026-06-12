@@ -104,6 +104,17 @@ export default async function EventPage({ params }: Props) {
   const acceptedMembers = band ? (band.band_members ?? []).filter((m: any) => m.status === 'accepted') : []
   const performers: any[] = performersData ?? []
 
+  const base = `https://sahne.today`
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Sahne.Today', item: base },
+      { '@type': 'ListItem', position: 2, name: isEn ? 'Events' : 'Etkinlikler', item: `${base}/events` },
+      { '@type': 'ListItem', position: 3, name: event.title, item: `${base}/events/${id}` },
+    ],
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -163,6 +174,10 @@ export default async function EventPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

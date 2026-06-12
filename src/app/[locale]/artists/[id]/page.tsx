@@ -111,6 +111,17 @@ export default async function ArtistPage({ params }: Props) {
   const avatarUrl = artist.avatar_url ?? profile?.avatar_url ?? null
 
   const socialLinks = (artist as any).social_links ?? {}
+  const base = `https://sahne.today`
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Sahne.Today', item: base },
+      { '@type': 'ListItem', position: 2, name: isEn ? 'Artists' : 'Sanatçılar', item: `${base}/artists` },
+      { '@type': 'ListItem', position: 3, name: artist.stage_name, item: `${base}/artists/${id}` },
+    ],
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicGroup',
@@ -129,6 +140,10 @@ export default async function ArtistPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

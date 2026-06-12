@@ -73,6 +73,7 @@
   },
   "events": {
     "title": "Etkinlikler",
+    "description": "İstanbul'daki canlı müzik, tiyatro, stand-up ve sahne etkinliklerini keşfet. Biletler ve mekan bilgileri burada.",
     "noEvents": "Etkinlik bulunamadı.",
     "upcoming": "Yaklaşan",
     "past": "Geçmiş",
@@ -97,6 +98,7 @@
   },
   "artists": {
     "title": "Sanatçılar",
+    "description": "Müzisyenler, tiyatrocular, komedyenler ve daha fazlası. Sahne.Today sanatçı profillerini keşfet.",
     "portal": "Sanatçı Portali",
     "createProfile": "Profil Oluştur",
     "editProfile": "Profili Düzenle",
@@ -112,6 +114,7 @@
   },
   "venues": {
     "title": "Mekanlar",
+    "description": "Sahne.Today'deki barlar, kafeler, tiyatrolar ve canlı müzik mekanlarını keşfet. Açık sahne ve slot başvuruları burada.",
     "portal": "Mekan Portali",
     "createProfile": "Profil Oluştur",
     "editProfile": "Profili Düzenle",

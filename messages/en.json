@@ -74,6 +74,7 @@
   },
   "events": {
     "title": "Events",
+    "description": "Discover live music, theatre, stand-up and stage events in Istanbul. Tickets and venue info, all in one place.",
     "noEvents": "No events found.",
     "upcoming": "Upcoming",
     "past": "Past",
@@ -98,6 +99,7 @@
   },
   "artists": {
     "title": "Artists",
+    "description": "Musicians, theatre artists, comedians and more. Explore artist profiles on TheStage.Today.",
     "portal": "Artist Portal",
     "createProfile": "Create Profile",
     "editProfile": "Edit Profile",
@@ -113,6 +115,7 @@
   },
   "venues": {
     "title": "Venues",
+    "description": "Bars, cafes, theatres and live music venues on TheStage.Today. Find open stages and apply for performance slots.",
     "portal": "Venue Portal",
     "createProfile": "Create Profile",
     "editProfile": "Edit Profile",

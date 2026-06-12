@@ -5,10 +5,23 @@ import { createClient } from '@/lib/supabase/server'
 import { ArtistsClient } from '@/components/artists/ArtistsClient'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { getTranslations } from 'next-intl/server'
+import { buildAlternates, localeBase } from '@/lib/seo'
 
-export async function generateMetadata(): Promise<Metadata> {
+interface MetaProps { params: Promise<{ locale: string }> }
+
+export async function generateMetadata({ params }: MetaProps): Promise<Metadata> {
+  const { locale } = await params
   const t = await getTranslations('artists')
-  return { title: t('title') }
+  const title = t('title')
+  const description = t('description')
+  const image = `${localeBase(locale)}/icon-512.png`
+  return {
+    title,
+    description,
+    alternates: buildAlternates(locale, '/artists'),
+    openGraph: { title, description, images: [{ url: image }], type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
+  }
 }
 
 export default async function ArtistsPage() {

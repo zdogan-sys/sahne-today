@@ -142,6 +142,17 @@ export default async function VenuePage({ params }: Props) {
   const videoUrls: string[] = (venue as any).video_urls ?? []
   const socialLinks = ((venue as any).social_links ?? {}) as SocialLinksData
 
+  const base = `https://sahne.today`
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Sahne.Today', item: base },
+      { '@type': 'ListItem', position: 2, name: isEn ? 'Venues' : 'Mekanlar', item: `${base}/venues` },
+      { '@type': 'ListItem', position: 3, name: venue.name, item: `${base}/venues/${id}` },
+    ],
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicVenue',
@@ -167,6 +178,10 @@ export default async function VenuePage({ params }: Props) {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
