@@ -95,7 +95,9 @@ Etkinlik varsa:
 {"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup/yazar veya null", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
 
 Notlar:
-- Tarihi BUGÜNDEN ÖNCE (strict, yani bugün değil) olan etkinlikleri DAHİL ETME. Bugün ve sonrasındaki etkinlikleri MUTLAKA ekle — bugünkü etkinlik henüz gerçekleşmemiştir.
+- Metinde açık bir tarih (gün+ay veya YYYY-MM-DD) varsa ve o tarih bugünden ÖNCE değilse (bugün dahil sonrası) o etkinliği MUTLAKA ekle.
+- "Sezon finali", "son oyun", "son temsil", "sezon sonu" gibi ifadeler etkinliğin geçmişte olduğu anlamına GELMEZ — yalnızca tarihe bak.
+- Tarihi geçmiş olan etkinlikleri (yani tarihi bugünden kesinlikle önce olanları) dahil etme.
 - "free": yalnızca metinde net "giriş ücretsiz/serbest/bedava" varsa true. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
 - "weekday": SADECE açıkça SÜREKLİ HAFTALIK tekrarı belirten ifadelerde doldur — "HER perşembe", "her hafta cumartesi", "perşembe GECELERİ/akşamları" (süreklilik). Gün no: 0=Pazar,1=Pazartesi,2=Salı,3=Çarşamba,4=Perşembe,5=Cuma,6=Cumartesi.
 - "Bu perşembe", "bu cumartesi", "önümüzdeki cuma" gibi TEK bir yaklaşan günü kastediyorsa → weekday=null; bunun yerine "date"i bugünden hesaplayıp o günün GERÇEK tarihini (YYYY-MM-DD) ver. Şüphedeysen weekday=null (tek seferlik varsay).
