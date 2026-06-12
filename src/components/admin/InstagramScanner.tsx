@@ -250,10 +250,10 @@ export function InstagramScanner() {
                 ))}
               </div>
             )}
-            {debugResult.data.claudeRaw && !debugResult.data.claudeParsed && (
+            {debugResult.data.claudeRaw && (
               <details className="mt-2">
                 <summary className="text-text-muted cursor-pointer hover:text-text-primary">Claude ham yanıt</summary>
-                <pre className="text-[10px] text-text-muted mt-1 whitespace-pre-wrap break-all">{debugResult.data.claudeRaw.slice(0, 500)}</pre>
+                <pre className="text-[10px] text-text-muted mt-1 whitespace-pre-wrap break-all">{debugResult.data.claudeRaw.slice(0, 800)}</pre>
               </details>
             )}
           </div>
