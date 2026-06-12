@@ -174,14 +174,14 @@ export async function POST(req: NextRequest) {
     let claudeParsed: any = null
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: `Kaynak: ${source.instagram_url} (${source.city ?? ''}). Bugün: ${today}.\n---\n${promptBody}` }],
       })
       claudeRaw = response.content.find(b => b.type === 'text')?.text ?? ''
-      const m = stripBadChars(claudeRaw).match(/\{[\s\S]*\}/)
-      if (m) claudeParsed = JSON.parse(m[0])
+      const mDebug = stripBadChars(claudeRaw).match(/\{[\s\S]*\}/)
+      if (mDebug) claudeParsed = JSON.parse(mDebug[0])
     } catch (e: any) {
       claudeRaw = `HATA: ${e?.message}`
     }
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
       const today = new Date().toISOString().slice(0, 10)
 
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [{
