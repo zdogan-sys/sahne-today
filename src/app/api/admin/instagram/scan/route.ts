@@ -76,14 +76,21 @@ function parsePosts(md: string): IgPost[] {
   return posts
 }
 
-const SYSTEM_PROMPT = `Sen bir etkinlik tespit asistanısın. Türk bar, pub ve mekan Instagram sayfalarından alınan içeriklerde yaklaşan canlı müzik etkinlikleri, konserler veya özel geceleri tespit ediyorsun.
+const SYSTEM_PROMPT = `Sen bir etkinlik tespit asistanısın. Mekan Instagram sayfalarından alınan içeriklerde yaklaşan etkinlikleri tespit ediyorsun.
+
+ETKİNLİK TÜRÜ KAPSAMI — şunların hepsini yakala:
+- Canlı müzik, konser, DJ gecesi
+- Tiyatro oyunu, müzikal, gösteri, performans
+- Stand-up, doğaçlama, söyleşi, şiir gecesi
+- Dans gösterisi, dans gecesi
+- Özel gece, kutlama, festival
 
 Sana mekanın son gönderileri "[1]", "[2]" gibi numaralarla verilir. Her etkinlik için onu hangi numaralı gönderide bulduğunu "post" alanında belirt.
 
 Yanıtını MUTLAKA şu JSON formatında ver, başka hiçbir şey yazma:
 
 Etkinlik varsa:
-{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
+{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup/yazar veya null", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
 
 Notlar:
 - SADECE YAKLAŞAN etkinlikleri ver. Tarihi bugünden ÖNCE olan (geçmiş/olmuş) etkinlikleri DAHİL ETME. Geçmiş bir gönderiden bahsediliyorsa onu atla.
