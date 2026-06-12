@@ -239,10 +239,21 @@ export function InstagramScanner() {
                 ))}
               </div>
             )}
-            {debugResult.data.contentLength > 0 && debugResult.data.postsFound === 0 && (
+            {debugResult.data.claudeParsed && (
+              <div className="mt-2 space-y-1">
+                <p className="text-text-muted">Claude yanıtı — has_event: <span className={debugResult.data.claudeParsed.has_event ? 'text-green-400' : 'text-red-400'}>{String(debugResult.data.claudeParsed.has_event)}</span></p>
+                {debugResult.data.claudeParsed.events?.map((e: any, i: number) => (
+                  <div key={i} className="pl-2 border-l border-accent/30 space-y-0.5">
+                    <p className="text-text-primary">{e.title}</p>
+                    <p className="text-text-muted">tarih: {e.date ?? 'null'} · saat: {e.time ?? 'null'} · weekday: {e.weekday ?? 'null'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {debugResult.data.claudeRaw && !debugResult.data.claudeParsed && (
               <details className="mt-2">
-                <summary className="text-text-muted cursor-pointer hover:text-text-primary">Ham içerik (ilk 1000 karakter)</summary>
-                <pre className="text-[10px] text-text-muted mt-1 whitespace-pre-wrap break-all">{debugResult.data.contentHead}</pre>
+                <summary className="text-text-muted cursor-pointer hover:text-text-primary">Claude ham yanıt</summary>
+                <pre className="text-[10px] text-text-muted mt-1 whitespace-pre-wrap break-all">{debugResult.data.claudeRaw.slice(0, 500)}</pre>
               </details>
             )}
           </div>

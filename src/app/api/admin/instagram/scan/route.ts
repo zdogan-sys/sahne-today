@@ -157,18 +157,39 @@ export async function POST(req: NextRequest) {
   if (srcError) return NextResponse.json({ error: srcError.message, scanned: 0, drafts: 0 })
   if (!sources?.length) return NextResponse.json({ scanned: 0, drafts: 0, debug: 'no active sources found' })
 
-  // Debug modu: içeriği ve ayrıştırılan postları döner, taslak oluşturmaz
+  // Debug modu: içeriği, postları ve Claude yanıtını döner, taslak oluşturmaz
   if (debugMode && sources.length === 1) {
     const source = sources[0]
     const content = await fetchInstagramContent(source.instagram_url)
     const posts = parsePosts(content)
+    const today = new Date().toISOString().slice(0, 10)
+    const promptBody = posts.length
+      ? posts.map((p, i) => `[${i + 1}] ${p.caption}`).join('\n\n')
+      : content.slice(0, 5000)
+    let claudeRaw = ''
+    let claudeParsed: any = null
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: `Kaynak: ${source.instagram_url} (${source.city ?? ''}). Bugün: ${today}.\n---\n${promptBody}` }],
+      })
+      claudeRaw = response.content.find(b => b.type === 'text')?.text ?? ''
+      const m = claudeRaw.match(/\{[\s\S]*\}/)
+      if (m) claudeParsed = JSON.parse(m[0])
+    } catch (e: any) {
+      claudeRaw = `HATA: ${e?.message}`
+    }
     return NextResponse.json({
       debug: true,
       username: source.username,
       contentLength: content.length,
-      contentHead: content.slice(0, 1000),
       postsFound: posts.length,
-      posts: posts.map(p => ({ caption: p.caption.slice(0, 200), image: p.image })),
+      posts: posts.map(p => ({ caption: p.caption.slice(0, 200) })),
+      claudeRaw,
+      claudeParsed,
+      today,
     })
   }
 
