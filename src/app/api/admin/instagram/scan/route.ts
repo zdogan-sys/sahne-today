@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
   const admin = adminClient()
   const body = await req.json().catch(() => ({}))
   const sourceId: string | undefined = body.source_id
+  const debugMode: boolean = !!body.debug
 
   // Tek kaynakta: sadece onu tara. Toplu taramada: önce profillerle eşitle, sonra timeout
   // olmaması için en eski taranan BATCH kadar kaynağı tara (rotasyon).
@@ -148,6 +149,21 @@ export async function POST(req: NextRequest) {
   const { data: sources, error: srcError } = await query
   if (srcError) return NextResponse.json({ error: srcError.message, scanned: 0, drafts: 0 })
   if (!sources?.length) return NextResponse.json({ scanned: 0, drafts: 0, debug: 'no active sources found' })
+
+  // Debug modu: içeriği ve ayrıştırılan postları döner, taslak oluşturmaz
+  if (debugMode && sources.length === 1) {
+    const source = sources[0]
+    const content = await fetchInstagramContent(source.instagram_url)
+    const posts = parsePosts(content)
+    return NextResponse.json({
+      debug: true,
+      username: source.username,
+      contentLength: content.length,
+      contentHead: content.slice(0, 1000),
+      postsFound: posts.length,
+      posts: posts.map(p => ({ caption: p.caption.slice(0, 200), image: p.image })),
+    })
+  }
 
   // Tek bir kaynağı tarar, oluşan taslak sayısını döner
   async function scanSource(source: any): Promise<number> {
