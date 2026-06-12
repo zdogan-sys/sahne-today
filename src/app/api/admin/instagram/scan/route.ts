@@ -51,7 +51,9 @@ async function fetchInstagramContent(instagramUrl: string): Promise<string> {
       // Engel/login/hata sayfası değil, gerçek içerik mi? (block sayfaları ~250-660 karakter)
       const head = text.slice(0, 600).toLowerCase()
       const blocked = /sign in|log in|giriş|you have been blocked|security verification|captcha|cloudflare|404 not found/.test(head)
-      if (text.length > 800 && !blocked) {
+      // İçerik doğru profile ait mi? Username sayfada geçmiyorsa yanlış profil (picnob önerilen içerik gösteriyor)
+      const hasUsername = text.toLowerCase().includes(username.toLowerCase())
+      if (text.length > 800 && !blocked && hasUsername) {
         return stripBadChars(text.slice(0, 14000))
       }
     } catch { /* sonraki kaynağa geç */ }
