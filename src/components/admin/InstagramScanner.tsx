@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket } from 'lucide-react'
+import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket, Bug } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
@@ -70,6 +70,7 @@ export function InstagramScanner() {
   const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[]; performer?: string; genre?: string }>>({})
   const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
   const [errorById, setErrorById] = useState<Record<string, string>>({})
+  const [debugResult, setDebugResult] = useState<{ id: string; data: any } | null>(null)
 
   // Bir taslağın geçerli tarih/saat/tekrar değerleri.
   // Varsayılan TEK SEFERLİK (AI tekrar tahmini otomatik uygulanmaz — çoğu yanlış pozitif).
@@ -115,6 +116,18 @@ export function InstagramScanner() {
       await load()
     } catch {
       setScanResult('Tarama sırasında hata oluştu (zaman aşımı olabilir).')
+    }
+    setScanning(false)
+  }
+
+  async function debugOne(sourceId: string) {
+    setScanning(true); setScanResult(null); setDebugResult(null)
+    try {
+      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source_id: sourceId, debug: true }) })
+      const data = await res.json()
+      setDebugResult({ id: sourceId, data })
+    } catch {
+      setScanResult('Debug hatası.')
     }
     setScanning(false)
   }
@@ -209,6 +222,33 @@ export function InstagramScanner() {
         <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-lg px-4 py-2">{scanResult}</div>
       )}
 
+      {debugResult && (
+        <div className="bg-[rgba(228,224,216,0.04)] border border-amber-500/20 rounded-lg p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-amber-400">Debug Sonucu</p>
+            <button onClick={() => setDebugResult(null)} className="text-text-muted hover:text-text-primary"><X size={14} /></button>
+          </div>
+          <div className="text-xs space-y-1">
+            <p><span className="text-text-muted">İçerik uzunluğu:</span> <span className={debugResult.data.contentLength > 0 ? 'text-green-400' : 'text-red-400'}>{debugResult.data.contentLength ?? 0} karakter</span></p>
+            <p><span className="text-text-muted">Bulunan post:</span> <span className={debugResult.data.postsFound > 0 ? 'text-green-400' : 'text-red-400'}>{debugResult.data.postsFound ?? 0}</span></p>
+            {debugResult.data.postsFound > 0 && (
+              <div className="mt-2 space-y-1">
+                <p className="text-text-muted">Post başlıkları:</p>
+                {debugResult.data.posts?.map((p: any, i: number) => (
+                  <p key={i} className="text-text-primary pl-2 border-l border-accent/30">{p.caption.slice(0, 120)}</p>
+                ))}
+              </div>
+            )}
+            {debugResult.data.contentLength > 0 && debugResult.data.postsFound === 0 && (
+              <details className="mt-2">
+                <summary className="text-text-muted cursor-pointer hover:text-text-primary">Ham içerik (ilk 1000 karakter)</summary>
+                <pre className="text-[10px] text-text-muted mt-1 whitespace-pre-wrap break-all">{debugResult.data.contentHead}</pre>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
+
       {tab === 'sources' && (
       <div className="space-y-6">
         {/* Sources */}
@@ -235,6 +275,10 @@ export function InstagramScanner() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={() => debugOne(src.id)} disabled={scanning} title="İçeriği debug et"
+                      className="p-1.5 text-text-muted hover:text-amber-400 transition-colors disabled:opacity-40">
+                      <Bug size={13} />
+                    </button>
                     <button onClick={() => scanOne(src.id)} disabled={scanning} title="Bu hesabı tara"
                       className="p-1.5 text-text-muted hover:text-accent transition-colors disabled:opacity-40">
                       <RefreshCw size={13} />
