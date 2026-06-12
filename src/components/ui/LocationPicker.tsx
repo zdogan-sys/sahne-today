@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { MapPin, Loader2, X } from 'lucide-react'
 
@@ -17,8 +17,9 @@ export function LocationPicker({ lat, lng, address, onChange }: {
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function findFromAddress() {
+  const findFromAddress = useCallback(async () => {
     if (!address.trim()) { setError('Önce adres/şehir gir'); return }
     setLoading(true); setError('')
     try {
@@ -33,7 +34,14 @@ export function LocationPicker({ lat, lng, address, onChange }: {
       setError('Konum aranamadı')
     }
     setLoading(false)
-  }
+  }, [address, onChange])
+
+  useEffect(() => {
+    if (!address.trim()) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(findFromAddress, 800)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [address, findFromAddress])
 
   return (
     <div>
