@@ -25,7 +25,7 @@ async function getAdminData() {
         .order('created_at', { ascending: false })
         .limit(1000),
       admin.from('venues')
-        .select('id, name, city, district, venue_type, phone, email, description, verified, is_pro_venue, created_at, social_links, genres')
+        .select('id, name, city, district, address, venue_type, venue_types, phone, email, description, verified, is_pro_venue, created_at, social_links, genres, latitude, longitude, price_per_hour')
         .order('created_at', { ascending: false })
         .limit(1000),
       admin.from('profiles')
