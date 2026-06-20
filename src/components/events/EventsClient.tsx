@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
-import { MapPin, Clock, Filter, X, CalendarDays, Navigation, Loader2 } from 'lucide-react'
+import { MapPin, Clock, Filter, X, CalendarDays, Navigation, Loader2, ChevronDown } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { formatTime } from '@/lib/utils'
@@ -406,75 +406,74 @@ function FilterContent({ genre, setGenre, entryType, setEntryType, musicGenres, 
   danceGenres: string[]
 }) {
   const t = useTranslations('filters')
-  const ENTRY_TYPES = [
-    { value: 'free', label: t('entryTypes.free') },
-    { value: 'paid', label: t('entryTypes.paid') },
-    { value: 'door', label: t('entryTypes.door') },
-  ]
+  const locale = useLocale()
+
+  const derivedCategory =
+    genre === 'cat:music' || musicGenres.includes(genre) ? 'cat:music' :
+    genre === 'cat:stage' || stageGenres.includes(genre) ? 'cat:stage' :
+    genre === 'cat:dance' || danceGenres.includes(genre) ? 'cat:dance' : ''
+
+  const derivedSubGenre =
+    musicGenres.includes(genre) || stageGenres.includes(genre) || danceGenres.includes(genre) ? genre : ''
+
+  const currentGenres =
+    derivedCategory === 'cat:music' ? musicGenres :
+    derivedCategory === 'cat:stage' ? stageGenres :
+    derivedCategory === 'cat:dance' ? danceGenres : []
+
+  const selectCls = 'w-full bg-surface border border-[rgba(228,224,216,0.15)] text-text-primary rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer focus:outline-none focus:border-accent/40'
+
   return (
-    <div className="space-y-5">
-      {/* Genel Hepsi — tüm kategoriler */}
-      <button onClick={() => setGenre('')}
-        className={`chip border transition-colors ${genre === '' ? 'bg-accent text-white border-accent' : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'}`}>
-        {t('all')}
-      </button>
-      <FilterGroup label={t('musicGenre')} options={musicGenres} value={genre} onChange={setGenre} showAll allValue="cat:music" allLabel={t('all')} />
-      <FilterGroup label={t('stageType')} options={stageGenres} value={genre} onChange={setGenre} showAll allValue="cat:stage" allLabel={t('all')} />
-      <FilterGroup label="Dans" options={danceGenres} value={genre} onChange={setGenre} showAll allValue="cat:dance" allLabel={t('all')} />
+    <div className="space-y-4">
       <div>
-        <label className="label">{t('entry')}</label>
-        <div className="space-y-1">
-          {ENTRY_TYPES.map((entry) => (
-            <button
-              key={entry.value}
-              onClick={() => setEntryType(entryType === entry.value ? '' : entry.value)}
-              className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
-                entryType === entry.value
-                  ? 'bg-accent/10 text-accent'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
-            >
-              {entry.value === 'free' ? t('free') : entry.value === 'paid' ? t('paid') : t('atDoor')}
-            </button>
-          ))}
+        <label className="label">{locale === 'tr' ? 'Kategori' : 'Category'}</label>
+        <div className="relative">
+          <select
+            value={derivedCategory}
+            onChange={e => setGenre(e.target.value)}
+            className={selectCls}
+          >
+            <option value="">{t('all')}</option>
+            <option value="cat:music">🎵 {t('musicGenre')}</option>
+            <option value="cat:stage">🎭 {t('stageType')}</option>
+            <option value="cat:dance">💃 {locale === 'tr' ? 'Dans' : 'Dance'}</option>
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
         </div>
       </div>
-    </div>
-  )
-}
 
-function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All', allValue = '' }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void; showAll?: boolean; allLabel?: string; allValue?: string
-}) {
-  return (
-    <div>
-      <label className="label">{label}</label>
-      <div className="flex flex-wrap gap-1.5">
-        {showAll && (
-          <button
-            onClick={() => onChange(allValue)}
-            className={`chip border transition-colors ${
-              value === allValue
-                ? 'bg-accent/10 text-accent border-accent/30'
-                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-            }`}
+      {derivedCategory && currentGenres.length > 0 && (
+        <div>
+          <label className="label">{locale === 'tr' ? 'Alt Tür' : 'Sub-genre'}</label>
+          <div className="relative">
+            <select
+              value={derivedSubGenre}
+              onChange={e => setGenre(e.target.value || derivedCategory)}
+              className={selectCls}
+            >
+              <option value="">{t('all')}</option>
+              {currentGenres.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="label">{t('entry')}</label>
+        <div className="relative">
+          <select
+            value={entryType}
+            onChange={e => setEntryType(e.target.value)}
+            className={selectCls}
           >
-            {allLabel}
-          </button>
-        )}
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(value === opt ? '' : opt)}
-            className={`chip border transition-colors ${
-              value === opt
-                ? 'bg-accent/10 text-accent border-accent/30'
-                : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
+            <option value="">{t('all')}</option>
+            <option value="free">{t('free')}</option>
+            <option value="paid">{t('paid')}</option>
+            <option value="door">{t('atDoor')}</option>
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+        </div>
       </div>
     </div>
   )

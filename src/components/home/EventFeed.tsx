@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/supabase/types'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
-import { MapPin, Clock, Navigation } from 'lucide-react'
+import { MapPin, Clock, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { getListConfigs } from '@/app/actions/site'
 
@@ -37,13 +37,7 @@ function getDateRange(period: TimePeriod): { from: string; to: string } {
 
 export function EventFeed() {
   const t = useTranslations('filters')
-  const tCommon = useTranslations('common')
   const locale = useLocale()
-
-  const ALL_LABEL = t('all')
-  const MUSIC_LABEL = locale === 'en' ? 'Music' : 'Müzik'
-  const STAGE_LABEL = locale === 'en' ? 'Stage' : 'Sahne'
-  const DANCE_LABEL = locale === 'en' ? 'Dance' : 'Dans'
 
   const [MUSIC_GENRES, setMusicGenres] = useState<string[]>([])
   const [STAGE_GENRES, setStageGenres] = useState<string[]>([])
@@ -57,7 +51,8 @@ export function EventFeed() {
 
   const [events, setEvents] = useState<EventWithRelations[]>([])
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week')
-  const [activeGenre, setActiveGenre] = useState<string>('all')
+  const [activeCategory, setActiveCategory] = useState<string>('')
+  const [activeSubGenre, setActiveSubGenre] = useState<string>('')
   const [city, setCity] = useState<string>('Tümü')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -95,10 +90,11 @@ export function EventFeed() {
         .limit(30)
 
       if (cityFilter) query = query.eq('venues.city', city)
-      if (activeGenre === 'cat:music') query = query.in('genre', MUSIC_GENRES)
-      else if (activeGenre === 'cat:stage') query = query.in('genre', STAGE_GENRES)
-      else if (activeGenre === 'cat:dance') query = query.in('genre', DANCE_GENRES)
-      else if (activeGenre !== 'all') query = query.eq('genre', activeGenre)
+      const effectiveGenre = activeSubGenre || activeCategory
+      if (effectiveGenre === 'cat:music') query = query.in('genre', MUSIC_GENRES)
+      else if (effectiveGenre === 'cat:stage') query = query.in('genre', STAGE_GENRES)
+      else if (effectiveGenre === 'cat:dance') query = query.in('genre', DANCE_GENRES)
+      else if (effectiveGenre) query = query.eq('genre', effectiveGenre)
 
       const { data } = await query
       let rows = (data as EventWithRelations[]) ?? []
@@ -108,7 +104,7 @@ export function EventFeed() {
       setLoading(false)
     }
     fetchEvents()
-  }, [timePeriod, activeGenre, city])
+  }, [timePeriod, activeCategory, activeSubGenre, city])
 
   return (
     <div>
@@ -129,69 +125,46 @@ export function EventFeed() {
         ))}
       </div>
 
-      {/* Genre filter chips */}
-      <div className="space-y-3 mb-5">
-        {[
-          { label: null, genres: [{ key: 'all', display: ALL_LABEL }] },
-          { label: MUSIC_LABEL, genres: [{ key: 'cat:music', display: ALL_LABEL }, ...MUSIC_GENRES.map((g) => ({ key: g, display: g }))] },
-          { label: STAGE_LABEL, genres: [{ key: 'cat:stage', display: ALL_LABEL }, ...STAGE_GENRES.map((g) => ({ key: g, display: g }))] },
-          { label: DANCE_LABEL, genres: [{ key: 'cat:dance', display: ALL_LABEL }, ...DANCE_GENRES.map((g) => ({ key: g, display: g }))] },
-        ].map(({ label, genres }) => (
-          <div key={label ?? 'all'}>
-            {label && <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{label}</p>}
-            <div className="flex flex-wrap gap-1.5">
-              {genres.map(({ key, display }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveGenre(key)}
-                  className={`flex-shrink-0 chip transition-colors border ${
-                    activeGenre === key
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-[rgba(228,224,216,0.06)] text-text-muted border-[rgba(228,224,216,0.1)]'
-                  }`}
-                >
-                  {display}
-                </button>
+      {/* Genre dropdowns */}
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <select
+            value={activeCategory}
+            onChange={e => { setActiveCategory(e.target.value); setActiveSubGenre('') }}
+            className="w-full bg-surface border border-[rgba(228,224,216,0.15)] text-text-primary rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer focus:outline-none focus:border-accent/40"
+          >
+            <option value="">{locale === 'en' ? 'All Genres' : 'Tüm Türler'}</option>
+            <option value="cat:music">{locale === 'en' ? '🎵 Music' : '🎵 Müzik'}</option>
+            <option value="cat:stage">{locale === 'en' ? '🎭 Stage' : '🎭 Sahne'}</option>
+            <option value="cat:dance">{locale === 'en' ? '💃 Dance' : '💃 Dans'}</option>
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+        </div>
+        {activeCategory && (
+          <div className="relative flex-1">
+            <select
+              value={activeSubGenre}
+              onChange={e => setActiveSubGenre(e.target.value)}
+              className="w-full bg-surface border border-[rgba(228,224,216,0.15)] text-text-primary rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer focus:outline-none focus:border-accent/40"
+            >
+              <option value="">{locale === 'en' ? 'All' : 'Tümü'}</option>
+              {(activeCategory === 'cat:music' ? MUSIC_GENRES : activeCategory === 'cat:stage' ? STAGE_GENRES : DANCE_GENRES).map(g => (
+                <option key={g} value={g}>{g}</option>
               ))}
-            </div>
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
-        ))}
-        {/* En altta: Kurslar → Kurslar sayfası (kategoriye göre) */}
-        <div>
-          <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{locale === 'en' ? 'Courses' : 'Kurslar'}</p>
-          <div className="flex flex-wrap gap-1.5">
-            <Link href="/courses?category=music"
-              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
-              🎵 {locale === 'en' ? 'Music Courses' : 'Müzik Kursları'}
-            </Link>
-            <Link href="/courses?category=dance"
-              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
-              💃 {locale === 'en' ? 'Dance Courses' : 'Dans Kursları'}
-            </Link>
-            <Link href="/courses?category=theater"
-              className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
-              🎭 {locale === 'en' ? 'Theater Courses' : 'Tiyatro Kursları'}
-            </Link>
-          </div>
-        </div>
-        {/* Stüdyolar — prova/kayıt, dans stüdyosu, müzik dersanesi */}
-        <div>
-          <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{locale === 'en' ? 'Studios' : 'Stüdyolar'}</p>
-          <div className="flex flex-wrap gap-1.5">
-            <Link href="/studios?type=studio"
-              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
-              🎚️ {locale === 'en' ? 'Rehearsal / Recording' : 'Prova / Kayıt'}
-            </Link>
-            <Link href="/studios?type=dance_studio"
-              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
-              💃 {locale === 'en' ? 'Dance Studio' : 'Dans Stüdyosu'}
-            </Link>
-            <Link href="/studios?type=music_school"
-              className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
-              🎓 {locale === 'en' ? 'Music School' : 'Müzik Dersanesi'}
-            </Link>
-          </div>
-        </div>
+        )}
+      </div>
+
+      {/* Kurslar & Stüdyolar quick links */}
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <Link href="/courses" className="inline-flex items-center gap-1 chip border bg-[#d4a820]/10 text-[#d4a820] border-[#d4a820]/30 hover:bg-[#d4a820]/20 transition-colors">
+          🎵 {locale === 'en' ? 'Courses' : 'Kurslar'}
+        </Link>
+        <Link href="/studios" className="inline-flex items-center gap-1 chip border bg-[#5ba4cf]/10 text-[#5ba4cf] border-[#5ba4cf]/30 hover:bg-[#5ba4cf]/20 transition-colors">
+          🎚️ {locale === 'en' ? 'Studios' : 'Stüdyolar'}
+        </Link>
       </div>
 
       {loading ? (
@@ -209,12 +182,12 @@ export function EventFeed() {
               : timePeriod === 'today' ? 'Bugün etkinlik yok' : `Bu dönem için etkinlik bulunamadı`}
           </p>
           <p className="text-text-muted text-xs">
-            {activeGenre !== 'all'
-              ? (locale === 'en' ? `No events in this genre.` : `"${activeGenre}" türünde etkinlik yok.`)
+            {activeSubGenre || activeCategory
+              ? (locale === 'en' ? 'No events in this genre.' : 'Bu türde etkinlik yok.')
               : (locale === 'en' ? 'Try a different period.' : 'Farklı bir dönem seçin.')}
           </p>
-          {activeGenre !== 'all' && (
-            <button onClick={() => setActiveGenre('all')} className="mt-2 text-accent text-xs hover:underline">
+          {(activeSubGenre || activeCategory) && (
+            <button onClick={() => { setActiveCategory(''); setActiveSubGenre('') }} className="mt-2 text-accent text-xs hover:underline">
               {locale === 'en' ? 'Show all genres' : 'Tüm türleri göster'}
             </button>
           )}
