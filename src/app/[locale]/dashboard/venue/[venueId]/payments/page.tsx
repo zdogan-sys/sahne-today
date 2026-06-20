@@ -49,8 +49,11 @@ export default function VenuePaymentsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const { data: venueData } = await supabase.from('venues').select('id, name, owner_id, venue_type').eq('id', venueId).single()
-    if (!venueData || venueData.owner_id !== user.id) { router.push('/dashboard'); return }
+    const [{ data: venueData }, { data: membership }] = await Promise.all([
+      supabase.from('venues').select('id, name, venue_type').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
+    ])
+    if (!venueData || !membership) { router.push('/dashboard'); return }
     setVenue(venueData)
 
     // Aylık kurslar + kayıtlar + seanslar

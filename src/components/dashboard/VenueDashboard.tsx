@@ -44,11 +44,19 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
   }, [])
 
   async function loadData() {
-    const { data: venueData } = await supabase
-      .from('venues')
-      .select('*, slots(*, applications(*))')
-      .eq('owner_id', userId)
-      .select('id, name, city, district, venue_type, is_pro_venue, studio_payment_enabled, photo_url, slots(*, applications(*))')
+    const { data: memberships } = await supabase
+      .from('venue_members')
+      .select('venue_id')
+      .eq('user_id', userId)
+
+    const myVenueIds = memberships?.map((m: any) => m.venue_id) ?? []
+
+    const { data: venueData } = myVenueIds.length > 0
+      ? await supabase
+          .from('venues')
+          .select('id, name, city, district, venue_type, is_pro_venue, studio_payment_enabled, photo_url, slots(*, applications(*))')
+          .in('id', myVenueIds)
+      : { data: [] as any[] }
 
     const slotIds = venueData?.flatMap((v: any) => v.slots?.map((s: any) => s.id) ?? []) ?? []
     const venueIds = venueData?.map((v: any) => v.id) ?? []

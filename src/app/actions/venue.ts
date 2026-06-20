@@ -49,8 +49,15 @@ export async function respondToSlotApplication(appId: string, status: 'accepted'
 
   if (!app) return { success: false, error: 'Başvuru bulunamadı.' }
   const venue = (app as any).slots?.venues
-  if (!venue || (venue.owner_id !== user.id && !await isPrivilegedUser(user))) {
-    return { success: false, error: 'Yetkiniz yok.' }
+  if (!venue) return { success: false, error: 'Yetkiniz yok.' }
+  if (!await isPrivilegedUser(user)) {
+    const { data: membership } = await admin
+      .from('venue_members')
+      .select('id')
+      .eq('venue_id', venue.id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!membership) return { success: false, error: 'Yetkiniz yok.' }
   }
 
   // If accepting, create the event

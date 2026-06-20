@@ -8,6 +8,7 @@ import { buildAlternates, localeBase } from '@/lib/seo'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { EventsClient } from '@/components/events/EventsClient'
+import { getListConfigs } from '@/app/actions/site'
 
 interface Props { params: Promise<{ locale: string }> }
 
@@ -34,15 +35,18 @@ export default async function AnkaraPage({ params }: Props) {
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: events } = await supabase
-    .from('events')
-    .select('*, venues!inner(name, district, city, photo_url, latitude, longitude), artists(stage_name, profiles(avatar_url)), bands(name, photo_url)')
-    .eq('status', 'confirmed')
-    .eq('venues.city', 'Ankara')
-    .gte('event_date', today)
-    .order('event_date', { ascending: true })
-    .order('start_time', { ascending: true })
-    .limit(60)
+  const [{ data: events }, genres] = await Promise.all([
+    supabase
+      .from('events')
+      .select('*, venues!inner(name, district, city, photo_url, latitude, longitude), artists(stage_name, profiles(avatar_url)), bands(name, photo_url)')
+      .eq('status', 'confirmed')
+      .eq('venues.city', 'Ankara')
+      .gte('event_date', today)
+      .order('event_date', { ascending: true })
+      .order('start_time', { ascending: true })
+      .limit(60),
+    getListConfigs(),
+  ])
 
   const base = 'https://sahne.today'
   const breadcrumbLd = {
@@ -93,7 +97,12 @@ export default async function AnkaraPage({ params }: Props) {
           </div>
         }>
           {(events ?? []).length > 0 ? (
-            <EventsClient initialEvents={(events ?? []) as any[]} />
+            <EventsClient
+                initialEvents={(events ?? []) as any[]}
+                musicGenres={genres.music_genres}
+                stageGenres={genres.stage_genres}
+                danceGenres={genres.dance_types}
+              />
           ) : (
             <p className="text-text-muted text-sm py-12 text-center">
               {isEn ? 'No upcoming events in Ankara.' : "Ankara'da yaklaşan etkinlik bulunamadı."}

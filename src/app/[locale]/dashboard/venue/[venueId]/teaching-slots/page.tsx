@@ -81,13 +81,12 @@ export default function VenueTeachingSlotsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const { data: venueData } = await supabase
-      .from('venues')
-      .select('id, name, owner_id, venue_type')
-      .eq('id', venueId)
-      .single()
+    const [{ data: venueData }, { data: membership }] = await Promise.all([
+      supabase.from('venues').select('id, name, venue_type').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
+    ])
 
-    if (!venueData || venueData.owner_id !== user.id) {
+    if (!venueData || !membership) {
       router.push('/dashboard')
       return
     }

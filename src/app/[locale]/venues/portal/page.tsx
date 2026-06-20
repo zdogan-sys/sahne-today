@@ -9,13 +9,14 @@ export default async function VenuePortal() {
     redirect('/auth')
   }
 
-  const { data: venues } = await supabase
-    .from('venues')
-    .select('id')
-    .eq('owner_id', user.id)
+  const { data: membership } = await supabase
+    .from('venue_members')
+    .select('venue_id')
+    .eq('user_id', user.id)
     .limit(1)
+    .maybeSingle()
 
-  if (venues && venues.length > 0) {
+  if (membership) {
     redirect('/dashboard')
   } else {
     redirect('/venues/register')

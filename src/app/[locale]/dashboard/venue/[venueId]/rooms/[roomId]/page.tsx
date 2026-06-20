@@ -113,8 +113,11 @@ export default function RoomCalendarPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const { data: venueData } = await supabase.from('venues').select('*').eq('id', venueId).single()
-    if (!venueData || venueData.owner_id !== user.id) { router.push('/dashboard'); return }
+    const [{ data: venueData }, { data: membership }] = await Promise.all([
+      supabase.from('venues').select('*').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
+    ])
+    if (!venueData || !membership) { router.push('/dashboard'); return }
 
     const { data: allRooms } = await supabase.from('studio_rooms').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at')
     const roomData = (allRooms ?? []).find((r: any) => r.id === activeRoomId)

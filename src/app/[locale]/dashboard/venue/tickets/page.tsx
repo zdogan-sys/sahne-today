@@ -36,10 +36,19 @@ export default async function VenueTicketsDashboard() {
       events = data ?? []
     }
   } else {
+    const { data: myMembership } = await supabase
+      .from('venue_members')
+      .select('venue_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (!myMembership) notFound()
+
     const { data: venue } = await supabase
       .from('venues')
       .select('id, name')
-      .eq('owner_id', user.id)
+      .eq('id', myMembership.venue_id)
       .single()
 
     if (!venue) notFound()

@@ -17,18 +17,23 @@ async function isEventParty(userId: string, userEmail: string | undefined, event
   const admin = await getAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('artist_id, band_id, venue_id, artists(profile_id), bands(creator_id), venues(owner_id)')
+    .select('artist_id, band_id, venue_id, artists(profile_id), bands(creator_id)')
     .eq('id', eventId)
     .single()
   if (!ev) return false
   const a = ev.artists as any
   const b = ev.bands as any
-  const v = ev.venues as any
-  return (
-    a?.profile_id === userId ||
-    b?.creator_id === userId ||
-    v?.owner_id === userId
-  )
+  if (a?.profile_id === userId || b?.creator_id === userId) return true
+  if (ev.venue_id) {
+    const { data: membership } = await admin
+      .from('venue_members')
+      .select('id')
+      .eq('venue_id', ev.venue_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (membership) return true
+  }
+  return false
 }
 
 export async function updateEvent(eventId: string, payload: {

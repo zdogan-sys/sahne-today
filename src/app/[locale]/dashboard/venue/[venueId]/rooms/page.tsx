@@ -37,12 +37,13 @@ export default function VenueRoomsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [venueRes, roomsRes] = await Promise.all([
-      supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
+    const [venueRes, membershipRes, roomsRes] = await Promise.all([
+      supabase.from('venues').select('id, name').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
       supabase.from('studio_rooms').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at'),
     ])
 
-    if (!venueRes.data || venueRes.data.owner_id !== user.id) { router.push('/dashboard'); return }
+    if (!venueRes.data || !membershipRes.data) { router.push('/dashboard'); return }
     setVenue(venueRes.data)
     setRooms(roomsRes.data ?? [])
     setLoading(false)

@@ -45,15 +45,16 @@ export default function VenueReservationsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [venueRes, roomsRes, resRes, reqRes, instRes] = await Promise.all([
-      supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single(),
+    const [venueRes, membershipRes, roomsRes, resRes, reqRes, instRes] = await Promise.all([
+      supabase.from('venues').select('id, name').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
       supabase.from('studio_rooms').select('id, name, price_per_hour').eq('venue_id', venueId).eq('is_active', true),
       supabase.from('studio_reservations').select('*').eq('venue_id', venueId).order('reservation_date', { ascending: false }),
       supabase.from('lesson_requests').select('*, venue_lesson_templates(name, subject, weeks, hours_per_session, price_total)').eq('venue_id', venueId).order('created_at', { ascending: false }),
       supabase.from('venue_instructors').select('id, name').eq('venue_id', venueId).eq('is_active', true),
     ])
 
-    if (!venueRes.data || venueRes.data.owner_id !== user.id) { router.push('/dashboard'); return }
+    if (!venueRes.data || !membershipRes.data) { router.push('/dashboard'); return }
 
     setVenue(venueRes.data)
     setRooms(roomsRes.data ?? [])

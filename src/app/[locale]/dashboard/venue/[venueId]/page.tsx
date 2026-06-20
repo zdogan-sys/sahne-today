@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, X, Edit2, Loader2, Eye } from 'lucide-react'
+import { ArrowLeft, Plus, X, Edit2, Loader2, Eye, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { getListConfigs } from '@/app/actions/site'
@@ -18,6 +18,7 @@ export default function VenueHubPage() {
   const supabase = createClient()
 
   const [venue, setVenue] = useState<any>(null)
+  const [isOwner, setIsOwner] = useState(false)
   const [rooms, setRooms] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
   const [instrumentOptions, setInstrumentOptions] = useState<string[]>(INSTRUMENT_OPTIONS)
@@ -43,16 +44,16 @@ export default function VenueHubPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const { data: venueData } = await supabase
-      .from('venues')
-      .select('*')
-      .eq('id', venueId)
-      .single()
+    const [{ data: venueData }, { data: membership }] = await Promise.all([
+      supabase.from('venues').select('*').eq('id', venueId).single(),
+      supabase.from('venue_members').select('role').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
+    ])
 
-    if (!venueData || venueData.owner_id !== user.id) {
+    if (!venueData || !membership) {
       router.push('/dashboard')
       return
     }
+    setIsOwner(membership.role === 'owner')
 
     setVenue(venueData)
     setVenueForm({ name: venueData.name, city: venueData.city, district: venueData.district || '', description: venueData.description || '' })
@@ -417,6 +418,20 @@ export default function VenueHubPage() {
           <span className="text-accent">→</span>
         </Link>
       </div>
+
+      {/* Üyeler — sadece kurucu görür */}
+      {isOwner && (
+        <div className="space-y-4">
+          <h2 className="font-bebas text-2xl text-text-primary">MEKAN ÜYELERİ</h2>
+          <Link href={`/dashboard/venue/${venueId}/members`} className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors">
+            <div className="flex items-center gap-2 text-text-muted text-sm">
+              <Users size={14} />
+              Yönetici ekle, üyeleri düzenle
+            </div>
+            <span className="text-accent">→</span>
+          </Link>
+        </div>
+      )}
 
       {/* Videolar & Sosyal Medya */}
       <div className="space-y-4">

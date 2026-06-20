@@ -64,20 +64,26 @@ export default function VenueNewCoursePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('venues').select('id, name, owner_id').eq('id', venueId).single().then(({ data }) => {
-      if (!data) { router.push('/dashboard'); return }
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user?.id !== data.owner_id) { router.push('/dashboard'); return }
-        setVenue(data)
-        supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at')
-          .then(({ data: t }) => setTemplates(t ?? []))
-        supabase.from('studio_rooms').select('id, name').eq('venue_id', venueId).eq('is_active', true).order('created_at')
-          .then(({ data: r }) => setRooms(r ?? []))
-        supabase.from('venue_instructors').select('id, name, instruments').eq('venue_id', venueId).eq('is_active', true)
-          .then(({ data: i }) => setInstructors(i ?? []))
-        setLoading(false)
-      })
-    })
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/dashboard'); return }
+      const [{ data: venueData }, { data: membership }] = await Promise.all([
+        supabase.from('venues').select('id, name').eq('id', venueId).single(),
+        supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
+      ])
+      if (!venueData || !membership) { router.push('/dashboard'); return }
+      setVenue(venueData)
+      const [{ data: t }, { data: r }, { data: i }] = await Promise.all([
+        supabase.from('venue_lesson_templates').select('*').eq('venue_id', venueId).eq('is_active', true).order('created_at'),
+        supabase.from('studio_rooms').select('id, name').eq('venue_id', venueId).eq('is_active', true).order('created_at'),
+        supabase.from('venue_instructors').select('id, name, instruments').eq('venue_id', venueId).eq('is_active', true),
+      ])
+      setTemplates(t ?? [])
+      setRooms(r ?? [])
+      setInstructors(i ?? [])
+      setLoading(false)
+    }
+    init()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

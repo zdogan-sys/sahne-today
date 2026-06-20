@@ -40,13 +40,14 @@ export default function VenueInstructorsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
 
-    const [venueRes, instRes, artistsRes] = await Promise.all([
-      supabase.from('venues').select('id, name, owner_id, venue_type').eq('id', venueId).single(),
+    const [venueRes, membershipRes, instRes, artistsRes] = await Promise.all([
+      supabase.from('venues').select('id, name, venue_type').eq('id', venueId).single(),
+      supabase.from('venue_members').select('id').eq('venue_id', venueId).eq('user_id', user.id).maybeSingle(),
       supabase.from('venue_instructors').select('*').eq('venue_id', venueId).eq('is_active', true),
       supabase.from('artists').select('id, stage_name, teaching_instruments, instruments').order('stage_name').limit(300),
     ])
 
-    if (!venueRes.data || venueRes.data.owner_id !== user.id) {
+    if (!venueRes.data || !membershipRes.data) {
       router.push('/dashboard')
       return
     }

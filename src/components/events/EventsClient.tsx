@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useTranslations, useLocale } from 'next-intl'
-import { MapPin, Clock, Filter, Music2, Building2, X, CalendarDays, Navigation, Loader2 } from 'lucide-react'
+import { MapPin, Clock, Filter, X, CalendarDays, Navigation, Loader2 } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
 import { formatTime } from '@/lib/utils'
@@ -54,21 +54,20 @@ function groupByDate(events: EventFull[]) {
   }, {})
 }
 
-export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) {
+export function EventsClient({
+  initialEvents,
+  musicGenres,
+  stageGenres,
+  danceGenres,
+}: {
+  initialEvents: EventFull[]
+  musicGenres: string[]
+  stageGenres: string[]
+  danceGenres: string[]
+}) {
   const t = useTranslations('filters')
   const locale = useLocale()
   const router = useRouter()
-
-  // Get locale-specific genre and stage options
-  const musicGenres = locale === 'en'
-    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk']
-    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
-
-  const stageGenres = locale === 'en'
-    ? ['Stand-Up', 'Improvisation', 'Theater', 'Alternative Stage']
-    : ['Stand-Up', 'Doğaçlama', 'Tiyatro', 'Alternatif Sahne']
-
-  const danceGenres = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal']
 
   const [genre, setGenre] = useState('')
   const city = useSelectedCity() // üstteki global şehir seçicisinden
@@ -355,7 +354,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
           ) : nearList ? (
             <>
               <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
                 {nearList.map(({ e, dist }) => (
                   <EventListCard key={e.id} event={e} locale={locale} distance={dist} />
                 ))}
@@ -368,7 +367,7 @@ export function EventsClient({ initialEvents }: { initialEvents: EventFull[] }) 
                   <h2 className="font-bebas text-2xl text-text-primary mb-3">
                     {new Date(date).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
                   </h2>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {evts.map((event) => (
                       <EventListCard key={event.id} event={event} locale={locale} />
                     ))}
@@ -481,12 +480,6 @@ function FilterGroup({ label, options, value, onChange, showAll, allLabel = 'All
   )
 }
 
-function Avatar({ src, fallback, size = 8 }: { src?: string | null; fallback: ReactNode; size?: number }) {
-  const cls = `w-${size} h-${size} rounded-full flex-shrink-0 overflow-hidden bg-[rgba(228,224,216,0.08)] flex items-center justify-center`
-  return src
-    ? <div className={cls}><Image src={src} alt="" width={32} height={32} className="w-full h-full object-cover" /></div>
-    : <div className={cls}>{fallback}</div>
-}
 
 function EventListCard({ event, locale, distance }: { event: EventFull; locale: string; distance?: number | null }) {
   const date = new Date(event.event_date)
@@ -495,62 +488,60 @@ function EventListCard({ event, locale, distance }: { event: EventFull; locale: 
   const month = date.toLocaleDateString(localeStr, { month: 'short' })
 
   const performerName = event.artists?.stage_name ?? event.bands?.name ?? event.artist_name ?? null
-  const performerAvatar = event.artists?.profiles?.avatar_url ?? event.bands?.photo_url ?? null
-  const venueAvatar = event.venues?.photo_url ?? null
+  const bgImage = event.poster_url ?? event.venues?.photo_url ?? null
 
   return (
-    <Link href={`/events/${event.id}`} className="card p-4 flex gap-4 hover:border-accent/30 transition-colors block">
-      <div className="flex-shrink-0 w-12 h-12 bg-[rgba(212,83,126,0.08)] rounded-lg flex flex-col items-center justify-center border border-accent/20">
-        <span className="font-bebas text-lg text-accent leading-none">{dayNum}</span>
-        <span className="text-[9px] text-accent/70 uppercase">{month}</span>
+    <Link href={`/events/${event.id}`} className="block aspect-square relative rounded-xl overflow-hidden border border-[rgba(228,224,216,0.1)] hover:border-accent/40 transition-colors">
+      {bgImage ? (
+        <Image src={bgImage} alt={event.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
+      ) : (
+        <div className="absolute inset-0 bg-surface-alt" />
+      )}
+
+      {/* Koyu gradient — içerik okunabilirliği için */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
+
+      {/* Tarih — sol üst */}
+      <div className="absolute top-2 left-2 bg-accent rounded-lg px-2 py-1 flex flex-col items-center min-w-[28px]">
+        <span className="font-bebas text-base text-white leading-none">{dayNum}</span>
+        <span className="text-[8px] text-white/80 uppercase leading-none mt-0.5">{month}</span>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium text-text-primary text-sm truncate">{event.title}</h3>
-          {event.genre && <GenreChip genre={event.genre} />}
-        </div>
-
-        {performerName && (
-          <div className="flex items-center gap-1.5 mt-1">
-            <Avatar src={performerAvatar} size={5} fallback={<Music2 size={10} className="text-text-muted" />} />
-            <span className="text-xs text-accent truncate">{performerName}</span>
-          </div>
-        )}
-
-        {event.venues?.name && (
-          <div className="flex items-center gap-1.5 mt-1">
-            <Avatar src={venueAvatar} size={5} fallback={<Building2 size={10} className="text-text-muted" />} />
-            <span className="text-xs text-text-muted truncate">
-              <MapPin size={9} className="inline mr-0.5" />
-              {event.venues.name}{event.venues.district ? ` · ${event.venues.district}` : ''}
-            </span>
-            {distance != null && (
-              <span className="flex items-center gap-0.5 text-[11px] text-accent flex-shrink-0 ml-auto">
-                <Navigation size={9} /> {fmtDistance(distance)}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
-          <span className="flex items-center gap-1">
-            <Clock size={10} />
-            {formatTime(event.start_time)}
-          </span>
-          {event.entry_type === 'free' ? (
-            <span className="text-success">Ücretsiz</span>
-          ) : event.entry_fee ? (
-            <span>{event.entry_fee}₺</span>
-          ) : null}
-        </div>
-      </div>
-
-      {event.poster_url && (
-        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[rgba(228,224,216,0.08)]">
-          <Image src={event.poster_url} alt={event.title} width={64} height={64} className="w-full h-full object-cover" />
+      {/* Tür etiketi — sağ üst */}
+      {event.genre && (
+        <div className="absolute top-2 right-2">
+          <GenreChip genre={event.genre} />
         </div>
       )}
+
+      {/* İçerik — alt */}
+      <div className="absolute bottom-0 left-0 right-0 p-2.5">
+        <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 mb-0.5">{event.title}</h3>
+
+        {performerName && (
+          <p className="text-xs text-accent/90 truncate">{performerName}</p>
+        )}
+
+        <div className="flex items-center justify-between mt-1 gap-1">
+          <span className="text-[10px] text-white/55 truncate flex items-center gap-0.5">
+            <MapPin size={8} className="flex-shrink-0" />
+            {event.venues?.name ?? ''}
+          </span>
+          <span className="text-[10px] text-white/55 flex-shrink-0 flex items-center gap-0.5">
+            {distance != null
+              ? <><Navigation size={8} />{fmtDistance(distance)}</>
+              : <><Clock size={8} />{formatTime(event.start_time)}</>
+            }
+          </span>
+        </div>
+
+        {event.entry_type === 'free' && (
+          <span className="text-[9px] text-success font-medium">Ücretsiz</span>
+        )}
+        {event.entry_type !== 'free' && event.entry_fee ? (
+          <span className="text-[9px] text-white/60">{event.entry_fee}₺</span>
+        ) : null}
+      </div>
     </Link>
   )
 }
