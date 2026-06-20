@@ -16,6 +16,7 @@ import { isAdminUser } from '@/lib/admin'
 import { EventPosterSection, EventPhotosSection } from '@/components/events/EventMediaSection'
 import { EventEditor } from '@/components/events/EventEditor'
 import { CalendarExport } from '@/components/events/CalendarExport'
+import { ShareButton } from '@/components/events/ShareButton'
 import { RSVPButton } from '@/components/events/RSVPButton'
 import { OpenChatButton } from '@/components/messaging/OpenChatButton'
 
@@ -221,6 +222,11 @@ export default async function EventPage({ params }: Props) {
             {isEn ? 'Poster' : 'Afiş'}
           </Link>
           <OpenChatButton type="event" contextId={id} />
+          <ShareButton
+            title={event.title}
+            url={`https://sahne.today/events/${id}`}
+            isEn={isEn}
+          />
         </div>
       )}
 
