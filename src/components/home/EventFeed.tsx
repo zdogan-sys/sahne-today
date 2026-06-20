@@ -9,6 +9,7 @@ import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
 import { MapPin, Clock, Navigation } from 'lucide-react'
 import Image from 'next/image'
+import { getListConfigs } from '@/app/actions/site'
 
 type EventWithRelations = Event & {
   poster_url?: string | null
@@ -39,20 +40,14 @@ export function EventFeed() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
 
-  const MUSIC_GENRES = locale === 'en'
-    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk']
-    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
-
-  const STAGE_GENRES = locale === 'en'
-    ? ['Stand-Up', 'Improvisation', 'Theater', 'Alternative Stage']
-    : ['Stand-Up', 'Doğaçlama', 'Tiyatro', 'Alternatif Sahne']
-
-  const DANCE_GENRES = ['Salsa', 'Tango', 'Bale', 'Hip-Hop', 'Vals', 'Foxtrot', 'Zumba', 'Flamenco', 'Zeybek', 'Modern Dans', 'Bachata', 'Oryantal']
-
   const ALL_LABEL = t('all')
   const MUSIC_LABEL = locale === 'en' ? 'Music' : 'Müzik'
   const STAGE_LABEL = locale === 'en' ? 'Stage' : 'Sahne'
   const DANCE_LABEL = locale === 'en' ? 'Dance' : 'Dans'
+
+  const [MUSIC_GENRES, setMusicGenres] = useState<string[]>([])
+  const [STAGE_GENRES, setStageGenres] = useState<string[]>([])
+  const [DANCE_GENRES, setDanceGenres] = useState<string[]>([])
 
   const TIME_FILTERS: { value: TimePeriod; label: string }[] = [
     { value: 'today', label: t('dateRanges.today') },
@@ -66,6 +61,14 @@ export function EventFeed() {
   const [city, setCity] = useState<string>('Tümü')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+
+  useEffect(() => {
+    getListConfigs().then(g => {
+      setMusicGenres(g.music_genres)
+      setStageGenres(g.stage_genres)
+      setDanceGenres(g.dance_types)
+    })
+  }, [])
 
   // Üstteki şehir seçicisini dinle (localStorage + 'city_changed' event'i)
   useEffect(() => {
