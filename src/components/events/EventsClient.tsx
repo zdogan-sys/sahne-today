@@ -354,7 +354,7 @@ export function EventsClient({
           ) : nearList ? (
             <>
               <p className="text-xs text-text-muted mb-3">{locale === 'en' ? 'Sorted by distance from your location' : 'Konumuna en yakından uzağa sıralandı'}</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {nearList.map(({ e, dist }) => (
                   <EventListCard key={e.id} event={e} locale={locale} distance={dist} />
                 ))}
@@ -367,7 +367,7 @@ export function EventsClient({
                   <h2 className="font-bebas text-2xl text-text-primary mb-3">
                     {new Date(date).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
                   </h2>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {evts.map((event) => (
                       <EventListCard key={event.id} event={event} locale={locale} />
                     ))}

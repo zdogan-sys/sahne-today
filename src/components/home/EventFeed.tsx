@@ -168,7 +168,7 @@ export function EventFeed() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="aspect-square rounded-xl bg-[rgba(228,224,216,0.06)] animate-pulse" />
           ))}
@@ -193,7 +193,7 @@ export function EventFeed() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {events.map((event) => (
             <EventCard key={event.id} event={event} locale={locale} />
           ))}
