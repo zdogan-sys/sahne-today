@@ -7,10 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/supabase/types'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
-import { MapPin, Clock } from 'lucide-react'
+import { MapPin, Clock, Navigation } from 'lucide-react'
+import Image from 'next/image'
 
 type EventWithRelations = Event & {
-  venues: { name: string; district: string; city: string } | null
+  poster_url?: string | null
+  venues: { name: string; district: string; city: string; photo_url?: string | null } | null
   artists: { stage_name: string } | null
 }
 
@@ -81,7 +83,7 @@ export function EventFeed() {
       const cityFilter = city && city !== 'Tümü'
       let query = supabase
         .from('events')
-        .select(`*, venues${cityFilter ? '!inner' : ''}(name, district, city), artists(stage_name)`)
+        .select(`*, venues${cityFilter ? '!inner' : ''}(name, district, city, photo_url), artists(stage_name)`)
         .eq('status', 'confirmed')
         .gte('event_date', from)
         .lte('event_date', to)
@@ -190,17 +192,9 @@ export function EventFeed() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="card p-4 animate-pulse">
-              <div className="flex gap-4">
-                <div className="w-14 h-14 bg-[rgba(228,224,216,0.06)] rounded-lg" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-[rgba(228,224,216,0.06)] rounded w-2/3" />
-                  <div className="h-3 bg-[rgba(228,224,216,0.06)] rounded w-1/2" />
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-xl bg-[rgba(228,224,216,0.06)] animate-pulse" />
           ))}
         </div>
       ) : events.length === 0 ? (
@@ -223,7 +217,7 @@ export function EventFeed() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-3">
           {events.map((event) => (
             <EventCard key={event.id} event={event} locale={locale} />
           ))}
@@ -237,42 +231,48 @@ function EventCard({ event, locale }: { event: EventWithRelations; locale: strin
   const date = new Date(event.event_date)
   const dayNum = date.getDate()
   const month = date.toLocaleDateString(locale === 'en' ? 'en-US' : 'tr-TR', { month: 'short' })
+  const performerName = event.artists?.stage_name ?? null
+  const bgImage = event.poster_url ?? event.venues?.photo_url ?? null
 
   return (
-    <Link href={`/events/${event.id}`} className="card p-4 flex gap-4 hover:border-accent/30 transition-colors block">
-      <div className="flex-shrink-0 w-14 h-14 bg-[rgba(212,83,126,0.08)] rounded-lg flex flex-col items-center justify-center border border-accent/20">
-        <span className="font-bebas text-xl text-accent leading-none">{dayNum}</span>
-        <span className="text-[10px] text-accent/70 uppercase">{month}</span>
+    <Link href={`/events/${event.id}`} className="block aspect-square relative rounded-xl overflow-hidden border border-[rgba(228,224,216,0.1)] hover:border-accent/40 transition-colors">
+      {bgImage ? (
+        <Image src={bgImage} alt={event.title} fill className="object-cover" sizes="33vw" />
+      ) : (
+        <div className="absolute inset-0 bg-surface-alt" />
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
+
+      <div className="absolute top-2 left-2 bg-accent rounded-lg px-2 py-1 flex flex-col items-center min-w-[28px]">
+        <span className="font-bebas text-base text-white leading-none">{dayNum}</span>
+        <span className="text-[8px] text-white/80 uppercase leading-none mt-0.5">{month}</span>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-text-primary text-sm leading-tight truncate">
-            {event.title}
-          </h3>
-          {event.genre && <GenreChip genre={event.genre} />}
+      {event.genre && (
+        <div className="absolute top-2 right-2">
+          <GenreChip genre={event.genre} />
         </div>
+      )}
 
-        <div className="mt-1 flex items-center gap-1 text-text-muted text-xs">
-          <MapPin size={11} />
-          <span className="truncate">
-            {event.venues?.name} · {event.venues?.district}
+      <div className="absolute bottom-0 left-0 right-0 p-2.5">
+        <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 mb-0.5">{event.title}</h3>
+        {performerName && <p className="text-xs text-accent/90 truncate">{performerName}</p>}
+        <div className="flex items-center justify-between mt-1 gap-1">
+          <span className="text-[10px] text-white/55 truncate flex items-center gap-0.5">
+            <MapPin size={8} className="flex-shrink-0" />
+            {event.venues?.name ?? ''}
+          </span>
+          <span className="text-[10px] text-white/55 flex-shrink-0 flex items-center gap-0.5">
+            <Clock size={8} />{formatTime(event.start_time)}
           </span>
         </div>
-
-        <div className="mt-1 flex items-center gap-3 text-text-muted text-xs">
-          <span className="flex items-center gap-1">
-            <Clock size={11} />
-            {formatTime(event.start_time)}
-          </span>
-          {event.entry_type === 'free' ? (
-            <span className="text-success">{locale === 'en' ? 'Free' : 'Ücretsiz'}</span>
-          ) : event.entry_fee ? (
-            <span>{event.entry_fee}₺</span>
-          ) : (
-            <span>{locale === 'en' ? 'At the Door' : 'Kapıda'}</span>
-          )}
-        </div>
+        {event.entry_type === 'free' && (
+          <span className="text-[9px] text-success font-medium">{locale === 'en' ? 'Free' : 'Ücretsiz'}</span>
+        )}
+        {event.entry_type !== 'free' && event.entry_fee ? (
+          <span className="text-[9px] text-white/60">{event.entry_fee}₺</span>
+        ) : null}
       </div>
     </Link>
   )
