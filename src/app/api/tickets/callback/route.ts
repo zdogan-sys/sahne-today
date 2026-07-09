@@ -4,6 +4,7 @@ import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ticketEmailHtml } from '@/lib/email-templates/ticket'
 import { formatDate, formatTime } from '@/lib/utils'
+import { createTicketInvoice } from '@/lib/muhasebe'
 
 const MERCHANT_KEY = process.env.PAYTR_MERCHANT_KEY!
 const MERCHANT_SALT = process.env.PAYTR_MERCHANT_SALT!
@@ -115,6 +116,17 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Email send error:', err)
   }
+
+  // Ön muhasebeye satış faturası (idempotent; hata bilet akışını bozmaz)
+  await createTicketInvoice({
+    merchantOid,
+    buyerName: `${ticket.buyer_name} ${ticket.buyer_surname ?? ''}`.trim(),
+    buyerEmail: ticket.buyer_email,
+    buyerPhone: ticket.buyer_phone,
+    eventTitle: event?.title ?? 'Etkinlik',
+    quantity: ticket.quantity,
+    unitPriceGross: Number(ticket.unit_price),
+  })
 
   return new NextResponse('OK')
 }
