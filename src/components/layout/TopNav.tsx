@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
+import { KNOWN_CITIES, cityFromSlug, slugifyCity } from '@/lib/cities'
 
-const cities = ['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Bursa', 'Eskişehir']
+const cities = KNOWN_CITIES
 
 export function TopNav() {
   const t = useTranslations()
@@ -30,9 +31,20 @@ export function TopNav() {
   const logoText = locale === 'tr' ? 'SAHNE.TODAY' : 'THE STAGE'
 
   useEffect(() => {
-    const savedCity = localStorage.getItem('sahne_city')
-    if (savedCity && cities.includes(savedCity)) {
-      setSelectedCity(savedCity)
+    // URL'deki ?city= parametresi esas; yoksa localStorage'a düş
+    const urlSlug = new URLSearchParams(window.location.search).get('city')
+    const urlCity = urlSlug ? cityFromSlug(urlSlug) : null
+    if (urlCity) {
+      setSelectedCity(urlCity)
+      if (localStorage.getItem('sahne_city') !== urlCity) {
+        localStorage.setItem('sahne_city', urlCity)
+        window.dispatchEvent(new Event('city_changed'))
+      }
+    } else {
+      const savedCity = localStorage.getItem('sahne_city')
+      if (savedCity && cities.includes(savedCity)) {
+        setSelectedCity(savedCity)
+      }
     }
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -57,6 +69,11 @@ export function TopNav() {
     setSelectedCity(city)
     localStorage.setItem('sahne_city', city)
     setCityOpen(false)
+    // Seçimi URL'e de yaz — link paylaşılabilir olsun
+    const url = new URL(window.location.href)
+    if (city === 'Tümü') url.searchParams.delete('city')
+    else url.searchParams.set('city', slugifyCity(city))
+    window.history.replaceState(null, '', url)
     window.dispatchEvent(new Event('city_changed'))
   }
 

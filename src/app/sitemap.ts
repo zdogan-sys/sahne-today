@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/seo'
+import { getCities, slugifyCity } from '@/lib/cities'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = await getSiteUrl()
@@ -8,10 +9,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = `${siteUrl}/${locale}`
   const supabase = await createClient()
 
-  const [eventsRes, venuesRes, artistsRes] = await Promise.all([
+  const [eventsRes, venuesRes, artistsRes, cities] = await Promise.all([
     supabase.from('events').select('id, created_at').eq('status', 'confirmed' as any).limit(500),
     supabase.from('venues').select('id, created_at').limit(500),
     supabase.from('artists').select('id, created_at').limit(500),
+    getCities(supabase),
   ])
 
   const events = (eventsRes.data ?? []) as { id: string; created_at: string }[]
@@ -47,5 +49,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticRoutes, ...eventRoutes, ...venueRoutes, ...artistRoutes]
+  const cityRoutes = cities.map((c) => ({
+    url: `${baseUrl}/${slugifyCity(c)}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }))
+
+  return [...staticRoutes, ...cityRoutes, ...eventRoutes, ...venueRoutes, ...artistRoutes]
 }

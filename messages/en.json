@@ -40,7 +40,6 @@
     "send": "Send",
     "apply": "Apply",
     "accept": "Accept",
-    "reject": "Reject",
     "viewAll": "View All"
   },
   "auth": {
@@ -70,7 +69,10 @@
     "activeArtists": "Active artists",
     "everyoneHasPlace": "A place for everyone",
     "platform": "Platform",
-    "venues": "Active Venues"
+    "venues": "Active Venues",
+    "tonightLive": "{count} stages live tonight",
+    "weekLive": "{count} events this week",
+    "seeAll": "see all"
   },
   "events": {
     "title": "Events",
@@ -163,12 +165,23 @@
     "myNote": "My Note"
   },
   "notifications": {
-    "title": "Notifications",
-    "noNotifications": "No notifications yet.",
-    "desc": "New offers and updates will appear here.",
-    "newMessage": "New message — {context}",
-    "groupChat": "Group Chat",
-    "eventChat": "Event Chat"
+    "newStageOffer": "New Stage Offer",
+    "offerAcceptedTitle": "🎉 Offer Accepted",
+    "offerRejectedTitle": "Offer Rejected",
+    "offerWithdrawnTitle": "Offer Withdrawn",
+    "competingOfferRejectedTitle": "Your Offer Went Unanswered",
+    "newEventTitle": "New Event: {title}",
+    "viewEventButton": "View Event →",
+    "offerAcceptedBody": "{performer} accepted your offer for {date}!",
+    "offerRejectedBody": "{performer} declined your offer for {date}.",
+    "offerWithdrawnBody": "A stage offer sent to you was withdrawn by the venue.",
+    "competingOfferRejectedBody": "{performer} accepted another offer for {date}. Discover other artists to fill your schedule.",
+    "newVenueOfferBody": "{venue} invited you to perform on {date}. Respond within {hours} hours.",
+    "followEmailDisclaimer": "You received this email because you follow this account.",
+    "reminderPerformer": "You're on stage tomorrow: {title}",
+    "reminderBand": "You're on stage tomorrow: {title}",
+    "reminderAudience": "There's an event tomorrow: {title}",
+    "reminderEmailText": "You have an event tomorrow."
   },
   "search": {
     "title": "Search",
@@ -230,11 +243,11 @@
       "folk": "Folk",
       "arabesk": "Arabesk"
     },
-    "stageTypes": {
-      "standup": "Stand-Up",
-      "improvisation": "Improvisation",
-      "alternativeStage": "Alternative Stage"
-    },
+    "stageTypes": [
+      "Stand-Up",
+      "Improvisation",
+      "Alternative Stage"
+    ],
     "cities": {
       "istanbul": "Istanbul",
       "ankara": "Ankara",
@@ -250,9 +263,27 @@
       "paid": "Paid",
       "door": "At the Door"
     },
-    "dateRanges": { "today": "Today", "week": "This Week", "month": "This Month" },
-    "musicGenres": ["Acoustic", "Metal", "Rock", "Blues", "Jazz", "Pop", "Electronic", "R&B", "Rap", "Classical", "Ethnic", "Fasıl", "Folk", "Arabesk"],
-    "stageTypes": ["Stand-Up", "Improvisation", "Alternative Stage"],
+    "dateRanges": {
+      "today": "Today",
+      "week": "This Week",
+      "month": "This Month"
+    },
+    "musicGenres": [
+      "Acoustic",
+      "Metal",
+      "Rock",
+      "Blues",
+      "Jazz",
+      "Pop",
+      "Electronic",
+      "R&B",
+      "Rap",
+      "Classical",
+      "Ethnic",
+      "Fasıl",
+      "Folk",
+      "Arabesk"
+    ],
     "venueTypes": {
       "pub": "Pub",
       "turku_bar": "Turkish Folk Bar",
@@ -377,24 +408,5 @@
     "artistProfileNotFound": "Artist profile not found.",
     "offerExpired": "This offer is no longer valid.",
     "offerCannotWithdraw": "This offer cannot be withdrawn."
-  },
-  "notifications": {
-    "newStageOffer": "New Stage Offer",
-    "offerAcceptedTitle": "🎉 Offer Accepted",
-    "offerRejectedTitle": "Offer Rejected",
-    "offerWithdrawnTitle": "Offer Withdrawn",
-    "competingOfferRejectedTitle": "Your Offer Went Unanswered",
-    "newEventTitle": "New Event: {title}",
-    "viewEventButton": "View Event →",
-    "offerAcceptedBody": "{performer} accepted your offer for {date}!",
-    "offerRejectedBody": "{performer} declined your offer for {date}.",
-    "offerWithdrawnBody": "A stage offer sent to you was withdrawn by the venue.",
-    "competingOfferRejectedBody": "{performer} accepted another offer for {date}. Discover other artists to fill your schedule.",
-    "newVenueOfferBody": "{venue} invited you to perform on {date}. Respond within {hours} hours.",
-    "followEmailDisclaimer": "You received this email because you follow this account.",
-    "reminderPerformer": "You're on stage tomorrow: {title}",
-    "reminderBand": "You're on stage tomorrow: {title}",
-    "reminderAudience": "There's an event tomorrow: {title}",
-    "reminderEmailText": "You have an event tomorrow."
   }
 }

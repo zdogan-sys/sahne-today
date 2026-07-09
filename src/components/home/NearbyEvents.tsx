@@ -9,7 +9,8 @@ import { GenreChip } from '@/components/ui/GenreChip'
 import { formatTime } from '@/lib/utils'
 import { EventsMap, type MapEvent } from '@/components/events/EventsMap'
 
-const RADIUS_KM = 1
+// Sonuç bulunana kadar kademeli genişleyen arama yarıçapları
+const RADIUS_STEPS_KM = [1, 5, 15, 50]
 
 type Row = {
   id: string
@@ -41,6 +42,7 @@ export function NearbyEvents() {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [mapEvents, setMapEvents] = useState<MapEvent[]>([])
   const [view, setView] = useState<'list' | 'map'>('list')
+  const [radiusKm, setRadiusKm] = useState<number>(RADIUS_STEPS_KM[0])
 
   async function findNearby() {
     if (!('geolocation' in navigator)) { setError(isEn ? 'Location not supported' : 'Konum desteklenmiyor'); return }
@@ -63,8 +65,16 @@ export function NearbyEvents() {
         .map(r => ({ row: r, dist: distanceKm(user, { lat: r.venues!.latitude!, lng: r.venues!.longitude! }) }))
         .sort((a, b) => a.dist - b.dist)
 
-      // Liste: en yakın 6; Harita: konumu olan tüm etkinlikler (zoom out'ta 1 km dışı da görünür)
-      setItems(withDist.slice(0, 6))
+      // Liste: sonuç bulunana kadar yarıçapı kademeli genişlet (1 → 5 → 15 → 50 km).
+      // Hiçbir kademede sonuç yoksa en yakın 3 etkinliği yine de göster.
+      let chosenRadius = RADIUS_STEPS_KM[RADIUS_STEPS_KM.length - 1]
+      let inRadius: typeof withDist = []
+      for (const r of RADIUS_STEPS_KM) {
+        inRadius = withDist.filter(x => x.dist <= r)
+        if (inRadius.length > 0) { chosenRadius = r; break }
+      }
+      setRadiusKm(chosenRadius)
+      setItems(inRadius.length > 0 ? inRadius.slice(0, 6) : withDist.slice(0, 3))
       setMapEvents(located.map(r => ({
         id: r.id,
         title: r.title,
@@ -119,9 +129,17 @@ export function NearbyEvents() {
         <p className="text-text-muted text-sm mt-2">{isEn ? 'No upcoming events with a location nearby.' : 'Yakında konumu belirli yaklaşan etkinlik bulunamadı.'}</p>
       )}
 
+      {done && items.length > 0 && (
+        <p className="text-text-muted text-xs mt-1">
+          {items[0].dist <= radiusKm
+            ? (isEn ? `Found within ${radiusKm} km` : `${radiusKm} km içinde bulundu`)
+            : (isEn ? 'Nothing within 50 km — showing the closest ones' : '50 km içinde yok — en yakınlar gösteriliyor')}
+        </p>
+      )}
+
       {done && view === 'map' && mapEvents.length > 0 && (
         <div className="mt-3">
-          <EventsMap events={mapEvents} userLoc={userLoc} radiusKm={RADIUS_KM} />
+          <EventsMap events={mapEvents} userLoc={userLoc} radiusKm={radiusKm} />
         </div>
       )}
 

@@ -69,7 +69,10 @@
     "activeArtists": "Aktif sanatçı",
     "everyoneHasPlace": "Herkes için bir yer var",
     "platform": "Platform",
-    "venues": "Aktif Mekan"
+    "venues": "Aktif Mekan",
+    "tonightLive": "Bu akşam {count} sahne var",
+    "weekLive": "Bu hafta {count} etkinlik var",
+    "seeAll": "hepsini gör"
   },
   "events": {
     "title": "Etkinlikler",
@@ -162,12 +165,23 @@
     "myNote": "Notum"
   },
   "notifications": {
-    "title": "Bildirimler",
-    "noNotifications": "Henüz bildirim yok.",
-    "desc": "Yeni teklifler ve güncellemeler burada görünecek.",
-    "newMessage": "Yeni mesaj — {context}",
-    "groupChat": "Grup Sohbeti",
-    "eventChat": "Etkinlik Sohbeti"
+    "newStageOffer": "Yeni Sahne Teklifi",
+    "offerAcceptedTitle": "🎉 Teklif Kabul Edildi",
+    "offerRejectedTitle": "Teklif Reddedildi",
+    "offerWithdrawnTitle": "Teklif Geri Çekildi",
+    "competingOfferRejectedTitle": "Teklifiniz Yanıtsız Kaldı",
+    "newEventTitle": "Yeni Etkinlik: {title}",
+    "viewEventButton": "Etkinliği Gör →",
+    "offerAcceptedBody": "{performer}, {date} tarihli teklifinizi kabul etti!",
+    "offerRejectedBody": "{performer}, {date} tarihli teklifinizi reddetti.",
+    "offerWithdrawnBody": "Size gönderilen sahne teklifi mekan tarafından geri çekildi.",
+    "competingOfferRejectedBody": "{performer}, {date} tarihi için başka bir teklifi kabul etti. Takviminizi doldurmak için diğer sanatçıları keşfedin.",
+    "newVenueOfferBody": "{venue} sizi {date} tarihine davet etti. {hours} saat içinde yanıtlayın.",
+    "followEmailDisclaimer": "Takip ettiğiniz için bu e-postayı aldınız.",
+    "reminderPerformer": "Yarın Sahnedesin: {title}",
+    "reminderBand": "Yarın Sahnedesiniz: {title}",
+    "reminderAudience": "Yarın Etkinlik Var: {title}",
+    "reminderEmailText": "Yarın bir etkinliğiniz var."
   },
   "search": {
     "title": "Ara",
@@ -229,11 +243,11 @@
       "folk": "Türkü",
       "arabesk": "Arabesk"
     },
-    "stageTypes": {
-      "standup": "Stand-Up",
-      "improvisation": "Doğaçlama",
-      "alternativeStage": "Alternatif Sahne"
-    },
+    "stageTypes": [
+      "Stand-Up",
+      "Doğaçlama",
+      "Alternatif Sahne"
+    ],
     "cities": {
       "istanbul": "İstanbul",
       "ankara": "Ankara",
@@ -249,9 +263,27 @@
       "paid": "Ücretli",
       "door": "Kapıda"
     },
-    "dateRanges": { "today": "Bugün", "week": "Bu Hafta", "month": "Bu Ay" },
-    "musicGenres": ["Akustik", "Metal", "Rock", "Blues", "Caz", "Pop", "Elektronik", "R&B", "Rap", "Klasik", "Etnik", "Fasıl", "Türkü", "Arabesk"],
-    "stageTypes": ["Stand-Up", "Doğaçlama", "Alternatif Sahne"],
+    "dateRanges": {
+      "today": "Bugün",
+      "week": "Bu Hafta",
+      "month": "Bu Ay"
+    },
+    "musicGenres": [
+      "Akustik",
+      "Metal",
+      "Rock",
+      "Blues",
+      "Caz",
+      "Pop",
+      "Elektronik",
+      "R&B",
+      "Rap",
+      "Klasik",
+      "Etnik",
+      "Fasıl",
+      "Türkü",
+      "Arabesk"
+    ],
     "venueTypes": {
       "pub": "Pub",
       "turku_bar": "Türkü Bar",
@@ -376,24 +408,5 @@
     "artistProfileNotFound": "Sanatçı profili bulunamadı.",
     "offerExpired": "Bu teklif artık geçerli değil.",
     "offerCannotWithdraw": "Bu teklif geri çekilemez."
-  },
-  "notifications": {
-    "newStageOffer": "Yeni Sahne Teklifi",
-    "offerAcceptedTitle": "🎉 Teklif Kabul Edildi",
-    "offerRejectedTitle": "Teklif Reddedildi",
-    "offerWithdrawnTitle": "Teklif Geri Çekildi",
-    "competingOfferRejectedTitle": "Teklifiniz Yanıtsız Kaldı",
-    "newEventTitle": "Yeni Etkinlik: {title}",
-    "viewEventButton": "Etkinliği Gör →",
-    "offerAcceptedBody": "{performer}, {date} tarihli teklifinizi kabul etti!",
-    "offerRejectedBody": "{performer}, {date} tarihli teklifinizi reddetti.",
-    "offerWithdrawnBody": "Size gönderilen sahne teklifi mekan tarafından geri çekildi.",
-    "competingOfferRejectedBody": "{performer}, {date} tarihi için başka bir teklifi kabul etti. Takviminizi doldurmak için diğer sanatçıları keşfedin.",
-    "newVenueOfferBody": "{venue} sizi {date} tarihine davet etti. {hours} saat içinde yanıtlayın.",
-    "followEmailDisclaimer": "Takip ettiğiniz için bu e-postayı aldınız.",
-    "reminderPerformer": "Yarın Sahnedesin: {title}",
-    "reminderBand": "Yarın Sahnedesiniz: {title}",
-    "reminderAudience": "Yarın Etkinlik Var: {title}",
-    "reminderEmailText": "Yarın bir etkinliğiniz var."
   }
 }

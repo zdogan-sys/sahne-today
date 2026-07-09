@@ -6,10 +6,17 @@ interface Props {
   isLoggedIn: boolean
   isAdmin: boolean
   posterUrl: string | null
+  todayCount?: number
+  weekCount?: number
 }
 
-export async function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
+export async function HeroSection({ isLoggedIn, isAdmin, posterUrl, todayCount = 0, weekCount = 0 }: Props) {
   const t = await getTranslations()
+  const liveText = todayCount > 0
+    ? t('home.tonightLive', { count: todayCount })
+    : weekCount > 0
+      ? t('home.weekLive', { count: weekCount })
+      : null
 
   return (
     <section className="relative overflow-hidden px-4 pt-12 pb-10 md:pt-20 md:pb-16">
@@ -30,9 +37,23 @@ export async function HeroSection({ isLoggedIn, isAdmin, posterUrl }: Props) {
           <h1 className="font-bebas text-7xl md:text-9xl text-text-primary leading-none mb-4">
             {t('home.headline')}
           </h1>
-          <p className="text-text-muted text-base md:text-lg max-w-md mb-8">
+          <p className="text-text-muted text-base md:text-lg max-w-md mb-6">
             {t('home.description')}
           </p>
+
+          {liveText && (
+            <Link
+              href="/events"
+              className="inline-flex items-center gap-2 mb-8 px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-sm text-text-primary hover:bg-accent/20 transition-colors"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+              </span>
+              {liveText}
+              <span className="text-accent">→ {t('home.seeAll')}</span>
+            </Link>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             {isLoggedIn ? (

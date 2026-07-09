@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
@@ -10,8 +10,9 @@ import { formatTime } from '@/lib/utils'
 import { MapPin, Clock, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { getListConfigs } from '@/app/actions/site'
+import { cityFromSlug } from '@/lib/cities'
 
-type EventWithRelations = Event & {
+export type EventWithRelations = Event & {
   poster_url?: string | null
   venues: { name: string; district: string; city: string; photo_url?: string | null } | null
   artists: { stage_name: string } | null
@@ -35,7 +36,7 @@ function getDateRange(period: TimePeriod): { from: string; to: string } {
   }
 }
 
-export function EventFeed() {
+export function EventFeed({ initialEvents, initialCity }: { initialEvents?: EventWithRelations[]; initialCity?: string }) {
   const t = useTranslations('filters')
   const locale = useLocale()
 
@@ -49,13 +50,15 @@ export function EventFeed() {
     { value: 'month', label: t('dateRanges.month') },
   ]
 
-  const [events, setEvents] = useState<EventWithRelations[]>([])
+  const [events, setEvents] = useState<EventWithRelations[]>(initialEvents ?? [])
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week')
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [activeSubGenre, setActiveSubGenre] = useState<string>('')
-  const [city, setCity] = useState<string>('Tümü')
-  const [loading, setLoading] = useState(true)
+  const [city, setCity] = useState<string>(initialCity ?? 'Tümü')
+  const [loading, setLoading] = useState(!initialEvents)
   const supabase = createClient()
+  // İlk render sunucudan geldiyse, filtreler varsayılandayken yeniden fetch etme
+  const hasServerData = useRef(!!initialEvents)
 
   useEffect(() => {
     getListConfigs().then(g => {
@@ -65,15 +68,25 @@ export function EventFeed() {
     })
   }, [])
 
-  // Üstteki şehir seçicisini dinle (localStorage + 'city_changed' event'i)
+  // Şehir: önce URL'deki ?city=, yoksa TopNav'ın localStorage değeri
   useEffect(() => {
-    const read = () => setCity(localStorage.getItem('sahne_city') || 'Tümü')
+    const read = () => {
+      const urlSlug = new URLSearchParams(window.location.search).get('city')
+      const urlCity = urlSlug ? cityFromSlug(urlSlug) : null
+      setCity(urlCity ?? localStorage.getItem('sahne_city') ?? 'Tümü')
+    }
     read()
     window.addEventListener('city_changed', read)
     return () => window.removeEventListener('city_changed', read)
   }, [])
 
   useEffect(() => {
+    // Varsayılan filtreler + sunucu verisi varsa ilk fetch'i atla
+    if (hasServerData.current && timePeriod === 'week' && !activeCategory && !activeSubGenre && city === (initialCity ?? 'Tümü')) {
+      return
+    }
+    hasServerData.current = false
+
     async function fetchEvents() {
       setLoading(true)
       const { from, to } = getDateRange(timePeriod)

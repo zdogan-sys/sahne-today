@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   // Bu haftanın onaylı etkinlikleri
   const { data: events } = await admin
     .from('events')
-    .select('id, title, event_date, start_time, entry_type, entry_fee, genre, venues(name, city), artists(stage_name), bands(name)')
+    .select('id, title, event_date, start_time, entry_type, entry_fee, genre, venues(id, name, city), artists(id, stage_name), bands(id, name)')
     .eq('status', 'confirmed')
     .gte('event_date', todayStr)
     .lte('event_date', weekEndStr)
