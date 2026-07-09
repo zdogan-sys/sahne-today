@@ -1,12 +1,11 @@
-import withPWAInit from 'next-pwa'
+import withSerwistInit from '@serwist/next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
+const withSerwist = withSerwistInit({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
 })
 
@@ -25,10 +24,7 @@ const supabaseRemotePattern = (() => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-    serverComponentsExternalPackages: ['@anthropic-ai/sdk'],
-  },
+  serverExternalPackages: ['@anthropic-ai/sdk'],
   async headers() {
     return [
       {
@@ -47,4 +43,4 @@ const nextConfig = {
   },
 }
 
-export default withNextIntl(withPWA(nextConfig))
+export default withNextIntl(withSerwist(nextConfig))
