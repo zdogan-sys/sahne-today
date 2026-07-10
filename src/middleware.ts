@@ -66,6 +66,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Statik dosyalar (font dahil) middleware'e girmesin; yoksa dil
+    // yönlendirmesi 307 döndürüyor ve service worker precache'i başarısız oluyor
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ttf|otf|woff|woff2|ico|js|css|map|json|txt|xml|webmanifest)$).*)',
   ],
 }
