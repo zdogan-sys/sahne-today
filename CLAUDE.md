@@ -50,6 +50,9 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - [x] Cron zamanlayıcıları kuruldu (Temmuz 2026, VPS crontab): event-reminders
   ve weekly-digest'e ek olarak review-requests (11:00), expire-offers (saat
   başı), lesson-reminders (09:00) ve günlük DB yedeği (04:00, /root/backup-db.sh)
+- [x] DB yedekleri Cloudflare R2'ye de kopyalanıyor (bucket: sahneyedek,
+  rclone remote: r2, cron'da BACKUP_REMOTE ile). Not: VPS dışarı IPv6'dan
+  çıkıyor; R2 token'ında IP filtresi BOŞ bırakıldı, bu yüzden çalışıyor.
 - [x] ESLint React kural hataları temizlendi (Temmuz 2026) — kalan uyarılar
   bilinçli desenler (set-state-in-effect warn seviyesinde)
 - Not: Next 16 + React 19 + Serwist geçişi tamamlandı (Temmuz 2026).
