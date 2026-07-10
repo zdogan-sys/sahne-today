@@ -5,6 +5,11 @@ import { useLocale } from 'next-intl'
 import { BellRing, BellOff, Loader2 } from 'lucide-react'
 import { savePushSubscription, removePushSubscription } from '@/app/actions/push'
 
+// VAPID public anahtarı gizli değildir (tarayıcıya zaten açık gider);
+// build-time env sorunlarından etkilenmemek için sabit gömülü.
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  ?? 'BONyMWd3stGuWArPetCoTxn9V7FZEtWNBXjOUJ02K6-rhn5piBBaoNIA_HkXjd88o8xGO3TVU9E84AZLWiHFzkc'
+
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4)
   const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'))
@@ -24,7 +29,6 @@ export function PushToggle() {
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return
     setSupported(true)
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
@@ -47,7 +51,7 @@ export function PushToggle() {
         if (permission !== 'granted') return
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         })
         const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } }
         const res = await savePushSubscription(json)

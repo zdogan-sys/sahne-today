@@ -7,9 +7,13 @@ export type PushPayload = {
   link?: string
 }
 
+// Public anahtar gizli değil; PushToggle'daki sabitle aynı olmalı
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  ?? 'BONyMWd3stGuWArPetCoTxn9V7FZEtWNBXjOUJ02K6-rhn5piBBaoNIA_HkXjd88o8xGO3TVU9E84AZLWiHFzkc'
+
 let configured = false
 function ensureConfigured(): boolean {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const publicKey = VAPID_PUBLIC_KEY
   const privateKey = process.env.VAPID_PRIVATE_KEY
   if (!publicKey || !privateKey) return false
   if (!configured) {
