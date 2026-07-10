@@ -18,7 +18,9 @@ type SlotRow = {
 const DAYS_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-// Sanatçılar için açık sahne vitrini: mekan ↔ sanatçı tarafını ana sayfada buluşturur
+// Sanatçılar için açık sahne vitrini. Görünürlük RLS ile sınırlı:
+// sadece mekanı takip eden sanatçı/grup sahipleri slot görür (030 migration).
+// Oturumsuz veya takipsiz kullanıcıda sorgu boş döner, bölüm hiç render olmaz.
 export async function OpenSlotsShowcase({ city }: { city: string | null }) {
   const locale = await getLocale()
   const isEn = locale === 'en'
@@ -54,8 +56,8 @@ export async function OpenSlotsShowcase({ city }: { city: string | null }) {
       </div>
       <p className="text-text-muted text-sm mb-4">
         {isEn
-          ? 'Are you a performer? Apply for an open slot and get on stage.'
-          : 'Sanatçı mısın? Açık sahnelere başvur, sahneye çık.'}
+          ? 'Open slots at venues you follow — apply and get on stage.'
+          : 'Takip ettiğin mekanlardaki açık sahneler — başvur, sahneye çık.'}
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

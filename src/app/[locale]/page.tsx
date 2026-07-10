@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { HeroSection } from '@/components/home/HeroSection'
 import { LandingFeatures } from '@/components/home/LandingFeatures'
 import { StatsBar } from '@/components/home/StatsBar'
@@ -100,6 +101,9 @@ async function EventFeedServer({ city }: { city: string | null }) {
 
 async function StatsBarServer() {
   const supabase = await createClient()
+  // Slot detayları RLS ile takipçilere sınırlı; toplam SAYI herkese görünebilir,
+  // o yüzden sayaç admin client ile alınır (satır verisi dönmez, sadece count)
+  const admin = createAdminClient()
 
   const today = new Date().toISOString().split('T')[0]
   const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
@@ -109,7 +113,7 @@ async function StatsBarServer() {
       .gte('event_date', today).lte('event_date', weekEnd).eq('status', 'confirmed'),
     supabase.from('venues').select('id', { count: 'exact', head: true }),
     supabase.from('artists').select('id', { count: 'exact', head: true }),
-    supabase.from('slots').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    admin.from('slots').select('id', { count: 'exact', head: true }).eq('status', 'open'),
   ])
 
   return (

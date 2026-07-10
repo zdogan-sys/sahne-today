@@ -18,6 +18,7 @@ import { isAdminUser } from '@/lib/admin'
 import { LfbToggle } from '@/components/artists/LfbToggle'
 import { TeachingToggle } from '@/components/artists/TeachingToggle'
 import { ArtistCalendarSection } from '@/components/artists/ArtistCalendarSection'
+import { PerformerSlots } from '@/components/ui/PerformerSlots'
 import { ArtistProfileEditor } from '@/components/artists/ArtistProfileEditor'
 import { ArtistAvatarEditor } from '@/components/artists/ArtistAvatarEditor'
 import { ClaimProfileButton } from '@/components/artists/ClaimProfileButton'
@@ -320,6 +321,8 @@ export default async function ArtistPage({ params }: Props) {
             </div>
           </div>
         )}
+
+        <PerformerSlots performerType="artist" performerId={artist.id} isOwner={isOwner} />
 
         <ArtistCalendarSection
           artistId={artist.id}

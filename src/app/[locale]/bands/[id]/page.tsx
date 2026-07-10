@@ -23,6 +23,7 @@ import { isAdminUser } from '@/lib/admin'
 import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { OpenChatButton } from '@/components/messaging/OpenChatButton'
+import { PerformerSlots } from '@/components/ui/PerformerSlots'
 
 export const dynamic = 'force-dynamic'
 
@@ -250,6 +251,8 @@ export default async function BandPage({ params }: Props) {
             <SocialLinks links={socialLinks} />
           </div>
         ) : null}
+
+        <PerformerSlots performerType="band" performerId={b.id} isOwner={isCreator} />
 
         <BandCalendarSection
           bandId={b.id}
