@@ -59,6 +59,9 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
   env'de + public key kodda gömülü; abonelik zil menüsünden. Dikkat:
   middleware matcher'ı statik dosyaları dışlamalı, yoksa SW precache 307
   alıp kurulamıyor (yaşandı, düzeltildi).
+- [x] Umami analitiği kuruldu (Temmuz 2026): Coolify'da self-host,
+  analiz.sahne.today; site script'i UMAMI_URL + UMAMI_WEBSITE_ID
+  runtime env'lerinden besleniyor.
 - Not: Next 16 + React 19 + Serwist geçişi tamamlandı (Temmuz 2026).
   Build webpack ile çalışıyor (`next build --webpack`) çünkü Serwist
   henüz Turbopack desteklemiyor; destek gelince bayrak kaldırılabilir.
