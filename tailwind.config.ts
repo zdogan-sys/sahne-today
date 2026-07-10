@@ -14,7 +14,7 @@ const config: Config = {
         accent: '#D4537E',
         success: '#1D9E75',
         'text-primary': '#E4E0D8',
-        'text-muted': 'rgba(228,224,216,0.4)',
+        'text-muted': 'rgba(228,224,216,0.65)',
         genre: {
           rock: '#e86042',
           standup: '#d4a820',

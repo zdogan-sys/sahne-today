@@ -109,7 +109,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_HEADERS.map(d => (
-          <div key={d} className="text-center text-xs text-white/50 py-1 font-medium">{d}</div>
+          <div key={d} className="text-center text-xs text-white/70 py-1 font-medium">{d}</div>
         ))}
       </div>
 
@@ -148,8 +148,8 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
                     ? 'bg-yellow-400/15 text-white hover:bg-yellow-400/25 cursor-pointer'
                     : 'bg-success/20 text-white hover:bg-success/30 cursor-pointer'
                   : interactive
-                  ? 'text-white/55 hover:bg-white/5 cursor-pointer'
-                  : 'text-white/55 cursor-default',
+                  ? 'text-white/75 hover:bg-white/5 cursor-pointer'
+                  : 'text-white/75 cursor-default',
                 isToday && !isSelected ? 'ring-1 ring-accent/50' : '',
               )}
             >
@@ -160,7 +160,7 @@ export function EventCalendar({ events, onDayClick, selectedDate: externalSelect
                 </span>
               )}
               {venueLabel && !isSelected && (
-                <span className="text-[7px] leading-tight w-full text-center truncate text-white/50">
+                <span className="text-[7px] leading-tight w-full text-center truncate text-white/70">
                   {venueLabel}
                 </span>
               )}

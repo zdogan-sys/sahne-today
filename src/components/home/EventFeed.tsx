@@ -248,11 +248,11 @@ function EventCard({ event, locale }: { event: EventWithRelations; locale: strin
         <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 mb-0.5">{event.title}</h3>
         {performerName && <p className="text-xs text-accent/90 truncate">{performerName}</p>}
         <div className="flex items-center justify-between mt-1 gap-1">
-          <span className="text-[10px] text-white/55 truncate flex items-center gap-0.5">
+          <span className="text-[10px] text-white/75 truncate flex items-center gap-0.5">
             <MapPin size={8} className="flex-shrink-0" />
             {event.venues?.name ?? ''}
           </span>
-          <span className="text-[10px] text-white/55 flex-shrink-0 flex items-center gap-0.5">
+          <span className="text-[10px] text-white/75 flex-shrink-0 flex items-center gap-0.5">
             <Clock size={8} />{formatTime(event.start_time)}
           </span>
         </div>
@@ -260,7 +260,7 @@ function EventCard({ event, locale }: { event: EventWithRelations; locale: strin
           <span className="text-[9px] text-success font-medium">{locale === 'en' ? 'Free' : 'Ücretsiz'}</span>
         )}
         {event.entry_type !== 'free' && event.entry_fee ? (
-          <span className="text-[9px] text-white/60">{event.entry_fee}₺</span>
+          <span className="text-[9px] text-white/75">{event.entry_fee}₺</span>
         ) : null}
       </div>
     </Link>

@@ -525,11 +525,11 @@ function EventListCard({ event, locale, distance }: { event: EventFull; locale: 
         )}
 
         <div className="flex items-center justify-between mt-1 gap-1">
-          <span className="text-[10px] text-white/55 truncate flex items-center gap-0.5">
+          <span className="text-[10px] text-white/75 truncate flex items-center gap-0.5">
             <MapPin size={8} className="flex-shrink-0" />
             {event.venues?.name ?? ''}
           </span>
-          <span className="text-[10px] text-white/55 flex-shrink-0 flex items-center gap-0.5">
+          <span className="text-[10px] text-white/75 flex-shrink-0 flex items-center gap-0.5">
             {distance != null
               ? <><Navigation size={8} />{fmtDistance(distance)}</>
               : <><Clock size={8} />{formatTime(event.start_time)}</>
@@ -541,7 +541,7 @@ function EventListCard({ event, locale, distance }: { event: EventFull; locale: 
           <span className="text-[9px] text-success font-medium">Ücretsiz</span>
         )}
         {event.entry_type !== 'free' && event.entry_fee ? (
-          <span className="text-[9px] text-white/60">{event.entry_fee}₺</span>
+          <span className="text-[9px] text-white/75">{event.entry_fee}₺</span>
         ) : null}
       </div>
     </Link>

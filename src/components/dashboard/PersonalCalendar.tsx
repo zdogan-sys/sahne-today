@@ -191,7 +191,7 @@ export function PersonalCalendar({ entries, calendarToken, showTitle = false }: 
                     'h-14 sm:h-16 rounded-lg flex flex-col items-center pt-1.5 gap-0.5 text-sm transition-colors relative overflow-hidden',
                     isSelected ? 'bg-accent text-white' :
                     dayEntries.length > 0 ? 'bg-surface hover:bg-accent/10 cursor-pointer' :
-                    isPast ? 'text-white/30' : 'text-white/55 hover:bg-[rgba(228,224,216,0.05)]'
+                    isPast ? 'text-white/30' : 'text-white/75 hover:bg-[rgba(228,224,216,0.05)]'
                   )}>
                   <span className={cn('font-medium text-xs leading-none', isToday && !isSelected && 'text-accent font-bold')}>{date.getDate()}</span>
                   {isToday && !isSelected && <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-accent" />}

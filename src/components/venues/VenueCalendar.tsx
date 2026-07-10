@@ -896,7 +896,7 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_HEADERS.map(d => (
-          <div key={d} className="text-center text-xs text-white/50 py-1 font-medium">{d}</div>
+          <div key={d} className="text-center text-xs text-white/70 py-1 font-medium">{d}</div>
         ))}
       </div>
 
@@ -930,10 +930,10 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                   : (isOwner || isStudioType)
                   ? isPast
                     ? 'text-white/30 hover:bg-white/5 cursor-pointer'
-                    : 'text-white/50 hover:bg-accent/10 hover:text-accent/80 cursor-pointer'
+                    : 'text-white/70 hover:bg-accent/10 hover:text-accent/80 cursor-pointer'
                   : isPast
                   ? 'text-white/35 cursor-default'
-                  : 'text-white/55 cursor-default',
+                  : 'text-white/75 cursor-default',
                 isToday && !isSelected ? 'ring-1 ring-accent/60' : '',
               )}
             >
