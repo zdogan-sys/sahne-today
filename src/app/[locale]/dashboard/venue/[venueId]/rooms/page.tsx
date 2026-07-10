@@ -31,8 +31,6 @@ export default function VenueRoomsPage() {
     equipment: [] as string[],
   })
 
-  useEffect(() => { load() }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -48,6 +46,8 @@ export default function VenueRoomsPage() {
     setRooms(roomsRes.data ?? [])
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   function toggleEquipment(eq: string) {
     setForm(prev => ({

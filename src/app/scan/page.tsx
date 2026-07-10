@@ -24,32 +24,6 @@ export default function ScanPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!scanning) {
-      controlsRef.current?.stop()
-      controlsRef.current = null
-      return
-    }
-
-    const reader = new BrowserQRCodeReader()
-    let active = true
-
-    reader.decodeFromVideoDevice(undefined, videoRef.current!, (res, err, controls) => {
-      controlsRef.current = controls
-      if (!active || !res || loading) return
-      const text = res.getText()
-      if (text === lastScanned.current) return
-      lastScanned.current = text
-      handleScan(text)
-    })
-
-    return () => {
-      active = false
-      controlsRef.current?.stop()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanning])
-
   const handleScan = async (qrCode: string) => {
     setLoading(true)
     controlsRef.current?.stop()
@@ -76,6 +50,32 @@ export default function ScanPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!scanning) {
+      controlsRef.current?.stop()
+      controlsRef.current = null
+      return
+    }
+
+    const reader = new BrowserQRCodeReader()
+    let active = true
+
+    reader.decodeFromVideoDevice(undefined, videoRef.current!, (res, err, controls) => {
+      controlsRef.current = controls
+      if (!active || !res || loading) return
+      const text = res.getText()
+      if (text === lastScanned.current) return
+      lastScanned.current = text
+      handleScan(text)
+    })
+
+    return () => {
+      active = false
+      controlsRef.current?.stop()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning])
 
   const reset = () => {
     setResult(null)

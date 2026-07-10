@@ -12,6 +12,7 @@ import { OpenSlotsShowcase } from '@/components/home/OpenSlotsShowcase'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { cityFromSlug } from '@/lib/cities'
+import { dateOffsetStr } from '@/lib/utils'
 
 const ADMIN_EMAIL = 'z_dogan@hotmail.com'
 
@@ -25,8 +26,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const today = new Date().toISOString().split('T')[0]
-  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  const today = dateOffsetStr(0)
+  const weekEnd = dateOffsetStr(7)
 
   const [{ data: posterSetting }, todayRes, weekRes] = await Promise.all([
     supabase.from('site_settings').select('value').eq('key', 'hero_poster_url').single(),
@@ -80,8 +81,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
 // İlk yükleme sunucuda render edilir (SEO + hız); filtre değişince client devralır
 async function EventFeedServer({ city }: { city: string | null }) {
   const supabase = await createClient()
-  const from = new Date().toISOString().split('T')[0]
-  const to = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  const from = dateOffsetStr(0)
+  const to = dateOffsetStr(7)
 
   let query = supabase
     .from('events')
@@ -105,8 +106,8 @@ async function StatsBarServer() {
   // o yüzden sayaç admin client ile alınır (satır verisi dönmez, sadece count)
   const admin = createAdminClient()
 
-  const today = new Date().toISOString().split('T')[0]
-  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  const today = dateOffsetStr(0)
+  const weekEnd = dateOffsetStr(7)
 
   const [eventsRes, venuesRes, artistsRes, slotsRes] = await Promise.all([
     supabase.from('events').select('id', { count: 'exact', head: true })

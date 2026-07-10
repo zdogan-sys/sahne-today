@@ -34,14 +34,6 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
   const [justInvited, setJustInvited] = useState<string[]>([])
   const supabase = createClient()
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      search()
-    }, 300)
-    return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, city, instrument, lfbOnly])
-
   async function search() {
     setLoading(true)
     let q = supabase
@@ -67,6 +59,14 @@ export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Pr
     setSearched(true)
     setLoading(false)
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      search()
+    }, 300)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, city, instrument, lfbOnly])
 
   async function invite(artist: ArtistResult) {
     setInviting(artist.id)

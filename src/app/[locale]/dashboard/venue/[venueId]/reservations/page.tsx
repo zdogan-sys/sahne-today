@@ -39,8 +39,6 @@ export default function VenueReservationsPage() {
   const [assignReqId, setAssignReqId] = useState<string | null>(null)
   const [assign, setAssign] = useState({ room_id: '', instructor_name: '', date: '', time: '10:00', monthly_price: '' })
 
-  useEffect(() => { load() }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -63,6 +61,8 @@ export default function VenueReservationsPage() {
     setInstructors(instRes.data ?? [])
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   function startAssign(req: any) {
     setAssign({

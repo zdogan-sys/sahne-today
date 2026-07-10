@@ -5,10 +5,12 @@ import { Clock } from 'lucide-react'
 
 export function OfferCountdown({ expiresAt }: { expiresAt: string }) {
   const [label, setLabel] = useState('')
+  const [urgent, setUrgent] = useState(false)
 
   useEffect(() => {
     function tick() {
       const diff = new Date(expiresAt).getTime() - Date.now()
+      setUrgent(diff < 6 * 3600000)
       if (diff <= 0) { setLabel('Süresi doldu'); return }
       const h = Math.floor(diff / 3600000)
       const m = Math.floor((diff % 3600000) / 60000)
@@ -18,8 +20,6 @@ export function OfferCountdown({ expiresAt }: { expiresAt: string }) {
     const id = setInterval(tick, 60000)
     return () => clearInterval(id)
   }, [expiresAt])
-
-  const urgent = new Date(expiresAt).getTime() - Date.now() < 6 * 3600000
 
   return (
     <span className={`inline-flex items-center gap-1 text-xs ${urgent ? 'text-red-400' : 'text-text-muted'}`}>

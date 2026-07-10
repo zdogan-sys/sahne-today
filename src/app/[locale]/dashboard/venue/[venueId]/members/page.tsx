@@ -22,8 +22,6 @@ export default function VenueMembersPage() {
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => { load() }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -50,6 +48,8 @@ export default function VenueMembersPage() {
     setMembers(membersRes.data ?? [])
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   function handleSearch(q: string) {
     setSearchQuery(q)

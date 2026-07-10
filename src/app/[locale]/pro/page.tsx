@@ -44,10 +44,6 @@ export default function ProPage() {
   const [iframeToken, setIframeToken] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    load()
-  }, [])
-
   async function load() {
     const { data: { user: u } } = await supabase.auth.getUser()
     if (!u) { setLoading(false); return }
@@ -61,6 +57,8 @@ export default function ProPage() {
     setVenues(venuesRes.data ?? [])
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   async function handleBuy(planId: string, venueId?: string) {
     if (!user) { window.location.href = '/auth'; return }

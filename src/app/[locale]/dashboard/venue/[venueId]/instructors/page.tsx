@@ -32,10 +32,6 @@ export default function VenueInstructorsPage() {
     artist_id: null as string | null,
   })
 
-  useEffect(() => {
-    load()
-  }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -69,6 +65,8 @@ export default function VenueInstructorsPage() {
 
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   function toggleInstrument(inst: string) {
     setFormData(prev => ({

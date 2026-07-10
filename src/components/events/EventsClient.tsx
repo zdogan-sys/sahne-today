@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -9,7 +9,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { MapPin, Clock, Filter, X, CalendarDays, Navigation, Loader2, ChevronDown } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
-import { formatTime } from '@/lib/utils'
+import { formatTime, dateOffsetStr } from '@/lib/utils'
 import type { Event, Venue, Artist } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { EventsMap, type MapEvent } from '@/components/events/EventsMap'
@@ -105,6 +105,12 @@ export function EventsClient({
     return distanceKm(userLoc, { lat, lng })
   }
 
+  // Tarih eşiklerini render başına bir kez hesapla
+  const [todayStr, weekStr, monthStr] = useMemo(
+    () => [dateOffsetStr(0), dateOffsetStr(7), dateOffsetStr(30)],
+    []
+  )
+
   const filtered = initialEvents.filter((e) => {
     if (genre) {
       const g = e.genre ?? ''
@@ -116,9 +122,6 @@ export function EventsClient({
     if (city && e.venues?.city !== city) return false
     if (entryType && e.entry_type !== entryType) return false
     if (dateRange !== 'all') {
-      const todayStr = new Date().toISOString().split('T')[0]
-      const weekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
-      const monthStr = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
       if (dateRange === 'today' && e.event_date !== todayStr) return false
       if (dateRange === 'week' && e.event_date > weekStr) return false
       if (dateRange === 'month' && e.event_date > monthStr) return false

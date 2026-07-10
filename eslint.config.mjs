@@ -9,6 +9,9 @@ export default [
     rules: {
       // Türkçe metinlerdeki tırnaklar için kozmetik kural, kapalı
       'react/no-unescaped-entities': 'off',
+      // React Compiler varsayımı; bu projede compiler yok. Mount sonrası
+      // tarayıcı durumu okuma ve loading bayrağı desenleri kasıtlı — uyarı yeter.
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
 ]

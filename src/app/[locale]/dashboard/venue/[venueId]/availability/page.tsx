@@ -32,8 +32,6 @@ export default function VenueAvailabilityPage() {
     room_id: '',
   })
 
-  useEffect(() => { load() }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -51,6 +49,9 @@ export default function VenueAvailabilityPage() {
     setRules(rulesRes.data ?? [])
     setLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [])
 
   function toggleDay(d: number) {
     setForm(p => ({

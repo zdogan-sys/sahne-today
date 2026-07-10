@@ -16,10 +16,6 @@ export default function VenueCoursesPage() {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    load()
-  }, [])
-
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
@@ -56,6 +52,8 @@ export default function VenueCoursesPage() {
     setCourses(withDates)
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   function fmtDate(d: string | null) {
     if (!d) return null

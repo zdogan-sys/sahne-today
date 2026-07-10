@@ -29,20 +29,6 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  useEffect(() => {
-    loadData()
-
-    const channel = supabase
-      .channel('venue-applications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, () => {
-        loadData()
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   async function loadData() {
     const { data: memberships } = await supabase
       .from('venue_members')
@@ -136,6 +122,20 @@ export function VenueDashboard({ userId, calendarToken }: { userId: string; cale
 
     setLoading(false)
   }
+
+  useEffect(() => {
+    loadData()
+
+    const channel = supabase
+      .channel('venue-applications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleApplication(appId: string, status: 'accepted' | 'rejected') {
     await respondToSlotApplication(appId, status)

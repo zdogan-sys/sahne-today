@@ -25,6 +25,15 @@ export function NotificationBell({ userId }: { userId: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
+  async function fetch() {
+    const { data } = await supabase
+      .from('notifications')
+      .select('id, type, title, body, link, read, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setItems((data ?? []) as Notification[])
+  }
+
   useEffect(() => {
     fetch()
 
@@ -57,15 +66,6 @@ export function NotificationBell({ userId }: { userId: string }) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
-
-  async function fetch() {
-    const { data } = await supabase
-      .from('notifications')
-      .select('id, type, title, body, link, read, created_at')
-      .order('created_at', { ascending: false })
-      .limit(20)
-    setItems((data ?? []) as Notification[])
-  }
 
   async function handleOpen() {
     setOpen(o => !o)

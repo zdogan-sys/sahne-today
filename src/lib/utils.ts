@@ -69,6 +69,11 @@ export function formatTime(time: string): string {
   return time.substring(0, 5)
 }
 
+// Bugünden `days` gün sonrasının YYYY-MM-DD karşılığı (0 = bugün)
+export function dateOffsetStr(days: number = 0): string {
+  return new Date(Date.now() + days * 86400000).toISOString().split('T')[0]
+}
+
 export function formatDate(dateStr: string, locale: string = 'en'): string {
   const date = new Date(dateStr)
   const localeStr = locale === 'tr' ? 'tr-TR' : 'en-US'
