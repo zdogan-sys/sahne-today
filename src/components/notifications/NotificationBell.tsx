@@ -6,6 +6,7 @@ import { Bell, X } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { markNotificationsRead } from '@/app/actions/offer'
+import { PushToggle } from '@/components/notifications/PushToggle'
 import { formatDate } from '@/lib/utils'
 
 interface Notification {
@@ -97,9 +98,12 @@ export function NotificationBell({ userId }: { userId: string }) {
         <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-[rgba(228,224,216,0.12)] rounded-xl shadow-2xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(228,224,216,0.08)]">
             <span className="text-sm font-semibold text-text-primary">Bildirimler</span>
-            <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-primary">
-              <X size={14} />
-            </button>
+            <div className="flex items-center gap-3">
+              <PushToggle />
+              <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-primary">
+                <X size={14} />
+              </button>
+            </div>
           </div>
 
           {items.length === 0 ? (

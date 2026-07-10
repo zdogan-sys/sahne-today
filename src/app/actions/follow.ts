@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPushToUsers } from '@/lib/push'
 
 export async function toggleFollow(
   targetType: 'artist' | 'band' | 'venue',
@@ -92,6 +93,16 @@ export async function notifyFollowers(eventId: string, locale: 'tr' | 'en' = 'tr
       link: `/events/${eventId}`,
     }))
   )
+
+  // Web push (abonesi olan takipçilere)
+  sendPushToUsers(
+    followers.map(f => f.userId),
+    {
+      title: notificationTitle,
+      body: `${performer}${location ? ` · ${location}` : ''} · ${eventDate}`,
+      link: `/events/${eventId}`,
+    }
+  ).catch(() => {})
 
   // Emails
   try {

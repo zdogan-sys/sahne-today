@@ -19,3 +19,39 @@ const serwist = new Serwist({
 })
 
 serwist.addEventListeners()
+
+// ── Web Push ───────────────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let payload: { title?: string; body?: string; link?: string } = {}
+  try {
+    payload = event.data.json()
+  } catch {
+    payload = { body: event.data.text() }
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? 'Sahne.Today', {
+      body: payload.body ?? '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { link: payload.link ?? '/' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const link: string = event.notification.data?.link ?? '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      // Açık sekme varsa odaklan, yoksa yeni pencere aç
+      for (const win of windows) {
+        if ('focus' in win) {
+          win.navigate(link)
+          return win.focus()
+        }
+      }
+      return self.clients.openWindow(link)
+    })
+  )
+})

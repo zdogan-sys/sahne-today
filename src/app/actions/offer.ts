@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ADMIN_EMAIL } from '@/lib/admin'
 import { notifyFollowers } from '@/app/actions/follow'
+import { sendPushToUsers } from '@/lib/push'
 
 async function getAdminClient() {
   return createClient(
@@ -14,6 +15,8 @@ async function getAdminClient() {
 
 async function notify(admin: any, userId: string, type: string, title: string, body: string, data: object = {}) {
   await admin.from('notifications').insert({ user_id: userId, type, title, body, data })
+  const eventId = (data as { event_id?: string }).event_id
+  sendPushToUsers([userId], { title, body, link: eventId ? `/events/${eventId}` : '/dashboard' }).catch(() => {})
 }
 
 export async function respondToVenueOffer(eventId: string, accept: boolean) {

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { ADMIN_EMAIL, isPrivilegedUser } from '@/lib/admin'
 import { notifyFollowers } from '@/app/actions/follow'
+import { sendPushToUsers } from '@/lib/push'
 
 async function getAdminClient() {
   return createClient(
@@ -205,13 +206,19 @@ export async function addVenueEvent(payload: {
       performerProfileId = (b as any)?.creator_id ?? null
     }
     if (performerProfileId) {
+      const offerBody = `${venue.name} sizi ${payload.eventDate} tarihine davet etti. ${payload.ttlHours ?? 48} saat içinde yanıtlayın.`
       await admin.from('notifications').insert({
         user_id: performerProfileId,
         type: 'offer_received',
         title: 'Yeni Sahne Teklifi',
-        body: `${venue.name} sizi ${payload.eventDate} tarihine davet etti. ${payload.ttlHours ?? 48} saat içinde yanıtlayın.`,
+        body: offerBody,
         data: { event_id: (data as any).id, venue_id: payload.venueId, venue_name: venue.name },
       })
+      sendPushToUsers([performerProfileId], {
+        title: 'Yeni Sahne Teklifi',
+        body: offerBody,
+        link: `/events/${(data as any).id}`,
+      }).catch(() => {})
     }
   }
 
