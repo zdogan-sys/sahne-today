@@ -50,6 +50,11 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   const messages = await getMessages()
 
+  // Umami analitiği: runtime env'den okunur (build variable gerektirmez);
+  // değişkenler tanımlı değilse script hiç render edilmez
+  const umamiUrl = process.env.UMAMI_URL
+  const umamiWebsiteId = process.env.UMAMI_WEBSITE_ID
+
   return (
     <html lang={locale}>
       <head>
@@ -59,6 +64,9 @@ export default async function LocaleLayout({ children, params }: Props) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Sahne.Today" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {umamiUrl && umamiWebsiteId && (
+          <script defer src={`${umamiUrl}/script.js`} data-website-id={umamiWebsiteId} />
+        )}
       </head>
       <body className="bg-background text-text-primary font-dm min-h-screen">
         <NextIntlClientProvider messages={messages}>
