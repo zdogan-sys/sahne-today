@@ -7,6 +7,7 @@ import { LandingFeatures } from '@/components/home/LandingFeatures'
 import { StatsBar } from '@/components/home/StatsBar'
 import { EventFeed, type EventWithRelations } from '@/components/home/EventFeed'
 import { NearbyEvents } from '@/components/home/NearbyEvents'
+import { OpenSlotsShowcase } from '@/components/home/OpenSlotsShowcase'
 import { EventCardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { cityFromSlug } from '@/lib/cities'
@@ -66,6 +67,11 @@ export default async function HomePage({ searchParams }: HomeProps) {
           </Suspense>
         </ErrorBoundary>
       </section>
+      <ErrorBoundary>
+        <Suspense fallback={null}>
+          <OpenSlotsShowcase city={selectedCity} />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   )
 }
