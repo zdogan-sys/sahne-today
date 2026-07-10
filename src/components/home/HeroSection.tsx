@@ -34,7 +34,7 @@ export async function HeroSection({ isLoggedIn, isAdmin, posterUrl, todayCount =
           <p className="text-accent text-sm font-medium uppercase tracking-widest mb-3">
             {t('home.tagline')}
           </p>
-          <h1 className="font-bebas text-7xl md:text-9xl text-text-primary leading-none mb-4">
+          <h1 className="font-bebas text-7xl md:text-9xl text-text-primary leading-none mb-4 whitespace-pre-line">
             {t('home.headline')}
           </h1>
           <p className="text-text-muted text-base md:text-lg max-w-md mb-6">
