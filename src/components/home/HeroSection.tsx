@@ -78,8 +78,8 @@ export async function HeroSection({ isLoggedIn, isAdmin, posterUrl, todayCount =
           </div>
         </div>
 
-        {/* Poster — desktop only */}
-        <div className="hidden lg:block flex-shrink-0 w-80 h-[480px] -ml-36">
+        {/* Poster — desktop only; ml-auto ile sağa yaslı, yazıya taşmaz */}
+        <div className="hidden lg:block flex-shrink-0 w-80 h-[480px] ml-auto pl-8">
           <HeroPosterImage url={posterUrl} isAdmin={isAdmin} />
         </div>
       </div>
