@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { FEE_MODEL_LABELS, formatTime } from '@/lib/utils'
-import { CalendarPlus, Trash2, Clock, Loader2 } from 'lucide-react'
+import { CalendarPlus, Trash2, Clock, Loader2, Send, Check } from 'lucide-react'
+import { addVenueEvent } from '@/app/actions/event'
 
 type PerformerSlot = {
   id: string
@@ -20,13 +21,14 @@ type PerformerSlot = {
 interface Props {
   performerType: 'artist' | 'band'
   performerId: string
+  performerName?: string
   isOwner: boolean
 }
 
 // Sanatçı/grup müsaitlik slotları. Görünürlük RLS ile sınırlı:
 // sahibi yönetir, sadece takip eden mekan sahipleri görür (030 migration).
 // Yetkisiz kullanıcıda sorgu boş döner ve bölüm hiç render olmaz.
-export function PerformerSlots({ performerType, performerId, isOwner }: Props) {
+export function PerformerSlots({ performerType, performerId, performerName, isOwner }: Props) {
   const locale = useLocale()
   const isEn = locale === 'en'
   const supabase = createClient()
@@ -36,6 +38,15 @@ export function PerformerSlots({ performerType, performerId, isOwner }: Props) {
   const [saving, setSaving] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState({ slot_date: '', start_time: '', end_time: '', fee_model: 'negotiable', notes: '' })
+
+  // Teklif akışı (görüntüleyen mekan sahibiyse)
+  const [myVenues, setMyVenues] = useState<{ id: string; name: string }[]>([])
+  const [offerSlotId, setOfferSlotId] = useState<string | null>(null)
+  const [offerVenueId, setOfferVenueId] = useState('')
+  const [offerTitle, setOfferTitle] = useState('')
+  const [offerSending, setOfferSending] = useState(false)
+  const [offerSentIds, setOfferSentIds] = useState<string[]>([])
+  const [offerError, setOfferError] = useState('')
 
   const idColumn = performerType === 'artist' ? 'artist_id' : 'band_id'
 
@@ -53,6 +64,47 @@ export function PerformerSlots({ performerType, performerId, isOwner }: Props) {
   }, [idColumn, performerId])
 
   useEffect(() => { load() }, [load])
+
+  // Görüntüleyen mekan sahibiyse teklif atabileceği mekanlarını getir
+  useEffect(() => {
+    if (isOwner) return
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase.from('venues').select('id, name').eq('owner_id', user.id)
+      setMyVenues((data as { id: string; name: string }[]) ?? [])
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwner])
+
+  function openOffer(slot: PerformerSlot) {
+    setOfferSlotId(slot.id)
+    setOfferVenueId(myVenues[0]?.id ?? '')
+    setOfferTitle(performerName ?? '')
+    setOfferError('')
+  }
+
+  async function sendOffer(slot: PerformerSlot) {
+    if (!offerVenueId || !offerTitle.trim()) return
+    setOfferSending(true)
+    setOfferError('')
+    const res = await addVenueEvent({
+      venueId: offerVenueId,
+      title: offerTitle.trim(),
+      eventDate: slot.slot_date,
+      startTime: slot.start_time ?? '21:00',
+      endTime: slot.end_time,
+      artistId: performerType === 'artist' ? performerId : null,
+      bandId: performerType === 'band' ? performerId : null,
+      artistName: null,
+    })
+    setOfferSending(false)
+    if (res.success) {
+      setOfferSentIds(prev => [...prev, slot.id])
+      setOfferSlotId(null)
+    } else {
+      setOfferError(res.error ?? (isEn ? 'Could not send offer' : 'Teklif gönderilemedi'))
+    }
+  }
 
   async function addSlot() {
     if (!form.slot_date) return
@@ -148,9 +200,11 @@ export function PerformerSlots({ performerType, performerId, isOwner }: Props) {
         <div className="space-y-2">
           {visibleSlots.map(slot => {
             const d = new Date(slot.slot_date)
+            const offerSent = offerSentIds.includes(slot.id)
             return (
               <div key={slot.id}
-                className={`flex items-center gap-3 rounded-xl border border-[rgba(228,224,216,0.1)] p-3 ${slot.status !== 'open' ? 'opacity-50' : ''}`}>
+                className={`rounded-xl border border-[rgba(228,224,216,0.1)] p-3 ${slot.status !== 'open' ? 'opacity-50' : ''}`}>
+              <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-11 h-11 bg-[rgba(212,83,126,0.08)] rounded-lg flex flex-col items-center justify-center border border-accent/20">
                   <span className="font-bebas text-lg text-accent leading-none">{d.getDate()}</span>
                   <span className="text-[9px] text-accent/70 uppercase">
@@ -185,6 +239,39 @@ export function PerformerSlots({ performerType, performerId, isOwner }: Props) {
                     </button>
                   </div>
                 )}
+                {!isOwner && myVenues.length > 0 && (
+                  offerSent ? (
+                    <span className="flex items-center gap-1 text-success text-xs flex-shrink-0">
+                      <Check size={13} /> {isEn ? 'Offer sent' : 'Teklif gönderildi'}
+                    </span>
+                  ) : (
+                    <button onClick={() => openOffer(slot)}
+                      className="btn-accent py-1.5 px-3 text-xs flex items-center gap-1 flex-shrink-0">
+                      <Send size={11} /> {isEn ? 'Send offer' : 'Teklif Gönder'}
+                    </button>
+                  )
+                )}
+              </div>
+
+              {offerSlotId === slot.id && !offerSent && (
+                <div className="mt-3 pt-3 border-t border-[rgba(228,224,216,0.08)] grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {myVenues.length > 1 && (
+                    <select value={offerVenueId} onChange={e => setOfferVenueId(e.target.value)}
+                      className="input-field text-sm">
+                      {myVenues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  )}
+                  <input type="text" value={offerTitle} onChange={e => setOfferTitle(e.target.value)}
+                    placeholder={isEn ? 'Event title' : 'Etkinlik başlığı'}
+                    className={`input-field text-sm ${myVenues.length > 1 ? '' : 'sm:col-span-2'}`} />
+                  <button onClick={() => sendOffer(slot)} disabled={offerSending || !offerTitle.trim()}
+                    className="btn-accent py-2 px-4 text-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                    {offerSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                    {isEn ? 'Send (48h valid)' : 'Gönder (48 saat geçerli)'}
+                  </button>
+                  {offerError && <p className="text-red-400 text-xs sm:col-span-3">{offerError}</p>}
+                </div>
+              )}
               </div>
             )
           })}

@@ -252,7 +252,7 @@ export default async function BandPage({ params }: Props) {
           </div>
         ) : null}
 
-        <PerformerSlots performerType="band" performerId={b.id} isOwner={isCreator} />
+        <PerformerSlots performerType="band" performerId={b.id} performerName={b.name} isOwner={isCreator} />
 
         <BandCalendarSection
           bandId={b.id}

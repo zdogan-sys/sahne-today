@@ -322,7 +322,7 @@ export default async function ArtistPage({ params }: Props) {
           </div>
         )}
 
-        <PerformerSlots performerType="artist" performerId={artist.id} isOwner={isOwner} />
+        <PerformerSlots performerType="artist" performerId={artist.id} performerName={artist.stage_name} isOwner={isOwner} />
 
         <ArtistCalendarSection
           artistId={artist.id}
