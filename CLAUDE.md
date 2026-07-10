@@ -55,6 +55,10 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
   çıkıyor; R2 token'ında IP filtresi BOŞ bırakıldı, bu yüzden çalışıyor.
 - [x] ESLint React kural hataları temizlendi (Temmuz 2026) — kalan uyarılar
   bilinçli desenler (set-state-in-effect warn seviyesinde)
+- [x] Web push bildirimleri aktif (Temmuz 2026): VAPID anahtarları Coolify
+  env'de + public key kodda gömülü; abonelik zil menüsünden. Dikkat:
+  middleware matcher'ı statik dosyaları dışlamalı, yoksa SW precache 307
+  alıp kurulamıyor (yaşandı, düzeltildi).
 - Not: Next 16 + React 19 + Serwist geçişi tamamlandı (Temmuz 2026).
   Build webpack ile çalışıyor (`next build --webpack`) çünkü Serwist
   henüz Turbopack desteklemiyor; destek gelince bayrak kaldırılabilir.
