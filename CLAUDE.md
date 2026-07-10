@@ -47,6 +47,13 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - [ ] İçerik üretimi: Instagram Reels (@sahnetoday hesabı için)
 - [ ] Apple Login (App Store yayını sonrasına ertelendi)
 - [ ] Facebook Login alternatifi araştırılabilir (opsiyonel)
+- [ ] `/api/cron/review-requests` için günlük zamanlayıcı kur (weekly-digest
+  ile aynı yöntem, Bearer CRON_SECRET) — kod hazır, tetikleyici eksik
+- [ ] ESLint'in yeni React kuralları eski kodda ~37 gerçek hata buldu
+  (effect içinde senkron setState vb.) — ayrı oturumda temizlenecek
+- Not: Next 16 + React 19 + Serwist geçişi tamamlandı (Temmuz 2026).
+  Build webpack ile çalışıyor (`next build --webpack`) çünkü Serwist
+  henüz Turbopack desteklemiyor; destek gelince bayrak kaldırılabilir.
 
 ## Çalışma Tercihleri (genel, tüm projeler için geçerli)
 
