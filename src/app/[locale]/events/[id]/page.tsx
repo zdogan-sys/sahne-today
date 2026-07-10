@@ -42,7 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = event.description
     ?? [dateStr, locationStr].filter(Boolean).join(' · ')
     ?? undefined
-  const image = event.poster_url ?? `${localeBase(locale)}/icon-512.png`
+  // Afiş yoksa dinamik OG kartı (tarih + mekan + sanatçı) üretilir
+  const image = event.poster_url ?? `${localeBase(locale)}/api/og/event/${id}`
   return {
     title,
     description,
