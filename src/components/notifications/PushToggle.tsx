@@ -26,20 +26,32 @@ export function PushToggle() {
   const [supported, setSupported] = useState(false)
   const [enabled, setEnabled] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     setSupported(true)
-    navigator.serviceWorker.ready
+    swReady()
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setEnabled(!!sub))
       .catch(() => {})
   }, [])
 
+  // serviceWorker.ready SW hiç kayıtlı değilse sonsuza dek bekler; 6 sn'de kes
+  function swReady(): Promise<ServiceWorkerRegistration> {
+    return Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(isEn ? 'Service worker not ready' : 'Service worker hazır değil (sayfayı yenileyip tekrar dene)')), 6000)
+      ),
+    ])
+  }
+
   async function toggle() {
     setBusy(true)
+    setError('')
     try {
-      const reg = await navigator.serviceWorker.ready
+      const reg = await swReady()
       const existing = await reg.pushManager.getSubscription()
 
       if (existing) {
@@ -48,6 +60,12 @@ export function PushToggle() {
         setEnabled(false)
       } else {
         const permission = await Notification.requestPermission()
+        if (permission === 'denied') {
+          setError(isEn
+            ? 'Notifications blocked in browser settings'
+            : 'Tarayıcı bildirimi engellemiş — adres çubuğundaki kilit ikonundan izin ver')
+          return
+        }
         if (permission !== 'granted') return
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -56,10 +74,14 @@ export function PushToggle() {
         const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } }
         const res = await savePushSubscription(json)
         if (res.success) setEnabled(true)
-        else await sub.unsubscribe()
+        else {
+          await sub.unsubscribe()
+          setError(res.error ?? (isEn ? 'Could not save' : 'Kaydedilemedi'))
+        }
       }
-    } catch {
-      // sessizce geç — kullanıcı tekrar deneyebilir
+    } catch (e) {
+      console.error('[push]', e)
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
@@ -68,6 +90,8 @@ export function PushToggle() {
   if (!supported) return null
 
   return (
+    <span className="flex items-center gap-2 min-w-0">
+    {error && <span className="text-red-400 text-[10px] leading-tight max-w-40 truncate" title={error}>{error}</span>}
     <button
       onClick={toggle}
       disabled={busy}
@@ -79,5 +103,6 @@ export function PushToggle() {
       {busy ? <Loader2 size={13} className="animate-spin" /> : enabled ? <BellRing size={13} className="text-accent" /> : <BellOff size={13} />}
       {enabled ? (isEn ? 'Push on' : 'Push açık') : (isEn ? 'Push off' : 'Push kapalı')}
     </button>
+    </span>
   )
 }
