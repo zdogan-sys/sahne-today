@@ -47,8 +47,9 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - [ ] İçerik üretimi: Instagram Reels (@sahnetoday hesabı için)
 - [ ] Apple Login (App Store yayını sonrasına ertelendi)
 - [ ] Facebook Login alternatifi araştırılabilir (opsiyonel)
-- [ ] `/api/cron/review-requests` için günlük zamanlayıcı kur (weekly-digest
-  ile aynı yöntem, Bearer CRON_SECRET) — kod hazır, tetikleyici eksik
+- [x] Cron zamanlayıcıları kuruldu (Temmuz 2026, VPS crontab): event-reminders
+  ve weekly-digest'e ek olarak review-requests (11:00), expire-offers (saat
+  başı), lesson-reminders (09:00) ve günlük DB yedeği (04:00, /root/backup-db.sh)
 - [x] ESLint React kural hataları temizlendi (Temmuz 2026) — kalan uyarılar
   bilinçli desenler (set-state-in-effect warn seviyesinde)
 - Not: Next 16 + React 19 + Serwist geçişi tamamlandı (Temmuz 2026).
