@@ -24,6 +24,13 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+// Gece yarısını aşan etkinlikler için (end_time < start_time) bitiş tarihi ertesi gün
+function nextDay(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const locale = await getLocale()
@@ -125,8 +132,10 @@ export default async function EventPage({ params }: Props) {
       ? `${event.event_date}T${event.start_time}`
       : event.event_date,
     endDate: event.event_date && event.end_time
-      ? `${event.event_date}T${event.end_time}`
-      : undefined,
+      ? `${event.end_time < event.start_time ? nextDay(event.event_date) : event.event_date}T${event.end_time}`
+      : event.event_date && event.start_time
+        ? `${event.event_date}T${event.start_time}`
+        : event.event_date,
     eventStatus: event.status === 'cancelled'
       ? 'https://schema.org/EventCancelled'
       : 'https://schema.org/EventScheduled',
@@ -157,21 +166,39 @@ export default async function EventPage({ params }: Props) {
         ? 'https://schema.org/InStock'
         : 'https://schema.org/SoldOut',
       url: `https://sahne.today/events/${id}/tickets`,
-    } : event.entry_type === 'free' ? {
+    } : {
+      // Biletleme yoksa giriş ücreti (kapıda/ücretsiz) offer olarak verilir
       '@type': 'Offer',
-      price: 0,
+      price: event.entry_type === 'free' ? 0 : event.entry_fee ?? undefined,
       priceCurrency: 'TRY',
       availability: 'https://schema.org/InStock',
-    } : undefined,
-    performer: artist ? {
-      '@type': 'MusicGroup',
-      name: artist.stage_name,
-      url: `https://sahne.today/artists/${artist.id}`,
-    } : band ? {
-      '@type': 'MusicGroup',
-      name: band.name,
-      url: `https://sahne.today/bands/${band.id}`,
-    } : undefined,
+      url: `https://sahne.today/events/${id}`,
+    },
+    performer: (() => {
+      const list = [
+        ...(artist ? [{
+          '@type': 'MusicGroup',
+          name: artist.stage_name,
+          url: `https://sahne.today/artists/${artist.id}`,
+        }] : []),
+        ...(band ? [{
+          '@type': 'MusicGroup',
+          name: band.name,
+          url: `https://sahne.today/bands/${band.id}`,
+        }] : []),
+        ...performers.map((p: any) => p.artists ? {
+          '@type': 'MusicGroup',
+          name: p.artists.stage_name,
+          url: `https://sahne.today/artists/${p.artists.id}`,
+        } : p.bands ? {
+          '@type': 'MusicGroup',
+          name: p.bands.name,
+          url: `https://sahne.today/bands/${p.bands.id}`,
+        } : null).filter(Boolean),
+      ]
+      // Sanatçı bağlanmamış etkinliklerde (IG'den içe aktarılanlar) performer boş kalmasın
+      return list.length > 0 ? list : { '@type': 'PerformingGroup', name: event.title }
+    })(),
   }
 
   return (
