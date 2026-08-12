@@ -22,6 +22,8 @@ type Source = {
   is_active: boolean
   last_checked_at: string | null
   last_error: string | null
+  pending_apify_run_id: string | null
+  pending_since: string | null
 }
 
 type Draft = {
@@ -71,6 +73,7 @@ export function InstagramScanner() {
   const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
   const [errorById, setErrorById] = useState<Record<string, string>>({})
   const [debugResult, setDebugResult] = useState<{ id: string; data: any } | null>(null)
+  const [debugStatus, setDebugStatus] = useState<string | null>(null)
 
   // Bir taslağın geçerli tarih/saat/tekrar değerleri.
   // Varsayılan TEK SEFERLİK (AI tekrar tahmini otomatik uygulanmaz — çoğu yanlış pozitif).
@@ -101,33 +104,26 @@ export function InstagramScanner() {
 
   useEffect(() => { load() }, [load])
 
+  // Apify run'ı ~100-120s sürüyor; Cloudflare'ın ~100s origin timeout'u yüzünden
+  // senkron beklenemiyor. Bu yüzden "start" run'ı başlatıp hemen döner, sonuçlar
+  // ayrıca "finalize" ile (bu buton veya arka plandaki cron) toplanır.
   async function scanAll() {
     setScanning(true)
     setScanResult(null)
     try {
-      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data) {
-        setScanResult(`Tarama hatası (${res.status}). Çok kaynak varsa parça parça tarayın.`)
+        setScanResult(`Tarama başlatma hatası (${res.status}).`)
+      } else if (data.error) {
+        setScanResult(data.error)
       } else {
-        const more = data.remaining > 0 ? ` ${data.remaining} kaynak kaldı — tekrar "Şimdi Tara" deyin.` : ''
-        setScanResult(`${data.scanned} kaynak tarandı, ${data.drafts} yeni taslak.${more}`)
+        const more = data.remaining > 0 ? ` ${data.remaining} kaynak kaldı — birkaç dakika sonra tekrar "Şimdi Tara" deyin.` : ''
+        setScanResult(`${data.started ?? 0} kaynak için tarama başlatıldı. Birkaç dakika sonra "Sonuçları Kontrol Et" ile taslakları toplayın.${more}`)
       }
       await load()
     } catch {
-      setScanResult('Tarama sırasında hata oluştu (zaman aşımı olabilir).')
-    }
-    setScanning(false)
-  }
-
-  async function debugOne(sourceId: string) {
-    setScanning(true); setScanResult(null); setDebugResult(null)
-    try {
-      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source_id: sourceId, debug: true }) })
-      const data = await res.json()
-      setDebugResult({ id: sourceId, data })
-    } catch {
-      setScanResult('Debug hatası.')
+      setScanResult('Tarama başlatılırken hata oluştu.')
     }
     setScanning(false)
   }
@@ -136,14 +132,65 @@ export function InstagramScanner() {
     setScanning(true)
     setScanResult(null)
     try {
-      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source_id: sourceId }) })
-      const data = await res.json()
-      setScanResult(`${data.drafts} yeni taslak oluşturuldu.`)
+      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', source_id: sourceId }) })
+      const data = await res.json().catch(() => ({}))
+      setScanResult(data.started ? 'Tarama başlatıldı, birkaç dakika sonra "Sonuçları Kontrol Et" deyin.' : (data.message ?? data.error ?? 'Tarama başlatılamadı.'))
       await load()
     } catch {
       setScanResult('Tarama hatası.')
     }
     setScanning(false)
+  }
+
+  // Bekleyen tüm run'ları kontrol eder, biteni taslağa çevirir (aynı işi cron da yapar).
+  async function finalizeNow() {
+    setScanning(true)
+    setScanResult(null)
+    try {
+      const res = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'finalize' }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setScanResult(data.error ?? 'Kontrol sırasında hata oluştu.')
+      } else {
+        setScanResult(`${data.checked ?? 0} bekleyen kontrol edildi, ${data.finalized ?? 0} tamamlandı (${data.drafts ?? 0} yeni taslak), ${data.stillRunning ?? 0} hâlâ sürüyor.`)
+      }
+      await load()
+    } catch {
+      setScanResult('Kontrol sırasında hata oluştu.')
+    }
+    setScanning(false)
+  }
+
+  // Debug: run'ı başlatır, bitene kadar 5s aralıkla durumu sorar (maks 3dk).
+  async function debugOne(sourceId: string) {
+    setScanning(true); setScanResult(null); setDebugResult(null); setDebugStatus('Başlatılıyor...')
+    try {
+      const startRes = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'debug_start', source_id: sourceId }) })
+      const startData = await startRes.json().catch(() => ({}))
+      if (!startRes.ok || !startData.runId) {
+        setScanResult(startData.error ?? 'Debug başlatılamadı.')
+        return
+      }
+      const runId = startData.runId
+      const startedAt = Date.now()
+      let finished = false
+      while (Date.now() - startedAt < 180000) {
+        await new Promise(r => setTimeout(r, 5000))
+        setDebugStatus(`Bekleniyor... (${Math.round((Date.now() - startedAt) / 1000)}s)`)
+        const checkRes = await fetch('/api/admin/instagram/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'debug_check', source_id: sourceId, run_id: runId }) })
+        const checkData = await checkRes.json().catch(() => ({}))
+        if (checkData.done) {
+          setDebugResult({ id: sourceId, data: checkData })
+          finished = true
+          break
+        }
+      }
+      if (!finished) setScanResult('Debug zaman aşımına uğradı (3 dakika) — Apify beklenenden yavaş kalıyor olabilir.')
+    } catch {
+      setScanResult('Debug hatası.')
+    } finally {
+      setScanning(false); setDebugStatus(null)
+    }
   }
 
   // Tek seferlik: önceden 'free' kaydedilmiş taranan etkinlikleri 'Kapıda Öde' yap
@@ -199,6 +246,10 @@ export function InstagramScanner() {
           <button onClick={fixEntryTypes} disabled={scanning} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50" title="Taranan ücretsiz etkinlikleri Kapıda Öde yap (tek seferlik)">
             <Ticket size={14} /> Ücretleri Düzelt
           </button>
+          <button onClick={finalizeNow} disabled={scanning} className="btn-outline py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50" title="Biten taramaları taslağa çevir">
+            {scanning ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+            Sonuçları Kontrol Et
+          </button>
           <button onClick={scanAll} disabled={scanning} className="btn-accent py-2 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50">
             {scanning ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Şimdi Tara
@@ -220,6 +271,12 @@ export function InstagramScanner() {
 
       {scanResult && (
         <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-lg px-4 py-2">{scanResult}</div>
+      )}
+
+      {debugStatus && (
+        <div className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2 flex items-center gap-2">
+          <Loader2 size={14} className="animate-spin" /> {debugStatus} (Apify taraması genelde ~100-120s sürer)
+        </div>
       )}
 
       {debugResult && (
@@ -277,9 +334,14 @@ export function InstagramScanner() {
                         className="text-sm text-text-primary hover:text-accent transition-colors flex items-center gap-1">
                         @{src.username} <ExternalLink size={10} />
                       </a>
+                      {src.pending_apify_run_id && (
+                        <span className="text-[10px] text-amber-400 flex items-center gap-1">
+                          <Loader2 size={10} className="animate-spin" /> taranıyor
+                        </span>
+                      )}
                     </div>
                     {src.last_error && <p className="text-[10px] text-red-400 mt-0.5 truncate">{src.last_error}</p>}
-                    {src.last_checked_at && !src.last_error && (
+                    {src.last_checked_at && !src.last_error && !src.pending_apify_run_id && (
                       <p className="text-[10px] text-text-muted mt-0.5">
                         Son tarama: {new Date(src.last_checked_at).toLocaleString('tr-TR')}
                       </p>
@@ -290,7 +352,7 @@ export function InstagramScanner() {
                       className="p-1.5 text-text-muted hover:text-amber-400 transition-colors disabled:opacity-40">
                       <Bug size={13} />
                     </button>
-                    <button onClick={() => scanOne(src.id)} disabled={scanning} title="Bu hesabı tara"
+                    <button onClick={() => scanOne(src.id)} disabled={scanning || !!src.pending_apify_run_id} title="Bu hesabı tara"
                       className="p-1.5 text-text-muted hover:text-accent transition-colors disabled:opacity-40">
                       <RefreshCw size={13} />
                     </button>

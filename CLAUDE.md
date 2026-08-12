@@ -27,7 +27,11 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - **Instagram etkinlik tarama:** Ücretsiz oturumsuz viewer siteleri (imginn/picuki,
   sonra picnob/pixwox) sırayla Cloudflare tarafından bloklandığı için (Ağustos 2026)
   terk edildi, yerine **Apify Instagram Scraper API** kullanılıyor
-  (`APIFY_API_TOKEN` env var'ı gerekli, Coolify'e eklenmeli)
+  (`APIFY_API_TOKEN` env var'ı gerekli, Coolify'e eklenmeli). Apify run'ı ~100-120s
+  sürdüğü ve Cloudflare origin timeout'u ~100s olduğu için tarama **asenkron**:
+  `/api/admin/instagram/scan` `action:'start'` run'ı başlatıp hemen döner,
+  `action:'finalize'` (admin butonu + `/api/cron/instagram-finalize` cron'u)
+  biteni taslağa çevirir. Ortak mantık `src/lib/instagram-scan.ts`'de.
 - **SEO:** Sitemap Google Search Console'a submit edildi (şu an ~621 sayfa indexli)
 
 ## Bilinen Kararlar / "Neden Böyle Yaptık"
