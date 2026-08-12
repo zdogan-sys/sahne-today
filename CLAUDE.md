@@ -24,6 +24,10 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - **Google Maps:** Mekan listelerinde konum gösterimi için entegre edildi
 - **Instagram profil keşfi:** Google Custom Search API çok karmaşık çıktığı
   için terk edildi, yerine **SerpAPI** kullanılıyor
+- **Instagram etkinlik tarama:** Ücretsiz oturumsuz viewer siteleri (imginn/picuki,
+  sonra picnob/pixwox) sırayla Cloudflare tarafından bloklandığı için (Ağustos 2026)
+  terk edildi, yerine **Apify Instagram Scraper API** kullanılıyor
+  (`APIFY_API_TOKEN` env var'ı gerekli, Coolify'e eklenmeli)
 - **SEO:** Sitemap Google Search Console'a submit edildi (şu an ~621 sayfa indexli)
 
 ## Bilinen Kararlar / "Neden Böyle Yaptık"
@@ -44,6 +48,9 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 
 ## Aktif / Bekleyen İşler
 
+- [ ] Apify hesabı açılıp `APIFY_API_TOKEN` Coolify env'ine eklenmeli
+  (sahne.today app), yoksa Instagram etkinlik taraması çalışmaz (Ağustos 2026,
+  bkz. "Bilinen Kararlar")
 - [ ] İçerik üretimi: Instagram Reels (@sahnetoday hesabı için)
 - [ ] Apple Login (App Store yayını sonrasına ertelendi)
 - [ ] Facebook Login alternatifi araştırılabilir (opsiyonel)

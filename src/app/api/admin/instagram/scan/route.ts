@@ -16,66 +16,52 @@ function adminClient() {
   )
 }
 
-// Instagram kullanıcı adını URL'den çıkar
-function extractUsername(url: string): string {
-  return url.replace(/\/$/, '').split('/').pop() ?? ''
-}
-
 // Eşsiz (lone) surrogate karakterleri temizler — bozuk emoji vb. JSON'u geçersiz kılıp
 // Anthropic API'sine 400 ("no low surrogate") attırıyordu. Geçerli çiftler korunur.
 function stripBadChars(s: string): string {
   return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
 }
 
-// Instagram içeriği çeker — viewer siteler üzerinden (oturum açmadan erişim)
-async function fetchInstagramContent(instagramUrl: string): Promise<string> {
-  const username = extractUsername(instagramUrl)
-  if (!username) return ''
-
-  // Instagram içeriğini oturum açmadan gösteren viewer'lar üzerinden Jina.ai ile çek.
-  // (imginn/picuki öldü/engellendi; picnob + aynası pixwox şu an çalışıyor.)
-  const viewerUrls = [
-    `https://www.picnob.com/profile/${username}/`,
-    `https://www.pixwox.com/profile/${username}/`,
-  ]
-
-  for (const viewerUrl of viewerUrls) {
-    try {
-      // Markdown formatı (X-Return-Format yok) → görseller ![](url) olarak gelir, postlarla eşleştirebiliriz
-      const res = await fetch(`https://r.jina.ai/${viewerUrl}`, {
-        headers: { 'Accept': 'text/plain' },
-        signal: AbortSignal.timeout(12000),
-      })
-      if (!res.ok) continue
-      const text = await res.text()
-      // Engel/login/hata sayfası değil, gerçek içerik mi? (block sayfaları ~250-660 karakter)
-      const head = text.slice(0, 600).toLowerCase()
-      const blocked = /sign in|log in|giriş|you have been blocked|security verification|captcha|cloudflare|404 not found/.test(head)
-      // İçerik doğru profile ait mi? Username sayfada geçmiyorsa yanlış profil (picnob önerilen içerik gösteriyor)
-      const hasUsername = text.toLowerCase().includes(username.toLowerCase())
-      if (text.length > 800 && !blocked && hasUsername) {
-        return stripBadChars(text.slice(0, 14000))
-      }
-    } catch { /* sonraki kaynağa geç */ }
-  }
-
-  return ''
-}
-
 type IgPost = { image: string | null; caption: string }
 
-// picnob markdown'ını gönderilere ayırır. Caption picnob'da GÖRSEL ALT-METNİNDE
-// (![<caption>](.../p/<img>)) — sayfa düzeni değişse de orada. Sadece /p/ post
-// görsellerini alır (profil avatarını /a/ atlar). En fazla 12 gönderi, görselle eşli.
-function parsePosts(md: string): IgPost[] {
-  const posts: IgPost[] = []
-  const re = /!\[([^\]]*)\]\((https:\/\/sp\d+\.picnob\.com\/p\/[^)]+)\)/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(md)) !== null && posts.length < 12) {
-    const caption = (m[1] || '').replace(/^Image\s*\d+:\s*/i, '').replace(/\s+/g, ' ').trim()
-    if (caption.length >= 8) posts.push({ image: m[2], caption: caption.slice(0, 600) })
+// Instagram gönderilerini Apify'ın "Instagram Scraper" actor'ü üzerinden çeker.
+// Ücretsiz viewer siteleri (imginn/picuki → picnob/pixwox) sırayla Cloudflare tarafından
+// bloklandığı için (Ağustos 2026) terk edildi, yerine ücretli/stabil bir API kullanılıyor.
+async function fetchInstagramPosts(username: string): Promise<IgPost[]> {
+  const token = process.env.APIFY_API_TOKEN
+  if (!token) return []
+
+  try {
+    const res = await fetch(
+      'https://api.apify.com/v2/actors/apify~instagram-scraper/run-sync-get-dataset-items',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          resultsType: 'posts',
+          directUrls: [`https://www.instagram.com/${username}/`],
+          resultsLimit: 12,
+        }),
+        signal: AbortSignal.timeout(60000),
+      }
+    )
+    if (!res.ok) return []
+    const items = await res.json()
+    if (!Array.isArray(items)) return []
+
+    return items
+      .filter((it: any) => typeof it?.caption === 'string' && it.caption.trim().length >= 8)
+      .slice(0, 12)
+      .map((it: any) => ({
+        image: it.displayUrl ?? null,
+        caption: stripBadChars(String(it.caption)).replace(/\s+/g, ' ').trim().slice(0, 600),
+      }))
+  } catch {
+    return []
   }
-  return posts
 }
 
 const SYSTEM_PROMPT = `Sen bir etkinlik tespit asistanısın. Mekan Instagram sayfalarından alınan içeriklerde yaklaşan etkinlikleri tespit ediyorsun.
@@ -164,12 +150,9 @@ export async function POST(req: NextRequest) {
   // Debug modu: içeriği, postları ve Claude yanıtını döner, taslak oluşturmaz
   if (debugMode && sources.length === 1) {
     const source = sources[0]
-    const content = await fetchInstagramContent(source.instagram_url)
-    const posts = parsePosts(content)
+    const posts = await fetchInstagramPosts(source.username)
     const today = new Date().toISOString().slice(0, 10)
-    const promptBody = posts.length
-      ? posts.map((p, i) => `[${i + 1}] ${p.caption}`).join('\n\n')
-      : content.slice(0, 5000)
+    const promptBody = posts.map((p, i) => `[${i + 1}] ${p.caption}`).join('\n\n')
     let claudeRaw = ''
     let claudeParsed: any = null
     try {
@@ -188,7 +171,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       debug: true,
       username: source.username,
-      contentLength: content.length,
+      contentLength: promptBody.length,
       postsFound: posts.length,
       posts: posts.map(p => ({ caption: p.caption.slice(0, 200) })),
       claudeRaw,
@@ -200,21 +183,18 @@ export async function POST(req: NextRequest) {
   // Tek bir kaynağı tarar, oluşan taslak sayısını döner
   async function scanSource(source: any): Promise<number> {
     try {
-      const content = await fetchInstagramContent(source.instagram_url)
+      const posts = await fetchInstagramPosts(source.username)
 
-      if (!content.trim()) {
+      if (!posts.length) {
         await admin.from('instagram_sources').update({
           last_checked_at: new Date().toISOString(),
-          last_error: 'İçerik alınamadı (Instagram erişim engeli olabilir)',
+          last_error: 'İçerik alınamadı (Apify sonuç döndürmedi — kota/token kontrol edilmeli)',
         }).eq('id', source.id)
         return 0
       }
 
-      // Gönderileri {görsel, caption} olarak ayrıştır; Claude'a numaralı caption'ları ver (uzun URL'leri değil)
-      const posts = parsePosts(content)
-      const promptBody = posts.length
-        ? posts.map((p, i) => `[${i + 1}] ${p.caption}`).join('\n\n')
-        : content.slice(0, 5000)
+      // Claude'a numaralı caption'ları ver
+      const promptBody = posts.map((p, i) => `[${i + 1}] ${p.caption}`).join('\n\n')
       const today = new Date().toISOString().slice(0, 10)
 
       const response = await anthropic.messages.create({
@@ -249,7 +229,7 @@ ${promptBody}`,
           const post = pIdx >= 0 ? posts[pIdx] : undefined
           delete event.post
           event.image = post?.image ?? null
-          const caption = post?.caption ?? content.slice(0, 600)
+          const caption = post?.caption ?? posts[0]?.caption ?? ''
 
           const titleSnippet = String(event.title ?? '').slice(0, 30)
           // Mükerrer kontrolü TÜM durumlara bakar (pending/approved/skipped) — onaylanan/atlanan
