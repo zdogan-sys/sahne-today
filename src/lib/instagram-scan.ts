@@ -20,6 +20,8 @@ export function stripBadChars(s: string): string {
 export type IgPost = { image: string | null; caption: string }
 
 // Apify actor'ünü ASENKRON başlatır — runId hemen döner, scraping arka planda sürer.
+// resultsLimit bilinçli düşük (6) — ücretsiz Apify planı $5/ay, yüksek post
+// sayısı maliyeti hızla aşırıyordu (bkz. scan/route.ts'teki BATCH notu).
 export async function startApifyRun(username: string): Promise<string | null> {
   const token = process.env.APIFY_API_TOKEN
   if (!token) return null
@@ -30,7 +32,7 @@ export async function startApifyRun(username: string): Promise<string | null> {
       body: JSON.stringify({
         resultsType: 'posts',
         directUrls: [`https://www.instagram.com/${username}/`],
-        resultsLimit: 12,
+        resultsLimit: 6,
       }),
       signal: AbortSignal.timeout(15000),
     })

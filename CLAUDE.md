@@ -52,9 +52,16 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 
 ## Aktif / Bekleyen İşler
 
-- [ ] Apify hesabı açılıp `APIFY_API_TOKEN` Coolify env'ine eklenmeli
-  (sahne.today app), yoksa Instagram etkinlik taraması çalışmaz (Ağustos 2026,
-  bkz. "Bilinen Kararlar")
+- [x] `APIFY_API_TOKEN` Coolify env'ine eklendi ve geçerli (Ağustos 2026).
+  Ama Apify **ücretsiz plan $5/ay sert limiti** var — Ağustos'ta manuel
+  "Şimdi Tara" tıklamalarıyla aşıldı (`platform-feature-disabled: Monthly
+  usage hard limit exceeded`), yeni run başlatılamadı. Çözüm: tarama
+  maliyeti düşürüldü (`BATCH` 10→5 hesap/tıklama, `resultsLimit` 12→6 post —
+  bkz. `src/lib/instagram-scan.ts` ve `scan/route.ts`). instagram-finalize
+  cron'u (5dk'da bir) sadece biten run'ları kontrol ediyor, CU harcamıyor —
+  maliyetin tamamı admin panelindeki manuel "Şimdi Tara" taramalarından
+  geliyor. Limit yine aşılırsa: apify.com → Settings/Billing'den plan
+  yükselt (Starter $29/ay) ya da bir sonraki fatura dönemini bekle.
 - [ ] İçerik üretimi: Instagram Reels (@sahnetoday hesabı için)
 - [ ] Apple Login (App Store yayını sonrasına ertelendi)
 - [ ] Facebook Login alternatifi araştırılabilir (opsiyonel)

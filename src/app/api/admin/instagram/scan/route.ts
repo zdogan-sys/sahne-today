@@ -123,7 +123,10 @@ export async function POST(req: NextRequest) {
   }
 
   // start (varsayılan): run'ları başlatır, HEMEN döner (sonucu beklemez).
-  const BATCH = 10
+  // BATCH ve resultsLimit (bkz. instagram-scan.ts) bilinçli düşük tutuluyor —
+  // Apify ücretsiz plan sınırı $5/ay, önceki ayarlarla (BATCH 10, resultsLimit 12)
+  // bu sınır tek bir "Şimdi Tara" turunda aşılabiliyordu (Ağustos 2026).
+  const BATCH = 5
   let query = admin.from('instagram_sources').select('*').eq('is_active', true).is('pending_apify_run_id', null)
   if (sourceId) {
     query = (query as any).eq('id', sourceId)
