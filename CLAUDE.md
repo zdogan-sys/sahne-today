@@ -60,8 +60,24 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
   bkz. `src/lib/instagram-scan.ts` ve `scan/route.ts`). instagram-finalize
   cron'u (5dk'da bir) sadece biten run'ları kontrol ediyor, CU harcamıyor —
   maliyetin tamamı admin panelindeki manuel "Şimdi Tara" taramalarından
-  geliyor. Limit yine aşılırsa: apify.com → Settings/Billing'den plan
-  yükselt (Starter $29/ay) ya da bir sonraki fatura dönemini bekle.
+  geliyor.
+  - [x] Ağustos ayı limiti zaten aşılmıştı (kod düzeltmesi geriye dönük
+    işlemiyor, Apify tarafı bir sonraki fatura dönemine kadar kilitli
+    kalıyor). Bu ay için siteyi güncel tutmak amacıyla **yedek Apify hesabı**
+    açıldı, token'ı Coolify'de `APIFY_API_TOKEN_2` olarak eklendi.
+    `src/lib/instagram-scan.ts` artık `APIFY_TOKENS` listesini sırayla
+    dener (run başlatma/durum/dataset okuma) — birincisi limite takılırsa
+    otomatik ikinciye düşer, DB şeması değişmedi (run/dataset ID'leri
+    hesaba özel olduğu için "yanlış token" denemesi güvenle bir sonrakine
+    geçer). **Not:** İki ücretsiz hesap arasında geçiş Apify'ın "limiti
+    aşmak için çoklu hesap" maddesine girebilir — kullanıcı bilinçli
+    olarak bu riski kabul etti (site güncelliği önceliği).
+  - 12 Eylül 2026'da Apify'ın ilk hesabının limiti sıfırlanacak (bir
+    sonraki fatura dönemi) — o tarih için z_dogan@hotmail.com'a hatırlatma
+    e-postası zamanlandı (routine `trig_01C4CNfJoVsRQ3aVWFArphG7`).
+  - Limit yine aşılırsa: apify.com → Settings/Billing'den plan yükselt
+    (Starter $29/ay, kullanıcı şimdilik reddetti) ya da fatura dönemini
+    bekle.
 - [ ] İçerik üretimi: Instagram Reels (@sahnetoday hesabı için)
 - [ ] Apple Login (App Store yayını sonrasına ertelendi)
 - [ ] Facebook Login alternatifi araştırılabilir (opsiyonel)

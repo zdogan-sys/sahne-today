@@ -9,6 +9,15 @@ const APIFY_BASE = 'https://api.apify.com/v2'
 // tamamlanan run'ları toplayıp taslak oluşturur (admin butonu veya cron ile).
 const STALE_RUN_MINUTES = 10
 
+// İki Apify hesabı arasında otomatik geçiş (Ağustos 2026): ücretsiz plan $5/ay
+// sert limitine takılınca run başlatma 403 dönüyor. Her çağrı önce birincil
+// token'ı dener, olmazsa ikinciye düşer. run/dataset ID'leri hesaba özel
+// olduğu için "yanlış hesaba sorma" durumu güvenle bir sonraki token'a düşer —
+// ayrıca DB'de hangi token'ın kullanıldığını saklamaya gerek yok.
+const APIFY_TOKENS = [process.env.APIFY_API_TOKEN, process.env.APIFY_API_TOKEN_2].filter(
+  (t): t is string => !!t
+)
+
 export type AdminClient = SupabaseClient
 
 // Eşsiz (lone) surrogate karakterleri temizler — bozuk emoji vb. JSON'u geçersiz kılıp
@@ -23,64 +32,62 @@ export type IgPost = { image: string | null; caption: string }
 // resultsLimit bilinçli düşük (6) — ücretsiz Apify planı $5/ay, yüksek post
 // sayısı maliyeti hızla aşırıyordu (bkz. scan/route.ts'teki BATCH notu).
 export async function startApifyRun(username: string): Promise<string | null> {
-  const token = process.env.APIFY_API_TOKEN
-  if (!token) return null
-  try {
-    const res = await fetch(`${APIFY_BASE}/acts/apify~instagram-scraper/runs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        resultsType: 'posts',
-        directUrls: [`https://www.instagram.com/${username}/`],
-        resultsLimit: 6,
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data?.data?.id ?? null
-  } catch {
-    return null
+  for (const token of APIFY_TOKENS) {
+    try {
+      const res = await fetch(`${APIFY_BASE}/acts/apify~instagram-scraper/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          resultsType: 'posts',
+          directUrls: [`https://www.instagram.com/${username}/`],
+          resultsLimit: 6,
+        }),
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!res.ok) continue // bu token'ın limiti dolmuş olabilir — sıradaki token'ı dene
+      const data = await res.json()
+      const runId = data?.data?.id
+      if (runId) return runId
+    } catch { /* sıradaki token'ı dene */ }
   }
+  return null
 }
 
 export async function getApifyRunStatus(runId: string): Promise<{ status: string; datasetId: string | null } | null> {
-  const token = process.env.APIFY_API_TOKEN
-  if (!token) return null
-  try {
-    const res = await fetch(`${APIFY_BASE}/actor-runs/${runId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return { status: data?.data?.status ?? 'UNKNOWN', datasetId: data?.data?.defaultDatasetId ?? null }
-  } catch {
-    return null
+  for (const token of APIFY_TOKENS) {
+    try {
+      const res = await fetch(`${APIFY_BASE}/actor-runs/${runId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!res.ok) continue // bu run bu hesaba ait değil (yanlış token) olabilir — sıradakini dene
+      const data = await res.json()
+      return { status: data?.data?.status ?? 'UNKNOWN', datasetId: data?.data?.defaultDatasetId ?? null }
+    } catch { /* sıradaki token'ı dene */ }
   }
+  return null
 }
 
 export async function getApifyDatasetPosts(datasetId: string): Promise<IgPost[]> {
-  const token = process.env.APIFY_API_TOKEN
-  if (!token) return []
-  try {
-    const res = await fetch(`${APIFY_BASE}/datasets/${datasetId}/items`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(20000),
-    })
-    if (!res.ok) return []
-    const items = await res.json()
-    if (!Array.isArray(items)) return []
-    return items
-      .filter((it: any) => typeof it?.caption === 'string' && it.caption.trim().length >= 8)
-      .slice(0, 12)
-      .map((it: any) => ({
-        image: it.displayUrl ?? null,
-        caption: stripBadChars(String(it.caption)).replace(/\s+/g, ' ').trim().slice(0, 600),
-      }))
-  } catch {
-    return []
+  for (const token of APIFY_TOKENS) {
+    try {
+      const res = await fetch(`${APIFY_BASE}/datasets/${datasetId}/items`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(20000),
+      })
+      if (!res.ok) continue
+      const items = await res.json()
+      if (!Array.isArray(items)) continue
+      return items
+        .filter((it: any) => typeof it?.caption === 'string' && it.caption.trim().length >= 8)
+        .slice(0, 12)
+        .map((it: any) => ({
+          image: it.displayUrl ?? null,
+          caption: stripBadChars(String(it.caption)).replace(/\s+/g, ' ').trim().slice(0, 600),
+        }))
+    } catch { /* sıradaki token'ı dene */ }
   }
+  return []
 }
 
 export const SYSTEM_PROMPT = `Sen bir etkinlik tespit asistanısın. Mekan Instagram sayfalarından alınan içeriklerde yaklaşan etkinlikleri tespit ediyorsun.
