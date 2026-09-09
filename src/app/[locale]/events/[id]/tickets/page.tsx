@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { ArrowLeft, Ticket, User, Mail, Phone, Users, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
+import { PaymentBadges } from '@/components/ui/PaymentBadges'
 
 interface EventInfo {
   id: string
@@ -230,6 +231,8 @@ export default function TicketPurchasePage() {
             >
               {submitting ? (isEn ? 'Redirecting...' : 'Yönlendiriliyor...') : `${isEn ? 'Proceed to Payment' : 'Ödemeye Geç'} · ${total.toFixed(2)}₺`}
             </button>
+
+            <PaymentBadges className="pt-1" />
           </form>
         )}
       </div>
