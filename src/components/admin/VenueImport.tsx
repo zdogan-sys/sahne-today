@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Search, Loader2, MapPin, Star, Check, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CITY_OPTIONS, ALL_GENRES } from '@/lib/constants'
+import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Result = {
@@ -34,6 +35,7 @@ const PRESET_QUERIES: { q: string; type: string }[] = [
 ]
 
 export function VenueImport() {
+  const { allGenres: ALL_GENRES } = useListConfigs()
   const [city, setCity] = useState('Ankara')
   const [query, setQuery] = useState('canlı müzik')
   const [venueType, setVenueType] = useState('live_music')

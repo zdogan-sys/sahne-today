@@ -7,7 +7,7 @@ import { Trash2, Plus, Pencil } from 'lucide-react'
 import { getDayNames, FEE_MODEL_LABELS, formatTime, translateGenre } from '@/lib/utils'
 import { closeSlot, createSlot, updateSlot } from '@/app/actions/event'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 interface SlotEntry {
   id: string
@@ -260,6 +260,7 @@ function SlotForm({ form, setForm, error, dayNames }: {
 }) {
   const locale = useLocale()
   const isEn = locale === 'en'
+  const { musicGenres, stageGenres, danceTypes } = useListConfigs()
   return (
     <div className="space-y-4 pb-4">
       <div className="grid grid-cols-2 gap-3">
@@ -304,13 +305,13 @@ function SlotForm({ form, setForm, error, dayNames }: {
         <select value={form.event_type} onChange={e => setForm({ ...form, event_type: e.target.value })} className="input-field text-sm">
           <option value="">{isEn ? 'Select' : 'Seçin'}</option>
           <optgroup label={isEn ? 'Music' : 'Müzik'}>
-            {MUSIC_GENRES.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
+            {musicGenres.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
           </optgroup>
           <optgroup label={isEn ? 'Stage' : 'Sahne'}>
-            {STAGE_GENRES.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
+            {stageGenres.map(t => <option key={t} value={t}>{translateGenre(t, locale)}</option>)}
           </optgroup>
           <optgroup label={isEn ? 'Dance' : 'Dans'}>
-            {DANCE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+            {danceTypes.map(t => <option key={t} value={t}>{t}</option>)}
           </optgroup>
         </select>
       </div>

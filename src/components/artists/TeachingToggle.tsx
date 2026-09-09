@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { GraduationCap } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { DANCE_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 interface Props {
   artistId: string
@@ -29,6 +29,7 @@ export function TeachingToggle({
   instruments,
   isProIndividual,
 }: Props) {
+  const { danceTypes: DANCE_OPTIONS } = useListConfigs()
   const [isTeaching, setIsTeaching] = useState(initialIsTeaching)
   const [teachingInstruments, setTeachingInstruments] = useState<string[]>(initialTeachingInstruments)
   const [loading, setLoading] = useState(false)

@@ -11,28 +11,25 @@ import type { Artist, Profile } from '@/lib/supabase/types'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Filter } from 'lucide-react'
 import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
+import { translateGenre, translateInstrument } from '@/lib/utils'
 
 type ArtistFull = Artist & { profiles: Pick<Profile, 'display_name' | 'avatar_url' | 'city'> | null }
 
 export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[] }) {
   const t = useTranslations('filters')
   const locale = useLocale()
+  const { musicGenres, stageGenres, instruments } = useListConfigs()
 
-  const MUSIC_GENRES = locale === 'en'
-    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk']
-    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk']
-
-  const STAGE_GENRES = locale === 'en'
-    ? ['Stand-Up', 'Improvisation', 'Alternative Stage']
-    : ['Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+  // Filtre değeri her zaman DB'deki (Türkçe) kanonik değerdir; sadece
+  // görünen etiket dile göre çevrilir.
+  const MUSIC_GENRES = musicGenres.map(g => ({ value: g, label: translateGenre(g, locale) }))
+  const STAGE_GENRES = stageGenres.map(g => ({ value: g, label: translateGenre(g, locale) }))
+  const INSTRUMENTS = instruments.map(i => ({ value: i, label: translateInstrument(i, locale) }))
 
   const CITIES = locale === 'en'
     ? ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri']
     : CITY_OPTIONS
-
-  const INSTRUMENTS = locale === 'en'
-    ? ['Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Vocals', 'Saz', 'Flute', 'Trumpet', 'Oud']
-    : ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
 
   const artistsLabel = locale === 'en' ? 'Artists' : 'Sanatçılar'
   const instrumentLabel = locale === 'en' ? 'Instrument' : 'Enstrüman'
@@ -63,7 +60,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
           <h3 className="text-sm font-semibold text-text-primary">{t('title')}</h3>
           <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
+          <FilterGroup label={t('city')} options={CITIES.map(c => ({ value: c, label: c }))} value={city} onChange={setCity} />
           <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
           <div>
             <label className="label">{locale === 'en' ? 'Lessons' : 'Ders'}</label>
@@ -102,7 +99,7 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
         <div className="space-y-5">
           <FilterGroup label={t('musicGenre')} options={MUSIC_GENRES} value={genre} onChange={setGenre} />
           <FilterGroup label={t('stageType')} options={STAGE_GENRES} value={genre} onChange={setGenre} />
-          <FilterGroup label={t('city')} options={CITIES} value={city} onChange={setCity} />
+          <FilterGroup label={t('city')} options={CITIES.map(c => ({ value: c, label: c }))} value={city} onChange={setCity} />
           <FilterGroup label={instrumentLabel} options={INSTRUMENTS} value={instrument} onChange={setInstrument} />
           <div>
             <label className="label">{locale === 'en' ? 'Lessons' : 'Ders'}</label>
@@ -123,19 +120,19 @@ export function ArtistsClient({ initialArtists }: { initialArtists: ArtistFull[]
 }
 
 function FilterGroup({ label, options, value, onChange }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void
+  label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void
 }) {
   return (
     <div>
       <label className="label">{label}</label>
       <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => (
-          <button key={opt} onClick={() => onChange(value === opt ? '' : opt)}
-            className={cn('chip border transition-colors', value === opt
+          <button key={opt.value} onClick={() => onChange(value === opt.value ? '' : opt.value)}
+            className={cn('chip border transition-colors', value === opt.value
               ? 'bg-accent/10 text-accent border-accent/30'
               : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]'
             )}>
-            {opt}
+            {opt.label}
           </button>
         ))}
       </div>

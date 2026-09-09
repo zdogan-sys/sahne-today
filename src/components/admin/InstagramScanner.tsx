@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket, Bug } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
 
 function adminClient() {
@@ -63,6 +63,7 @@ const WEEKDAYS = [
 ]
 
 export function InstagramScanner() {
+  const { musicGenres: MUSIC_GENRES, stageGenres: STAGE_GENRES, danceTypes: DANCE_OPTIONS } = useListConfigs()
   const [sources, setSources] = useState<Source[]>([])
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [loading, setLoading] = useState(true)

@@ -5,12 +5,12 @@ import { useLocale } from 'next-intl'
 import { Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { translateInstrument } from '@/lib/utils'
-
-const INSTRUMENT_OPTIONS = ['Gitar', 'Bas', 'Davul', 'Klavye', 'Keman', 'Vokal', 'Saz', 'Flüt', 'Trompet', 'Ud']
+import { useListConfigs } from '@/lib/use-list-configs'
 
 export function LookingForEditor({ bandId, initialValue }: { bandId: string; initialValue: string[] }) {
   const locale = useLocale()
   const isEn = locale === 'en'
+  const { instruments: INSTRUMENT_OPTIONS } = useListConfigs()
   const [items, setItems] = useState<string[]>(initialValue)
   const [selected, setSelected] = useState('')
   const [saving, setSaving] = useState(false)

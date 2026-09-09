@@ -8,7 +8,7 @@ import { useLocale } from 'next-intl'
 import { ChevronLeft, ChevronRight, X, Music2, Users, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, cn, translateGenre } from '@/lib/utils'
-import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { addVenueEvent } from '@/app/actions/event'
 
 interface SlotEntry {
@@ -75,6 +75,7 @@ const HOURS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, 
 
 export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity, artistId, artistBands, isOwner, initialArtists = [], initialBands = [], isStudioType = false, studioRooms = [], pricePerHour }: Props) {
   const locale = useLocale()
+  const { musicGenres, stageGenres, danceTypes } = useListConfigs()
   const isEn = locale === 'en'
   const MONTH_NAMES = isEn ? MONTH_NAMES_EN : MONTH_NAMES_TR
   const DAY_HEADERS = isEn ? DAY_HEADERS_EN : DAY_HEADERS_TR
@@ -782,17 +783,17 @@ export function VenueCalendar({ slots, events: initialEvents, venueId, venueCity
                       <select value={slotEventType} onChange={(e) => setSlotEventType(e.target.value)} className="input-field text-sm">
                         <option value="">{isEn ? 'Select' : 'Seçin'}</option>
                         <optgroup label={isEn ? 'Music' : 'Müzik'}>
-                          {MUSIC_GENRES.map(t => (
+                          {musicGenres.map(t => (
                             <option key={t} value={t}>{translateGenre(t, locale)}</option>
                           ))}
                         </optgroup>
                         <optgroup label={isEn ? 'Stage' : 'Sahne'}>
-                          {STAGE_GENRES.map(t => (
+                          {stageGenres.map(t => (
                             <option key={t} value={t}>{translateGenre(t, locale)}</option>
                           ))}
                         </optgroup>
                         <optgroup label={isEn ? 'Dance' : 'Dans'}>
-                          {DANCE_OPTIONS.map(t => (
+                          {danceTypes.map(t => (
                             <option key={t} value={t}>{t}</option>
                           ))}
                         </optgroup>

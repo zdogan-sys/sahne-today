@@ -50,6 +50,32 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - Tek seferlik debug script'leri (check-*.js, test-*.js) silindi; gerekirse
   git geçmişinden geri alınabilir.
 
+## Türler / Enstrümanlar / Dans Türleri Senkronizasyonu (Eylül 2026)
+
+Admin panelindeki "Türler & Enstrümanlar" sekmesi (`music_genres`,
+`stage_genres`, `instruments`, `dance_types`) `site_settings` tablosuna
+yazıyor ve `getListConfigs()` (`src/app/actions/site.ts`) ile okunuyor —
+ama site genelinde ~20 form/filtre bileşeni bunun yerine `src/lib/constants.ts`
+içindeki **sabit** listeleri (`MUSIC_GENRES`, `STAGE_GENRES`, `ALL_GENRES`,
+`INSTRUMENT_OPTIONS`, `DANCE_OPTIONS`) doğrudan import ediyordu. Sonuç:
+admin'de eklenen bir tür (örn. "Latin", "Flamenko") Instagram etkinlik
+taramasında ve diğer birçok yerde seçilemiyordu, çünkü o bileşenler DB'yi
+hiç görmüyordu.
+
+Çözüm: `src/lib/use-list-configs.ts` adında client-side bir hook eklendi
+(`useListConfigs()`), `getListConfigs()` server action'ını çağırıp modül
+seviyesinde cache'liyor, sabit listeler sadece ilk render / DB'ye
+ulaşılamama fallback'i olarak kalıyor. Tüm seçim/filtre bileşenleri
+(TabbedGenreSelector, InstagramScanner, AdminPanel'in Event/Artist/Slot
+formları, VenueCalendar, VenueSlotsList, EventEditor, Band/Artist
+CalendarSection, ArtistsClient, BandsClient, CrewClient,
+UserProfileEditor, ArtistRegisterForm/ProfileEditor, BandInviteSearch,
+LookingForEditor, TeachingToggle, VenueImport) bu hook'u kullanacak
+şekilde güncellendi. Kurs oluşturma sayfalarındaki (`dashboard/.../courses/new`)
+enstrüman/dans **alt kategori** listeleri kasıtlı olarak dokunulmadı —
+bunlar admin'in Tür/Enstrüman editörüyle hiç bağlantılı olmayan, kursa
+özgü ayrı bir kavram.
+
 ## Aktif / Bekleyen İşler
 
 - [x] `APIFY_API_TOKEN` Coolify env'ine eklendi ve geçerli (Ağustos 2026).

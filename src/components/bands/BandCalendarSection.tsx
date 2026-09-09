@@ -9,7 +9,7 @@ import { X, MapPin, Trash2, Plus, Check, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, formatDate, translateGenre } from '@/lib/utils'
 import { EventCalendar, type CalendarEventItem } from '@/components/ui/EventCalendar'
-import { ALL_GENRES } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { addBandEvent, cancelBandEvent } from '@/app/actions/event'
 import { respondToVenueOffer } from '@/app/actions/offer'
 import { OfferCountdown } from '@/components/ui/OfferCountdown'
@@ -25,6 +25,7 @@ interface Props {
 export function BandCalendarSection({ bandId, initialEvents, isCreator }: Props) {
   const locale = useLocale()
   const isEn = locale === 'en'
+  const { allGenres: ALL_GENRES } = useListConfigs()
   const [events, setEvents] = useState<CalendarEventItem[]>(initialEvents)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dayEvents, setDayEvents] = useState<CalendarEventItem[]>([])

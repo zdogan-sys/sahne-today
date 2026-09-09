@@ -6,7 +6,7 @@ import { useLocale } from 'next-intl'
 import { Pencil, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { updateEvent } from '@/app/actions/event'
-import { ALL_GENRES } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { translateGenre } from '@/lib/utils'
 
 interface Props {
@@ -29,6 +29,7 @@ interface Props {
 
 export function EventEditor({ eventId, initial }: Props) {
   const isEn = useLocale() === 'en'
+  const { allGenres: ALL_GENRES } = useListConfigs()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)

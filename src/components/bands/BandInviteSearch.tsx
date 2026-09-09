@@ -5,7 +5,8 @@ import { Search, UserPlus, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { inviteToBand } from '@/app/actions/band'
-import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 interface ArtistResult {
   id: string
@@ -23,6 +24,7 @@ interface Props {
 
 export function BandInviteSearch({ bandId, existingMembers = [], onInvited }: Props) {
   const isEn = useLocale() === 'en'
+  const { instruments: INSTRUMENT_OPTIONS } = useListConfigs()
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
   const [instrument, setInstrument] = useState('')

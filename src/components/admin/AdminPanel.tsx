@@ -33,7 +33,8 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ALL_GENRES, CITY_OPTIONS, INSTRUMENT_OPTIONS, MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS, VENUE_TYPES } from '@/lib/constants'
+import { CITY_OPTIONS, VENUE_TYPES } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { getDayNames, FEE_MODEL_LABELS, VENUE_TYPE_LABELS } from '@/lib/utils'
 
 type Tab = 'pending' | 'events' | 'artists' | 'venues' | 'bands' | 'members' | 'lists' | 'premium' | 'conversations' | 'permissions' | 'instagram' | 'import'
@@ -278,6 +279,7 @@ function EventsTab({ events, venues, artists, bands, onRefresh }: { events: any[
 }
 
 function EventForm({ open, onClose, initial, venues: initialVenues, artists: initialArtists, bands: initialBands, onSaved }: any) {
+  const { allGenres: ALL_GENRES } = useListConfigs()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [venueId, setVenueId] = useState(initial?.venue_id ?? '')
   const [venueName, setVenueName] = useState(initial?.venue_name ?? '')
@@ -734,6 +736,7 @@ function ArtistsTab({ artists, onRefresh }: { artists: any[]; onRefresh: () => v
 }
 
 function ArtistForm({ open, onClose, initial, onSaved }: any) {
+  const { allGenres: ALL_GENRES, instruments: INSTRUMENT_OPTIONS } = useListConfigs()
   const [stageName, setStageName] = useState(initial?.stage_name ?? '')
   const [city, setCity] = useState(initial?.city ?? '')
   const [bio, setBio] = useState(initial?.bio ?? '')
@@ -1105,6 +1108,7 @@ function VenueForm({ open, onClose, initial, onSaved }: any) {
 function SlotForm({ venueId, venueName, onClose }: { venueId: string | null; venueName: string; onClose: () => void }) {
   const locale = useLocale()
   const dayNames = getDayNames(locale)
+  const { musicGenres: MUSIC_GENRES, stageGenres: STAGE_GENRES, danceTypes: DANCE_OPTIONS } = useListConfigs()
   const [slot, setSlot] = useState({
     day_of_week: 5,
     start_time: '21:00',

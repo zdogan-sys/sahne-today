@@ -6,8 +6,9 @@ import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { MapPin, Users, UserPlus } from 'lucide-react'
 import { GenreChip } from '@/components/ui/GenreChip'
-import { cn } from '@/lib/utils'
+import { cn, translateGenre } from '@/lib/utils'
 import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 interface Band {
   id: string
@@ -23,10 +24,11 @@ interface Band {
 export function BandsClient({ initialBands, isArtist }: { initialBands: Band[]; isArtist: boolean }) {
   const locale = useLocale()
   const isEn = locale === 'en'
+  const { allGenres } = useListConfigs()
 
-  const ALL_GENRES = isEn
-    ? ['Acoustic', 'Metal', 'Rock', 'Blues', 'Jazz', 'Pop', 'Electronic', 'R&B', 'Rap', 'Classical', 'Ethnic', 'Fasıl', 'Folk', 'Arabesk', 'Stand-Up', 'Improvisation', 'Alternative Stage']
-    : ['Akustik', 'Metal', 'Rock', 'Blues', 'Caz', 'Pop', 'Elektronik', 'R&B', 'Rap', 'Klasik', 'Etnik', 'Fasıl', 'Türkü', 'Arabesk', 'Stand-Up', 'Doğaçlama', 'Alternatif Sahne']
+  // Filtre değeri her zaman DB'deki (Türkçe) kanonik değerdir; sadece
+  // görünen etiket dile göre çevrilir.
+  const ALL_GENRES = allGenres.map(g => ({ value: g, label: translateGenre(g, locale) }))
 
   const CITIES = isEn
     ? ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Eskişehir', 'Adana', 'Kayseri']
@@ -67,12 +69,12 @@ export function BandsClient({ initialBands, isArtist }: { initialBands: Band[]; 
 
         <div className="flex gap-1.5 flex-wrap">
           {ALL_GENRES.map((g) => (
-            <button key={g} onClick={() => setGenre(genre === g ? '' : g)}
-              className={cn('chip border text-xs transition-colors', genre === g
+            <button key={g.value} onClick={() => setGenre(genre === g.value ? '' : g.value)}
+              className={cn('chip border text-xs transition-colors', genre === g.value
                 ? 'bg-accent/10 text-accent border-accent/30'
                 : 'bg-transparent text-text-muted border-[rgba(228,224,216,0.1)] hover:text-text-primary'
               )}>
-              {g}
+              {g.label}
             </button>
           ))}
         </div>

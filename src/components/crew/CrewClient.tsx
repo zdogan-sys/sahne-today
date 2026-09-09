@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { CrewListing, Profile } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
-import { ALL_GENRES } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 type ListingFull = CrewListing & { profiles: Pick<Profile, 'display_name' | 'city'> | null }
 
@@ -109,6 +109,7 @@ function CrewListingForm({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: (listing: any) => void
 }) {
   const isEn = useLocale() === 'en'
+  const { allGenres } = useListConfigs()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [genres, setGenres] = useState<string[]>([])
@@ -176,7 +177,7 @@ function CrewListingForm({ open, onClose, onCreated }: {
         <div>
           <label className="label">{isEn ? 'My Genres' : 'Müzik Türlerim'}</label>
           <div className="flex flex-wrap gap-1.5">
-            {ALL_GENRES.map((g) => (
+            {allGenres.map((g) => (
               <button key={g} type="button" onClick={() => toggle(genres, setGenres, g)}
                 className={cn('chip border transition-colors', genres.includes(g) ? 'bg-accent/10 text-accent border-accent/30' : 'bg-[rgba(228,224,216,0.04)] text-text-muted border-[rgba(228,224,216,0.1)]')}>
                 {g}

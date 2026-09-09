@@ -8,7 +8,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { ImageUpload } from '@/components/ui/ImageUpload'
-import { CITY_OPTIONS, INSTRUMENT_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { cn, translateInstrument } from '@/lib/utils'
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 export function ArtistProfileEditor({ artistId, initialData }: Props) {
   const router = useRouter()
   const isEn = useLocale() === 'en'
+  const { instruments: INSTRUMENT_OPTIONS } = useListConfigs()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

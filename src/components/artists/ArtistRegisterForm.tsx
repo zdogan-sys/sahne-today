@@ -9,7 +9,8 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { SocialLinksEditor, type SocialLinksData } from '@/components/ui/SocialLinksEditor'
 import { cn } from '@/lib/utils'
 
-import { INSTRUMENT_OPTIONS, CITY_OPTIONS } from '@/lib/constants'
+import { CITY_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { TabbedGenreSelector } from '@/components/ui/TabbedGenreSelector'
 
 function ProgressBar({ step }: { step: number }) {
@@ -188,6 +189,7 @@ function PastVenuePicker({ selected, onChange }: {
 export function ArtistRegisterForm() {
   const router = useRouter()
   const isEn = useLocale() === 'en'
+  const { instruments: INSTRUMENT_OPTIONS } = useListConfigs()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

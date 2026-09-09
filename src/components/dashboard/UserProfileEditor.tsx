@@ -5,7 +5,8 @@ import { useLocale } from 'next-intl'
 import { Edit2, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { CITY_OPTIONS, ALL_GENRES, getGenreColor } from '@/lib/constants'
+import { CITY_OPTIONS, getGenreColor } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 import { translateGenre } from '@/lib/utils'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 
@@ -23,6 +24,7 @@ interface Props {
 
 export function UserProfileEditor({ userId, initialData }: Props) {
   const locale = useLocale()
+  const { allGenres } = useListConfigs()
   const isEn = locale === 'en'
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -179,7 +181,7 @@ export function UserProfileEditor({ userId, initialData }: Props) {
             <label className="label">{isEn ? 'Event Types You Are Interested In' : 'İlgilendiğiniz Etkinlik Türleri'}</label>
             <p className="text-[10px] text-text-muted mb-2">{isEn ? 'We personalize your weekly event digest based on these preferences.' : 'Haftalık etkinlik özetinizi bu tercihlere göre kişiselleştiririz.'}</p>
             <div className="flex flex-wrap gap-2">
-              {ALL_GENRES.map((genre) => {
+              {allGenres.map((genre) => {
                 const selected = preferredGenres.includes(genre)
                 const color = getGenreColor(genre)
                 return (

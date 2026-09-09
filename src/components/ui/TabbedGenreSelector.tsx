@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useLocale } from 'next-intl'
 import { cn, translateGenre } from '@/lib/utils'
-import { MUSIC_GENRES, STAGE_GENRES, DANCE_OPTIONS } from '@/lib/constants'
+import { useListConfigs } from '@/lib/use-list-configs'
 
 type TabKey = 'music' | 'stage' | 'dance'
 
@@ -14,12 +14,13 @@ export function TabbedGenreSelector({ selected, onToggle, label, onTabChange, da
   const locale = useLocale()
   const isEn = locale === 'en'
   const [tab, setTab] = useState<TabKey>('music')
+  const { musicGenres, stageGenres, danceTypes } = useListConfigs()
   useEffect(() => {
     if (onTabChange) onTabChange(tab)
   }, [tab, onTabChange])
 
   const isDance = tab === 'dance'
-  const options = isDance ? DANCE_OPTIONS : (tab === 'music' ? MUSIC_GENRES : STAGE_GENRES)
+  const options = isDance ? danceTypes : (tab === 'music' ? musicGenres : stageGenres)
   const sel = isDance ? (danceSelected ?? selected) : selected
   const toggle = isDance ? (onDanceToggle ?? onToggle) : onToggle
 
