@@ -1,5 +1,14 @@
-// Ödeme sayfalarında güven rozeti olarak gösterilen kart logoları.
-// PayTR bu kartları işliyor; iyzico onayı gelene kadar eklenmiyor.
+// Ödeme sayfalarında güven rozeti olarak gösterilen kart/ödeme kuruluşu logoları.
+
+function IyzicoLogo() {
+  return (
+    <svg viewBox="0 0 72 16" width="52" height="12" role="img" aria-label="iyzico">
+      <text x="0" y="13" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="14" fill="#1A2B49">
+        iyzico
+      </text>
+    </svg>
+  )
+}
 
 function VisaLogo() {
   return (
@@ -31,6 +40,9 @@ export function PaymentBadges({ className }: { className?: string }) {
         </span>
         <span className="bg-white rounded-md px-2.5 py-1.5 flex items-center justify-center">
           <MastercardLogo />
+        </span>
+        <span className="bg-white rounded-md px-2.5 py-1.5 flex items-center justify-center">
+          <IyzicoLogo />
         </span>
       </div>
     </div>

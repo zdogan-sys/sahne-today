@@ -7,6 +7,7 @@ import { getSiteUrl, buildAlternates } from '@/lib/seo'
 import '../globals.css'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { TopNav } from '@/components/layout/TopNav'
+import { Footer } from '@/components/layout/Footer'
 import { PWAInstallBanner } from '@/components/PWAInstallBanner'
 
 interface Props {
@@ -73,6 +74,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           <TopNav />
           <main className="pb-16 md:pb-0">
             {children}
+            <Footer />
           </main>
           <MobileNav />
           <PWAInstallBanner />
