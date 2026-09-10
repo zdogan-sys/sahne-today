@@ -16,7 +16,18 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
 - **Auth:** Supabase Auth — Google OAuth + email/password aktif
   - Facebook Login: hesap kısıtlamaları nedeniyle terk edildi, tekrar denenmedi
   - Apple Login: App Store'a yayınlanana kadar erteleniyor
-- **Email/SMTP:** Resend üzerinden gönderim
+- **Email/SMTP:** Resend üzerinden gönderim (bildirim@, noreply@ vb. adresler
+  sadece gönderim amaçlı, gelen kutusu yok)
+- **Destek e-postası:** `destek@sahne.today` — Cloudflare Email Routing ile
+  `z_dogan@hotmail.com`'a yönlendiriliyor (Eylül 2026'da kuruldu; öncesinde
+  kodda/yasal metinlerde kullanılan bu adresin arkasında gerçek bir kutu
+  yoktu). Resend'in SPF/DKIM kayıtlarıyla çakışmıyor çünkü Resend `send.
+  sahne.today` alt domain'ini kullanıyor, Email Routing'in SPF'i ise kök
+  domain (`sahne.today`) üzerinde — farklı hostname'ler.
+- **Ödeme:** Şu an **PayTR** aktif (bilet satışı + Pro üyelik). **iyzico**
+  başvurusu için Eylül 2026'da gerekli yasal sayfalar eklendi (bkz. aşağıdaki
+  "iyzico Başvurusu" bölümü); iyzico onaylanınca PayTR'nin yanına/yerine
+  entegre edilecek.
 - **DNS:** Cloudflare (hem sahne.today hem thestage.today için)
 
 ## Önemli Entegrasyonlar
@@ -76,6 +87,25 @@ enstrüman/dans **alt kategori** listeleri kasıtlı olarak dokunulmadı —
 bunlar admin'in Tür/Enstrüman editörüyle hiç bağlantılı olmayan, kursa
 özgü ayrı bir kavram.
 
+## iyzico Başvurusu (Eylül 2026)
+
+iyzico'nun ön koşul listesi (Hakkımızda, SSL, Teslimat/İade Şartları, Gizlilik
+Sözleşmesi, Mesafeli Satış Sözleşmesi, Visa/MasterCard logoları, iyzico ile Öde
+logosu) için:
+
+- `/hakkimizda`, `/gizlilik-sozlesmesi`, `/mesafeli-satis-sozlesmesi`,
+  `/teslimat-ve-iade-sartlari` sayfaları eklendi (`src/app/[locale]/...`,
+  `src/components/legal/LegalLayout.tsx`). Hepsi Türkçe hukuki metin
+  (İngilizce locale'de sadece "bu metin Türkçe geçerlidir" notu var) —
+  Türkiye tüketici hukukunda bağlayıcı olan zaten Türkçe metin.
+- Tüm sayfalarda global bir footer var artık (`src/components/layout/
+  Footer.tsx`, `[locale]/layout.tsx`'e eklendi), yasal sayfalara link veriyor
+  + `PaymentBadges`'i gösteriyor (Visa/Mastercard/iyzico logoları,
+  `src/components/ui/PaymentBadges.tsx`).
+- İşletme kimlik bilgileri (unvan, adres, vergi dairesi/no, MERSİS, telefon)
+  tek yerden yönetiliyor: `src/lib/legal-info.ts` → `LEGAL_ENTITY`. Değişirse
+  sadece burayı güncelle, 4 sayfaya otomatik yansır.
+
 ## Aktif / Bekleyen İşler
 
 - [x] `APIFY_API_TOKEN` Coolify env'ine eklendi ve geçerli (Ağustos 2026).
@@ -133,6 +163,15 @@ bunlar admin'in Tür/Enstrüman editörüyle hiç bağlantılı olmayan, kursa
 - Adım adım, kısa ve net talimat tercih ediliyor
 - Karmaşık debugging yerine, durum çok dağıldığında sıfırdan başlamak tercih ediliyor
 - Git: GitHub kullanılıyor (GitLab denendi, terk edildi), lokal çalışma esas
+- **Claude Code (web/cloud oturumu) GitHub push sorunu (Eylül 2026):** Cloud
+  oturumundan `git push` "403 Resource not accessible by integration" hatası
+  verdi — GitHub'daki "Claude" App kurulumunun izin seti sadece "Read code" +
+  "Read/write pull requests" idi, "Contents: Read and write" yoktu. Çözüm:
+  https://github.com/apps/claude/installations/select_target üzerinden
+  "Install & Authorize" akışını (repo seçimiyle) yeniden tamamlamak —
+  claude.ai/customize/connectors sayfasından sadece "disconnect/reconnect"
+  yapmak yetmedi, doğrudan GitHub'ın bu App sayfasından tam yetkilendirme
+  gerekti.
 
 ---
 
