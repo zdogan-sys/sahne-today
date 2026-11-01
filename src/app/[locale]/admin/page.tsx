@@ -8,6 +8,20 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getListConfigs } from '@/app/actions/site'
 import { adminListConversations } from '@/app/actions/messaging'
 
+// Self-hosted PostgREST tek istekte en fazla 1000 satır döndürüyor (max_rows) —
+// .limit(5000) bile 1000'de kesiliyor. Listeleri 1000'lik sayfalarla sonuna kadar çeker.
+// Sayfalar arası kayma/mükerrer olmasın diye sorgu id ile ikincil sıralanmalı.
+const PAGE = 1000
+async function fetchAll(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>) {
+  const rows: any[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build(from, from + PAGE - 1)
+    if (error) return { data: rows } // eskisi gibi: hata tüm paneli boşaltmasın
+    rows.push(...(data ?? []))
+    if (!data || data.length < PAGE) return { data: rows }
+  }
+}
+
 async function getAdminData() {
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,30 +30,37 @@ async function getAdminData() {
 
   try {
     const [eventsRes, artistsRes, venuesRes, membersRes, bandsRes, pendingEventsRes, featureFlagsRes] = await Promise.all([
-      admin.from('events')
+      fetchAll((from, to) => admin.from('events')
         .select('id, title, event_date, start_time, status, genre, entry_type, entry_fee, venue_id, venue_name, artist_id, band_id, venues(name), artists(stage_name), bands(name)')
         .order('event_date', { ascending: false })
-        .limit(1000),
-      admin.from('artists')
+        .order('id')
+        .range(from, to)),
+      fetchAll((from, to) => admin.from('artists')
         .select('id, stage_name, city, genres, instruments, bio, is_hidden, created_at, profile_id, profiles(display_name, avatar_url, is_pro_individual)')
         .order('created_at', { ascending: false })
-        .limit(1000),
-      admin.from('venues')
+        .order('id')
+        .range(from, to)),
+      fetchAll((from, to) => admin.from('venues')
         .select('id, name, city, district, address, venue_type, venue_types, phone, email, description, verified, is_pro_venue, created_at, social_links, genres, latitude, longitude, price_per_hour')
         .order('created_at', { ascending: false })
-        .limit(1000),
-      admin.from('profiles')
+        .order('id')
+        .range(from, to)),
+      fetchAll((from, to) => admin.from('profiles')
         .select('id, display_name, city, role, is_premium, is_founding_member, is_moderator, created_at')
         .order('created_at', { ascending: false })
-        .limit(1000),
-      admin.from('bands')
+        .order('id')
+        .range(from, to)),
+      fetchAll((from, to) => admin.from('bands')
         .select('id, name, city, genres, bio, created_at')
         .order('created_at', { ascending: false })
-        .limit(1000),
-      admin.from('events')
+        .order('id')
+        .range(from, to)),
+      fetchAll((from, to) => admin.from('events')
         .select('id, title, event_date, start_time, status, venues(name, city), artists(stage_name), bands(name)')
         .in('status', ['pending', 'offered'])
-        .order('event_date', { ascending: true }),
+        .order('event_date', { ascending: true })
+        .order('id')
+        .range(from, to)),
       admin.from('feature_flags').select('*'),
     ])
 
