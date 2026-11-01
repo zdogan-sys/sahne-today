@@ -106,6 +106,22 @@ logosu) için:
   tek yerden yönetiliyor: `src/lib/legal-info.ts` → `LEGAL_ENTITY`. Değişirse
   sadece burayı güncelle, 4 sayfaya otomatik yansır.
 
+## Instagram'dan Grup Önerileri (Kasım 2026)
+
+Instagram etkinlik taramasında Claude her etkinlik için `performer_type`
+(band/solo/dj/other) ve gönderide etiketliyse `performer_instagram` döndürüyor.
+`performer_type='band'` olan ve sitede olmayan isimler `band_drafts`
+tablosuna öneri olarak düşer (migration 033; `name_key` UNIQUE → atlanan grup
+tekrar önerilmez). IG etiketi yoksa Serper ile isimden aranır
+(`src/lib/instagram-search.ts`, mekan tahminiyle ortak). Admin panelinde
+Instagram → "Grup Önerileri" sekmesinden onaylanınca grup **üyesiz ve
+sahipsiz** (`bands.creator_id = NULL`) açılır, aynı isimli bağlanmamış
+etkinlikler gruba bağlanır. Grup sayfasında "Bu benim grubum"
+(`claimBand`) ilk sahiplenen kullanıcıyı creator yapar, sanatçı profili varsa
+"Kurucu" üye ekler. Sonraki adım (henüz yok): grup IG'lerini de tarama
+kaynağı yapmak — dikkat: `syncSourcesFromVenues` mekan profilinde olmayan
+kaynakları pasifleştiriyor, grup kaynakları için ayrı işaret gerekecek.
+
 ## Aktif / Bekleyen İşler
 
 - [x] `APIFY_API_TOKEN` Coolify env'ine eklendi ve geçerli (Ağustos 2026).

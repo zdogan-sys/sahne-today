@@ -24,6 +24,7 @@ import { BandCalendarSection } from '@/components/bands/BandCalendarSection'
 import { FollowButton } from '@/components/ui/FollowButton'
 import { OpenChatButton } from '@/components/messaging/OpenChatButton'
 import { PerformerSlots } from '@/components/ui/PerformerSlots'
+import { ClaimBandButton } from '@/components/bands/ClaimBandButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -142,6 +143,8 @@ export default async function BandPage({ params }: Props) {
             {(isCreator || isAcceptedMember) && (
               <OpenChatButton type="band" contextId={b.id} />
             )}
+            {/* Instagram taramasından açılan sahipsiz grup — üyeler sahiplenebilir */}
+            {!b.creator_id && user && <ClaimBandButton bandId={b.id} />}
             {isCreator && (
               <BandProfileEditor
                 bandId={b.id}

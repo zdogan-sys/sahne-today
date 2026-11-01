@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket, Bug } from 'lucide-react'
+import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket, Bug, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useListConfigs } from '@/lib/use-list-configs'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
@@ -43,6 +43,17 @@ type Draft = {
   created_at: string
 }
 
+type BandDraft = {
+  id: string
+  name: string
+  instagram_handle: string | null
+  city: string | null
+  genres: string[] | null
+  source_username: string | null
+  sample_title: string | null
+  created_at: string
+}
+
 // Bir haftagününün (0=Paz..6=Cmt) önümüzdeki en yakın tarihini ISO döner
 function nextDateOfWeekday(wd: number): string {
   const base = new Date()
@@ -71,7 +82,10 @@ export function InstagramScanner() {
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, { date?: string; time?: string; weekdays?: number[]; performer?: string; genre?: string }>>({})
-  const [tab, setTab] = useState<'sources' | 'drafts'>('sources')
+  const [tab, setTab] = useState<'sources' | 'drafts' | 'bands'>('sources')
+  const [bandDrafts, setBandDrafts] = useState<BandDraft[]>([])
+  const [bandEdits, setBandEdits] = useState<Record<string, { name?: string; instagram?: string; city?: string; genre?: string }>>({})
+  const [findingIgId, setFindingIgId] = useState<string | null>(null)
   const [errorById, setErrorById] = useState<Record<string, string>>({})
   const [debugResult, setDebugResult] = useState<{ id: string; data: any } | null>(null)
   const [debugStatus, setDebugStatus] = useState<string | null>(null)
@@ -94,12 +108,14 @@ export function InstagramScanner() {
 
   const load = useCallback(async () => {
     const admin = adminClient()
-    const [srcRes, draftRes] = await Promise.all([
+    const [srcRes, draftRes, bandRes] = await Promise.all([
       admin.from('instagram_sources').select('*').order('city').order('username'),
       admin.from('event_drafts').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(2000),
+      fetch('/api/admin/instagram/bands').then(r => r.json()).catch(() => ({ drafts: [] })),
     ])
     setSources((srcRes.data ?? []) as Source[])
     setDrafts((draftRes.data ?? []) as Draft[])
+    setBandDrafts((bandRes?.drafts ?? []) as BandDraft[])
     setLoading(false)
   }, [])
 
@@ -223,6 +239,55 @@ export function InstagramScanner() {
     }
   }
 
+  function bandEffOf(b: BandDraft) {
+    const e = bandEdits[b.id]
+    return {
+      name: e?.name ?? b.name,
+      instagram: e?.instagram ?? b.instagram_handle ?? '',
+      city: e?.city ?? b.city ?? '',
+      genre: e?.genre ?? b.genres?.[0] ?? '',
+    }
+  }
+
+  async function findBandIg(b: BandDraft) {
+    setFindingIgId(b.id)
+    setErrorById(p => { const n = { ...p }; delete n[b.id]; return n })
+    const ef = bandEffOf(b)
+    try {
+      const res = await fetch('/api/admin/instagram/bands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'find_ig', id: b.id, name: ef.name, city: ef.city }) })
+      const data = await res.json().catch(() => ({}))
+      if (data.handle) setBandEdits(p => ({ ...p, [b.id]: { ...p[b.id], instagram: data.handle } }))
+      else setErrorById(p => ({ ...p, [b.id]: data.message ?? data.error ?? 'Instagram bulunamadı.' }))
+    } catch {
+      setErrorById(p => ({ ...p, [b.id]: 'Bağlantı hatası — tekrar deneyin.' }))
+    } finally {
+      setFindingIgId(null)
+    }
+  }
+
+  // Onay → üyesiz/sahipsiz grup oluşur (bkz. /api/admin/instagram/bands)
+  async function updateBandDraft(b: BandDraft, status: 'approved' | 'skipped') {
+    if (processingId) return
+    setProcessingId(b.id)
+    setErrorById(p => { const n = { ...p }; delete n[b.id]; return n })
+    const ef = bandEffOf(b)
+    try {
+      const res = await fetch('/api/admin/instagram/bands', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: b.id, status, name: ef.name, instagram: ef.instagram, city: ef.city, genres: ef.genre ? [ef.genre] : [] }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setErrorById(p => ({ ...p, [b.id]: data.error ?? 'İşlem başarısız oldu.' })); return }
+      setBandDrafts(prev => prev.filter(x => x.id !== b.id))
+      if (status === 'approved') {
+        const what = data.existed ? 'zaten kayıtlıydı, öneri ona bağlandı' : 'grubu oluşturuldu (üyesiz)'
+        const linked = data.linked_events ? ` · ${data.linked_events} etkinlik gruba bağlandı` : ''
+        setScanResult(`${ef.name} ${what}${linked}.`)
+      }
+    } catch {
+      setErrorById(p => ({ ...p, [b.id]: 'Bağlantı hatası — tekrar deneyin.' }))
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   if (loading) return <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-accent" /></div>
 
   // Sadece aktif (taranacak) hesapları göster — liste profillerden otomatik yönetiliyor
@@ -267,6 +332,10 @@ export function InstagramScanner() {
         <button onClick={() => setTab('drafts')}
           className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'drafts' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
           Onay Bekleyen Taslaklar{drafts.length > 0 ? ` (${drafts.length})` : ''}
+        </button>
+        <button onClick={() => setTab('bands')}
+          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === 'bands' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+          Grup Önerileri{bandDrafts.length > 0 ? ` (${bandDrafts.length})` : ''}
         </button>
       </div>
 
@@ -484,6 +553,83 @@ export function InstagramScanner() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+      )}
+
+      {tab === 'bands' && (
+      <div>
+        <h3 className="font-bebas text-xl text-text-primary mb-1">
+          Grup Önerileri
+          {bandDrafts.length > 0 && <span className="text-accent ml-2">{bandDrafts.length}</span>}
+        </h3>
+        <p className="text-text-muted text-xs mb-3">Taranan etkinliklerde adı geçen, sitede olmayan gruplar. Onaylanan grup üyesiz açılır; üyeler grup sayfasından sahiplenebilir.</p>
+
+        {bandDrafts.length === 0 ? (
+          <div className="card p-8 text-center text-text-muted text-sm">
+            Bekleyen grup önerisi yok. Yeni taramalarda etkinliklerde geçen gruplar buraya gelir.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {bandDrafts.map(b => {
+              const ef = bandEffOf(b)
+              const inputCls = 'bg-surface border border-[rgba(228,224,216,0.15)] rounded px-2 py-1 text-xs text-text-primary'
+              const setField = (k: 'name' | 'instagram' | 'city' | 'genre', v: string) =>
+                setBandEdits(p => ({ ...p, [b.id]: { ...p[b.id], [k]: v } }))
+              return (
+                <div key={b.id} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2 text-[10px] text-text-muted">
+                        {b.source_username && <span>@{b.source_username}</span>}
+                        {b.sample_title && <><span>·</span><span className="truncate">{b.sample_title}</span></>}
+                      </div>
+                      <input value={ef.name} onChange={ev => setField('name', ev.target.value)}
+                        placeholder="Grup adı" className={cn(inputCls, 'text-sm font-medium w-full max-w-[280px]')} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Instagram size={13} className="text-pink-400" />
+                        <input value={ef.instagram} onChange={ev => setField('instagram', ev.target.value)}
+                          placeholder="instagram hesabı" className={cn(inputCls, 'w-44')} />
+                        <button type="button" onClick={() => findBandIg(b)} disabled={findingIgId !== null} title="Instagram hesabını ara (Serper)"
+                          className="p-1.5 text-text-muted hover:text-accent transition-colors disabled:opacity-40">
+                          {findingIgId === b.id ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+                        </button>
+                        {ef.instagram && (
+                          <a href={`https://www.instagram.com/${ef.instagram.replace(/^@/, '')}/`} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] text-accent hover:underline flex items-center gap-0.5">
+                            kontrol et <ExternalLink size={9} />
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input value={ef.city} onChange={ev => setField('city', ev.target.value)}
+                          placeholder="Şehir" className={cn(inputCls, 'w-28')} />
+                        <select value={ef.genre} onChange={ev => setField('genre', ev.target.value)} className={cn(inputCls, 'max-w-[200px]')}>
+                          <option value="">Tür seç (opsiyonel)</option>
+                          <optgroup label="Müzik">{MUSIC_GENRES.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                          <optgroup label="Sahne">{STAGE_GENRES.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                          <optgroup label="Dans">{DANCE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}</optgroup>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button onClick={() => updateBandDraft(b, 'approved')} disabled={processingId !== null}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-40">
+                        {processingId === b.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Grubu Ekle
+                      </button>
+                      <button onClick={() => updateBandDraft(b, 'skipped')} disabled={processingId !== null}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-[rgba(228,224,216,0.04)] text-text-muted border border-[rgba(228,224,216,0.1)] hover:text-red-400 transition-colors disabled:opacity-40">
+                        <X size={12} /> Atla
+                      </button>
+                    </div>
+                  </div>
+                  {errorById[b.id] && (
+                    <p className="text-xs text-red-400 mt-2 bg-red-500/10 border border-red-500/20 rounded px-2 py-1">{errorById[b.id]}</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

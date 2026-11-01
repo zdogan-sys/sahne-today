@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabase } from '@supabase/supabase-js'
+import { IG_NON_HANDLE, profileHandleFromUrl, serperInstagram } from '@/lib/instagram-search'
 import { isAdminUser } from '@/lib/admin'
 
 function adminClient() {
@@ -175,8 +176,6 @@ async function fetchAndStoreLogo(website: string, placeId: string, admin: Return
 }
 
 // Instagram handle'ları için geçersiz yollar (post/reel/explore vb. handle değil)
-const IG_NON_HANDLE = new Set(['p', 'reel', 'reels', 'explore', 'tv', 'stories', 'accounts', 'about', 'directory'])
-
 function normalizeIg(handle: string): string | null {
   const h = handle.replace(/\/$/, '').split('/')[0].split('?')[0].trim()
   if (!h || IG_NON_HANDLE.has(h.toLowerCase()) || h.length < 2) return null
@@ -187,16 +186,6 @@ function extractIg(html: string): string | null {
   const m = html.match(/instagram\.com(?:%2F|\/)([A-Za-z0-9_.]+)/i)
   if (!m) return null
   try { return normalizeIg(decodeURIComponent(m[1])) } catch { return normalizeIg(m[1]) }
-}
-
-// Bir arama sonucu linki DİREKT bir IG profili mi? (post /p/, reel, explore değil) → handle döner.
-// instagram.com/<handle> ya da /<handle>/ ya da /<handle>?... biçimini kabul eder, alt yolları reddeder.
-function profileHandleFromUrl(u: string): string | null {
-  const m = u.match(/^https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9_.]+)\/?(?:\?|$)/i)
-  if (!m) return null
-  const h = m[1].toLowerCase()
-  if (IG_NON_HANDLE.has(h) || h.length < 2) return null
-  return h
 }
 
 // Google Custom Search API — resmi, JSON, instagram linklerini direkt verir
@@ -213,32 +202,6 @@ async function googleCseInstagram(name: string, city: string): Promise<string | 
     for (const item of data.items ?? []) {
       const ig = extractIg(item.link ?? '')
       if (ig) return ig
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-// Serper.dev (Google sonuçları) — sitesiz mekanlar için. Gerçek API, rate-limit/429 yok.
-// Yüksek isabet: ilk 3 organik sonuçtaki İLK direkt-profil linkini alır; profil yoksa null
-// döner (alakasız bir handle önermez). SERPER_API_KEY tanımlı değilse pas geçer.
-async function serperInstagram(name: string, city: string): Promise<string | null> {
-  const key = process.env.SERPER_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${name} ${city} instagram`, gl: 'tr', hl: 'tr', num: 10 }),
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    const links: string[] = (data.organic ?? []).map((o: any) => o.link).filter(Boolean)
-    for (const l of links.slice(0, 3)) {
-      const h = profileHandleFromUrl(l)
-      if (h) return `https://www.instagram.com/${h}/`
     }
     return null
   } catch {

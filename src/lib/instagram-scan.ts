@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { cleanIgHandle, serperInstagram } from '@/lib/instagram-search'
 
 const anthropic = new Anthropic()
 const APIFY_BASE = 'https://api.apify.com/v2'
@@ -104,18 +105,57 @@ Sana mekanın son gönderileri "[1]", "[2]" gibi numaralarla verilir. Her etkinl
 Yanıtını MUTLAKA şu JSON formatında ver, başka hiçbir şey yazma:
 
 Etkinlik varsa:
-{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup/yazar veya null", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
+{"has_event": true, "events": [{"title": "etkinlik adı", "performer": "sanatçı/grup/yazar veya null", "performer_type": "band | solo | dj | other veya null", "performer_instagram": "performer'ın gönderide etiketlenen @hesabı (@ olmadan) veya null", "date": "YYYY-MM-DD veya null", "time": "HH:MM veya null", "description": "kısa açıklama", "post": <gönderi numarası, örn. 1>, "free": <giriş AÇIKÇA ücretsiz/serbest deniyorsa true, aksi halde false>, "weekday": <her hafta TEKRARLAYAN bir etkinlikse o günün numarası, yoksa null>}]}
 
 Notlar:
 - Metinde açık bir tarih (gün+ay veya YYYY-MM-DD) varsa ve o tarih bugünden ÖNCE değilse (bugün dahil sonrası) o etkinliği MUTLAKA ekle.
 - "Sezon finali", "son oyun", "son temsil", "sezon sonu" gibi ifadeler etkinliğin geçmişte olduğu anlamına GELMEZ — yalnızca tarihe bak.
 - Tarihi geçmiş olan etkinlikleri (yani tarihi bugünden kesinlikle önce olanları) dahil etme.
+- "performer_type": müzik grubu / topluluk / orkestra / ikili-üçlü ise "band"; tek kişilik sanatçı (şarkıcı, komedyen, oyuncu) ise "solo"; DJ ise "dj"; emin değilsen "other".
+- "performer_instagram": SADECE gönderide performer için açıkça etiketlenmiş bir @hesap varsa yaz. Mekanın kendi hesabını, sponsorları veya fotoğrafçıları yazma. Tahmin ETME — yoksa null.
 - "free": yalnızca metinde net "giriş ücretsiz/serbest/bedava" varsa true. Telefon/rezervasyon numaralarını ücret sanma. Emin değilsen false.
 - "weekday": SADECE açıkça SÜREKLİ HAFTALIK tekrarı belirten ifadelerde doldur — "HER perşembe", "her hafta cumartesi", "perşembe GECELERİ/akşamları" (süreklilik). Gün no: 0=Pazar,1=Pazartesi,2=Salı,3=Çarşamba,4=Perşembe,5=Cuma,6=Cumartesi.
 - "Bu perşembe", "bu cumartesi", "önümüzdeki cuma" gibi TEK bir yaklaşan günü kastediyorsa → weekday=null; bunun yerine "date"i bugünden hesaplayıp o günün GERÇEK tarihini (YYYY-MM-DD) ver. Şüphedeysen weekday=null (tek seferlik varsay).
 
 Etkinlik yoksa:
 {"has_event": false, "events": []}`
+
+export function bandNameKey(name: string): string {
+  return name.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim()
+}
+
+// Etkinlikte adı geçen grup sitede yoksa band_drafts'a öneri olarak ekler (admin onaylar).
+// IG hesabı: önce gönderideki etiket, yoksa Serper ile isimden arama (yeni grup başına 1 kredi).
+async function suggestBandFromEvent(admin: AdminClient, source: any, event: any, eventDraftId: string | null) {
+  if (event.performer_type !== 'band') return
+  const name = typeof event.performer === 'string' ? event.performer.replace(/\s+/g, ' ').trim() : ''
+  if (name.length < 2 || name.length > 80) return
+  const nameKey = bandNameKey(name)
+
+  const [{ data: band }, { data: draft }] = await Promise.all([
+    admin.from('bands').select('id').ilike('name', name).limit(1),
+    admin.from('band_drafts').select('id').eq('name_key', nameKey).limit(1),
+  ])
+  if (band?.length || draft?.length) return
+
+  let handle = cleanIgHandle(event.performer_instagram)
+  if (handle === String(source.username).toLowerCase()) handle = null // mekanın kendi hesabı
+  if (!handle) {
+    const url = await serperInstagram(name, source.city ?? '')
+    handle = url ? cleanIgHandle(url) : null
+    if (handle === String(source.username).toLowerCase()) handle = null
+  }
+
+  await admin.from('band_drafts').insert({
+    name,
+    name_key: nameKey,
+    instagram_handle: handle,
+    city: source.city ?? null,
+    source_username: source.username,
+    event_draft_id: eventDraftId,
+    sample_title: event.title ?? null,
+  })
+}
 
 // Bir kaynağın çekilmiş gönderilerini Claude ile etkinliğe çevirip event_drafts'a yazar.
 export async function extractAndSaveDrafts(admin: AdminClient, source: any, posts: IgPost[]): Promise<number> {
@@ -168,15 +208,17 @@ ${promptBody}`,
       const { data: existing } = await dupQ.limit(1)
 
       if (!existing?.length) {
-        await admin.from('event_drafts').insert({
+        const { data: inserted } = await admin.from('event_drafts').insert({
           source_id: source.id,
           source_username: source.username,
           post_url: source.instagram_url,
           caption,
           extracted: event,
           status: 'pending',
-        })
+        }).select('id').single()
         drafts++
+        // Grup önerisi hatası (örn. migration 033 henüz uygulanmadıysa) taslağı etkilemesin
+        await suggestBandFromEvent(admin, source, event, (inserted as any)?.id ?? null).catch(() => {})
       }
     }
   }
