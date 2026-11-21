@@ -6,6 +6,7 @@ import { RefreshCw, Check, X, Loader2, Instagram, ExternalLink, Ticket, Bug, Sea
 import { cn } from '@/lib/utils'
 import { useListConfigs } from '@/lib/use-list-configs'
 import { VenueInstagramTools } from '@/components/admin/VenueInstagramTools'
+import { DeadImageTools } from '@/components/admin/DeadImageTools'
 
 function adminClient() {
   return createClient(
@@ -301,6 +302,7 @@ export function InstagramScanner() {
     <div className="space-y-6">
       {/* Mekan Instagram linklerini doldurma araçları — en üstte */}
       <VenueInstagramTools />
+      <DeadImageTools />
 
       {/* Header */}
       <div className="flex items-center justify-between">

@@ -532,5 +532,70 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ total, added })
   }
 
+  // ── KIRIK GÖRSELLER (Kasım 2026) ──
+  // Eski hosted Supabase projesi silindi; self-hosted'a geçişte storage.objects kayıtları
+  // taşındı ama dosyaların kendisi taşınmadı → *.supabase.co linkleri kalıcı olarak ölü.
+  // preview: ölü alan sayıları + fotoğrafı ölü mekanlar için Google Places adayı.
+  // apply: seçilen mekanlara Google fotoğrafı yükler, kalan tüm ölü linkleri boşaltır.
+  if (body.action === 'dead_images_preview' || body.action === 'dead_images_apply') {
+    const admin = adminClient()
+    const DEAD = '%.supabase.co/%'
+    const fields: [string, string][] = [
+      ['profiles', 'avatar_url'], ['venues', 'photo_url'], ['venues', 'logo_url'],
+      ['events', 'poster_url'], ['bands', 'photo_url'],
+    ]
+    const isDead = (v: unknown) => JSON.stringify(v ?? '').includes('.supabase.co/')
+
+    if (body.action === 'dead_images_preview') {
+      const counts: Record<string, number> = {}
+      for (const [t, c] of fields) {
+        const { count } = await admin.from(t).select('id', { count: 'exact', head: true }).like(c, DEAD)
+        counts[`${t}.${c}`] = count ?? 0
+      }
+      const { data: withPhotos } = await admin.from('venues').select('id, photos').not('photos', 'is', null)
+      counts['venues.photos'] = (withPhotos ?? []).filter((v: any) => isDead(v.photos)).length
+
+      const norm = (s: string) => s.toLocaleLowerCase('tr-TR').replace(/[^a-z0-9çğıöşü]/g, '')
+      const { data: deadVenues } = await admin.from('venues').select('id, name, city').like('photo_url', DEAD)
+      const venues = await mapPool((deadVenues ?? []) as any[], 4, async (v) => {
+        try {
+          const places = await searchPlaces(v.name, v.city ?? '')
+          const want = norm(v.name)
+          // Yanlış mekanın fotoğrafını koymamak için isim eşleşmesi şart
+          const hit = places.find(p => p.photo_name && (norm(p.name).includes(want) || want.includes(norm(p.name))))
+          return { id: v.id, name: v.name, city: v.city, match: hit ? { place_id: hit.place_id, name: hit.name, address: hit.address, photo_name: hit.photo_name } : null }
+        } catch (e: any) {
+          return { id: v.id, name: v.name, city: v.city, match: null, error: e?.message ?? 'Places hatası' }
+        }
+      })
+      return NextResponse.json({ counts, venues })
+    }
+
+    const photos: { id: string; place_id: string; photo_name: string }[] = Array.isArray(body.photos) ? body.photos : []
+    let photosSet = 0
+    for (const p of photos) {
+      if (!p?.id || !p.place_id || !p.photo_name) continue
+      const url = await fetchAndStorePhoto(p.photo_name, p.place_id, admin)
+      if (!url) continue
+      const { data } = await admin.from('venues').update({ photo_url: url }).eq('id', p.id).like('photo_url', DEAD).select('id')
+      if (data?.length) photosSet++
+    }
+
+    const cleared: Record<string, number> = {}
+    for (const [t, c] of fields) {
+      const { data } = await admin.from(t).update({ [c]: null }).like(c, DEAD).select('id')
+      cleared[`${t}.${c}`] = data?.length ?? 0
+    }
+    const { data: withPhotos } = await admin.from('venues').select('id, photos').not('photos', 'is', null)
+    let galleries = 0
+    for (const v of (withPhotos ?? []) as any[]) {
+      if (!Array.isArray(v.photos) || !isDead(v.photos)) continue
+      await admin.from('venues').update({ photos: v.photos.filter((x: unknown) => !isDead(x)) }).eq('id', v.id)
+      galleries++
+    }
+    cleared['venues.photos'] = galleries
+    return NextResponse.json({ photosSet, cleared })
+  }
+
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
