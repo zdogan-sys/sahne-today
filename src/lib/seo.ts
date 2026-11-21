@@ -33,3 +33,16 @@ export function buildAlternates(locale: string, pathAfterLocale: string) {
 export function localeBase(locale: string): string {
   return locale === 'en' ? EN_BASE : TR_BASE
 }
+
+/**
+ * Meta description: kayıttaki metin (açıklama/bio) varsa ~160 karaktere kısaltır,
+ * boşsa verilen yedek cümleyi kullanır — açıklamasız sayfada Google rastgele
+ * metin seçiyordu (Kasım 2026: 188 mekanın 185'i, 52 sanatçının 43'ü boştu).
+ */
+export function metaDescription(text: string | null | undefined, fallback: string): string {
+  const clean = (text ?? '').replace(/\s+/g, ' ').trim()
+  if (!clean) return fallback
+  if (clean.length <= 160) return clean
+  const cut = clean.slice(0, 157)
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 100 ? cut.lastIndexOf(' ') : 157)}…`
+}

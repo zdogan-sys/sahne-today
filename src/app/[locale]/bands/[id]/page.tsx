@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { buildAlternates, localeBase } from '@/lib/seo'
+import { buildAlternates, localeBase, metaDescription } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -39,7 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const band = data as any | null
   if (!band) return { title: locale === 'en' ? 'Band Not Found' : 'Grup Bulunamadı' }
   const title = `${band.name}${band.city ? ` — ${band.city}` : ''}`
-  const description = band.bio ?? undefined
+  const where = band.city ? (locale === 'en' ? ` from ${band.city}` : ` (${band.city})`) : ''
+  const description = metaDescription(band.bio, locale === 'en'
+    ? `${band.name}${where} — band profile, members and upcoming shows on TheStage.Today.`
+    : `${band.name}${where} — grup profili, üyeler ve yaklaşan sahneler Sahne.Today'de.`)
   const image = band.photo_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,

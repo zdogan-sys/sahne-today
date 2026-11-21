@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import { buildAlternates, localeBase } from '@/lib/seo'
+import { buildAlternates, localeBase, metaDescription } from '@/lib/seo'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenreChip } from '@/components/ui/GenreChip'
@@ -37,7 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const venue = data as any | null
   if (!venue) return { title: locale === 'en' ? 'Venue Not Found' : 'Mekan Bulunamadı' }
   const title = `${venue.name} — ${venue.city}`
-  const description = venue.description ?? undefined
+  const where = venue.city ? (locale === 'en' ? ` in ${venue.city}` : `, ${venue.city}`) : ''
+  const description = metaDescription(venue.description, locale === 'en'
+    ? `${venue.name}${where} — live music and stage venue. Upcoming events, location and contact info on TheStage.Today.`
+    : `${venue.name}${where} — canlı müzik ve sahne mekanı. Yaklaşan etkinlikler, konum ve iletişim bilgileri Sahne.Today'de.`)
   const image = venue.photo_url ?? `${localeBase(locale)}/icon-512.png`
   return {
     title,

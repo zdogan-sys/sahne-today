@@ -44,6 +44,12 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
   `action:'finalize'` (admin butonu + `/api/cron/instagram-finalize` cron'u)
   biteni taslağa çevirir. Ortak mantık `src/lib/instagram-scan.ts`'de.
 - **SEO:** Sitemap Google Search Console'a submit edildi (şu an ~621 sayfa indexli)
+  - Kasım 2026: sitemap artık tüm kayıtları 1000'lik sayfalarla çekiyor
+    (eskiden `.limit(500)` ile 1367 etkinliğin 500'ü giriyordu) ve grupları
+    da içeriyor. Açıklaması boş mekan/sanatçı/grup sayfaları `metaDescription()`
+    (`src/lib/seo.ts`) ile otomatik açıklama alıyor. Açık iş: `www.sahne.today`
+    503 dönüyor → Cloudflare'de www→apex 301 kuralı gerekli; ~35 görsel hâlâ
+    eski (erişilemeyen) `*.supabase.co` adresinde.
 
 ## Bilinen Kararlar / "Neden Böyle Yaptık"
 
