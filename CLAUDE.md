@@ -49,8 +49,19 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
     da içeriyor. Açıklaması boş mekan/sanatçı/grup sayfaları `metaDescription()`
     (`src/lib/seo.ts`) ile otomatik açıklama alıyor. `www.sahne.today` (sunucu tanımıyor,
     503 dönüyordu) Cloudflare Redirect Rule ile köke yönleniyor: `http*://www.sahne.today/*`
-    → `https://sahne.today/${2}`, 301, query korunuyor. Açık iş: ~35 görsel hâlâ
-    eski (erişilemeyen) `*.supabase.co` adresinde.
+    → `https://sahne.today/${2}`, 301, query korunuyor. Eski hosted Supabase projesi
+    silindi; geçişte storage kayıtları taşınmış ama dosyalar taşınmamıştı → 49 ölü
+    `*.supabase.co` görsel linki 21 Kasım 2026'da boşaltıldı (avatar, mekan foto/logo,
+    afiş, grup logosu). Admin → Instagram → "Kırık Görselleri Onar" aracı bunu yapar.
+  - Google Cloud `sahne-498812` projesinin **faturalandırma hesabı kapalı** (Kasım
+    2026) → Places API 403 PERMISSION_DENIED; "Mekan Çek" ve isimden IG tahmininin
+    Places adımı da çalışmıyor. Faturalandırma açılınca şu 14 mekana Google
+    fotoğrafı yeniden çekilebilir (şu an fotoğrafsız): Cafe Bien, DEPPO29, IF
+    Performance Hall, Last Penny Bahçelievler, Last Penny Büklüm, Manhattan, MUDDY
+    WATERS, SAHNE Zula'da, Samm’s Bistro, Siyah Beyaz, Tenedos Pub, Terradan Vegan
+    Pub & Mutfak, The Clubhouse Jazz Bar, Zürafa Performans Sanatları Merkezi. Not:
+    onarım aracı sadece ölü linkli mekanları arar; bunlar artık boş olduğu için
+    aracın fotoğrafı boş mekanları da kapsayacak şekilde güncellenmesi gerekir.
 
 ## Bilinen Kararlar / "Neden Böyle Yaptık"
 
