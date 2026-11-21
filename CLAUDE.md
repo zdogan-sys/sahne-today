@@ -47,8 +47,9 @@ sahne.today — sanatçı ve mekan keşif platformu. İkincil domain: thestage.t
   - Kasım 2026: sitemap artık tüm kayıtları 1000'lik sayfalarla çekiyor
     (eskiden `.limit(500)` ile 1367 etkinliğin 500'ü giriyordu) ve grupları
     da içeriyor. Açıklaması boş mekan/sanatçı/grup sayfaları `metaDescription()`
-    (`src/lib/seo.ts`) ile otomatik açıklama alıyor. Açık iş: `www.sahne.today`
-    503 dönüyor → Cloudflare'de www→apex 301 kuralı gerekli; ~35 görsel hâlâ
+    (`src/lib/seo.ts`) ile otomatik açıklama alıyor. `www.sahne.today` (sunucu tanımıyor,
+    503 dönüyordu) Cloudflare Redirect Rule ile köke yönleniyor: `http*://www.sahne.today/*`
+    → `https://sahne.today/${2}`, 301, query korunuyor. Açık iş: ~35 görsel hâlâ
     eski (erişilemeyen) `*.supabase.co` adresinde.
 
 ## Bilinen Kararlar / "Neden Böyle Yaptık"
